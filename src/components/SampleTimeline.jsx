@@ -125,9 +125,9 @@ export default function SampleTimeline({ styleId }) {
                       {sample.people?.name && (
                         <span className="text-sm text-muted">{sample.people.name}</span>
                       )}
-                      {sample.date_expected && (
+                      {sample.expected_date && (
                         <span className="text-sm text-muted">
-                          Due {new Date(sample.date_expected).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          Due {new Date(sample.expected_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </span>
                       )}
                       {sample.photos?.length > 0 && (

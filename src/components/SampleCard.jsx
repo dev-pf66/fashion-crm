@@ -3,8 +3,8 @@ import { ImageOff, Clock } from 'lucide-react'
 
 export default function SampleCard({ sample, onClick }) {
   const round = SAMPLE_ROUNDS.find(r => r.value === sample.round)
-  const isOverdue = sample.date_expected
-    && new Date(sample.date_expected) < new Date()
+  const isOverdue = sample.expected_date
+    && new Date(sample.expected_date) < new Date()
     && !['approved', 'rejected'].includes(sample.status)
   const assignee = sample.people
 
@@ -39,10 +39,10 @@ export default function SampleCard({ sample, onClick }) {
       )}
 
       <div className="sample-card-footer">
-        {sample.date_expected && (
+        {sample.expected_date && (
           <span className={`sample-card-date ${isOverdue ? 'overdue' : ''}`}>
             <Clock size={12} />
-            {new Date(sample.date_expected).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            {new Date(sample.expected_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
         )}
         {initials && (

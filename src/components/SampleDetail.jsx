@@ -143,9 +143,9 @@ export default function SampleDetail({ sampleId, onClose, onUpdate }) {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '1.25rem' }}>
-                  <div className="meta-item"><span className="meta-label">Requested</span><span className="meta-value">{sample.date_requested || '-'}</span></div>
-                  <div className="meta-item"><span className="meta-label">Expected</span><span className="meta-value">{sample.date_expected || '-'}</span></div>
-                  <div className="meta-item"><span className="meta-label">Received</span><span className="meta-value">{sample.date_received || '-'}</span></div>
+                  <div className="meta-item"><span className="meta-label">Requested</span><span className="meta-value">{sample.requested_date || '-'}</span></div>
+                  <div className="meta-item"><span className="meta-label">Expected</span><span className="meta-value">{sample.expected_date || '-'}</span></div>
+                  <div className="meta-item"><span className="meta-label">Received</span><span className="meta-value">{sample.received_date || '-'}</span></div>
                 </div>
 
                 {sample.notes && (

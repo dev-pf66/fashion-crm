@@ -23,9 +23,9 @@ export default function SampleForm({ sample, styleId, onClose, onSave }) {
     status: 'requested',
     colorway: '',
     size: '',
-    date_requested: new Date().toISOString().split('T')[0],
-    date_expected: '',
-    date_received: '',
+    requested_date: new Date().toISOString().split('T')[0],
+    expected_date: '',
+    received_date: '',
     tracking_number: '',
     courier: '',
     assigned_to: '',
@@ -44,9 +44,9 @@ export default function SampleForm({ sample, styleId, onClose, onSave }) {
         status: sample.status || 'requested',
         colorway: sample.colorway || '',
         size: sample.size || '',
-        date_requested: sample.date_requested || '',
-        date_expected: sample.date_expected || '',
-        date_received: sample.date_received || '',
+        requested_date: sample.requested_date || '',
+        expected_date: sample.expected_date || '',
+        received_date: sample.received_date || '',
         tracking_number: sample.tracking_number || '',
         courier: sample.courier || '',
         assigned_to: sample.assigned_to || '',
@@ -85,9 +85,9 @@ export default function SampleForm({ sample, styleId, onClose, onSave }) {
         supplier_id: form.supplier_id || null,
         assigned_to: form.assigned_to || null,
         round_number: parseInt(form.round_number) || 1,
-        date_requested: form.date_requested || null,
-        date_expected: form.date_expected || null,
-        date_received: form.date_received || null,
+        requested_date: form.requested_date || null,
+        expected_date: form.expected_date || null,
+        received_date: form.received_date || null,
       }
 
       if (isEditing) {
@@ -185,15 +185,15 @@ export default function SampleForm({ sample, styleId, onClose, onSave }) {
         <div className="form-row-3">
           <div className="form-group">
             <label>Date Requested</label>
-            <input type="date" value={form.date_requested} onChange={e => handleChange('date_requested', e.target.value)} />
+            <input type="date" value={form.requested_date} onChange={e => handleChange('requested_date', e.target.value)} />
           </div>
           <div className="form-group">
             <label>Date Expected</label>
-            <input type="date" value={form.date_expected} onChange={e => handleChange('date_expected', e.target.value)} />
+            <input type="date" value={form.expected_date} onChange={e => handleChange('expected_date', e.target.value)} />
           </div>
           <div className="form-group">
             <label>Date Received</label>
-            <input type="date" value={form.date_received} onChange={e => handleChange('date_received', e.target.value)} />
+            <input type="date" value={form.received_date} onChange={e => handleChange('received_date', e.target.value)} />
           </div>
         </div>
 
