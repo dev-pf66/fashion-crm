@@ -4,7 +4,7 @@ import { useSeason } from '../contexts/SeasonContext'
 import { useApp } from '../App'
 import {
   LayoutDashboard, Scissors, Factory, Palette,
-  Users, Settings, LogOut
+  FlaskConical, Users, Settings, LogOut
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -20,6 +20,7 @@ const NAV_SECTIONS = [
     label: 'Development',
     items: [
       { to: '/materials', icon: Palette, label: 'Materials' },
+      { to: '/samples', icon: FlaskConical, label: 'Samples' },
     ]
   },
   {

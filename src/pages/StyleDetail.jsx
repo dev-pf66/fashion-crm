@@ -4,6 +4,7 @@ import { getStyle, updateStyle } from '../lib/supabase'
 import { STYLE_STATUSES } from '../lib/constants'
 import StyleForm from '../components/StyleForm'
 import BomTable from '../components/BomTable'
+import SampleTimeline from '../components/SampleTimeline'
 import { ArrowLeft, Edit, ImageOff } from 'lucide-react'
 
 export default function StyleDetail() {
@@ -82,6 +83,7 @@ export default function StyleDetail() {
       <div className="tabs">
         <button className={`tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</button>
         <button className={`tab ${activeTab === 'bom' ? 'active' : ''}`} onClick={() => setActiveTab('bom')}>BOM</button>
+        <button className={`tab ${activeTab === 'samples' ? 'active' : ''}`} onClick={() => setActiveTab('samples')}>Samples</button>
       </div>
 
       {activeTab === 'overview' && (
@@ -138,6 +140,8 @@ export default function StyleDetail() {
       )}
 
       {activeTab === 'bom' && <BomTable styleId={style.id} />}
+
+      {activeTab === 'samples' && <SampleTimeline styleId={style.id} />}
 
       {showEdit && (
         <StyleForm style={style} onClose={() => setShowEdit(false)} onSave={() => { setShowEdit(false); loadStyle() }} />

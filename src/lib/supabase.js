@@ -236,6 +236,66 @@ export async function deleteBomItem(id) {
 }
 
 // ============================================================
+// SAMPLES
+// ============================================================
+
+export async function getSamples(seasonId) {
+  const { data, error } = await supabase
+    .from('samples')
+    .select('*, styles!inner(id, name, style_number, thumbnail_url, season_id), suppliers(id, name), people:assigned_to(id, name)')
+    .eq('styles.season_id', seasonId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function getSamplesForStyle(styleId) {
+  const { data, error } = await supabase
+    .from('samples')
+    .select('*, suppliers(id, name), people:assigned_to(id, name)')
+    .eq('style_id', styleId)
+    .order('round_number')
+  if (error) throw error
+  return data
+}
+
+export async function getSample(id) {
+  const { data, error } = await supabase
+    .from('samples')
+    .select('*, styles(id, name, style_number, thumbnail_url), suppliers(id, name), people:assigned_to(id, name), reviewer:reviewed_by(id, name)')
+    .eq('id', id)
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function createSample(sample) {
+  const { data, error } = await supabase
+    .from('samples')
+    .insert([sample])
+    .select('*, styles(id, name, style_number, thumbnail_url), suppliers(id, name), people:assigned_to(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateSample(id, updates) {
+  const { data, error } = await supabase
+    .from('samples')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*, styles(id, name, style_number, thumbnail_url), suppliers(id, name), people:assigned_to(id, name), reviewer:reviewed_by(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteSample(id) {
+  const { error } = await supabase.from('samples').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ============================================================
 // DASHBOARD STATS
 // ============================================================
 
