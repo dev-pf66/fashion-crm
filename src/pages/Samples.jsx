@@ -4,6 +4,7 @@ import { useSeason } from '../contexts/SeasonContext'
 import { getSamples, getSuppliers, updateSample } from '../lib/supabase'
 import { SAMPLE_STATUSES, SAMPLE_ROUNDS } from '../lib/constants'
 import { exportToCSV } from '../lib/csvExporter'
+import useStickyFilters from '../lib/useStickyFilters'
 import SampleCard from '../components/SampleCard'
 import SampleForm from '../components/SampleForm'
 import SampleDetail from '../components/SampleDetail'
@@ -19,7 +20,7 @@ export default function Samples() {
   const [showForm, setShowForm] = useState(false)
   const [selectedSampleId, setSelectedSampleId] = useState(null)
 
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useStickyFilters('samples', {
     search: '',
     round: '',
     status: '',

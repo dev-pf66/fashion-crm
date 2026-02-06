@@ -511,6 +511,41 @@ export async function getUpcomingDeadlines(seasonId) {
   return deadlines
 }
 
+// ============================================================
+// GLOBAL SEARCH
+// ============================================================
+
+export async function globalSearch(query, seasonId) {
+  const q = query.toLowerCase()
+  const results = []
+
+  const [styles, suppliers, pos, people] = await Promise.all([
+    seasonId
+      ? supabase.from('styles').select('id, name, style_number, status, category, suppliers(name), people:assigned_to(name)').eq('season_id', seasonId).or(`name.ilike.%${q}%,style_number.ilike.%${q}%`).limit(5)
+      : { data: [] },
+    supabase.from('suppliers').select('id, name, code, country, status').or(`name.ilike.%${q}%,code.ilike.%${q}%`).limit(5),
+    seasonId
+      ? supabase.from('purchase_orders').select('id, po_number, status, suppliers(name), people:assigned_to(name)').eq('season_id', seasonId).ilike('po_number', `%${q}%`).limit(5)
+      : { data: [] },
+    supabase.from('people').select('id, name, email, role').ilike('name', `%${q}%`).limit(5),
+  ])
+
+  ;(styles.data || []).forEach(s => {
+    results.push({ type: 'style', id: s.id, label: `${s.style_number} - ${s.name}`, sub: s.suppliers?.name || s.category || '' })
+  })
+  ;(suppliers.data || []).forEach(s => {
+    results.push({ type: 'supplier', id: s.id, label: s.name, sub: [s.code, s.country].filter(Boolean).join(' · ') })
+  })
+  ;(pos.data || []).forEach(p => {
+    results.push({ type: 'purchase_order', id: p.id, label: p.po_number, sub: p.suppliers?.name || '' })
+  })
+  ;(people.data || []).forEach(p => {
+    results.push({ type: 'person', id: p.id, label: p.name, sub: p.role || p.email || '' })
+  })
+
+  return results
+}
+
 export async function getOverdueItems(seasonId) {
   const nowStr = new Date().toISOString().slice(0, 10)
 

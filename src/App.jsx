@@ -2,6 +2,7 @@ import { useState, useEffect, createContext, useContext } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { SeasonProvider } from './contexts/SeasonContext'
+import { ToastProvider } from './contexts/ToastContext'
 import { getPeople, getPersonByEmail, createPerson } from './lib/supabase'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -88,6 +89,7 @@ function AppRoutes() {
 
   return (
     <AppContext.Provider value={{ currentPerson, people, setPeople, refreshPeople }}>
+      <ToastProvider>
       <SeasonProvider>
         <Routes>
           <Route path="/" element={<Layout />}>
@@ -108,6 +110,7 @@ function AppRoutes() {
           </Route>
         </Routes>
       </SeasonProvider>
+      </ToastProvider>
     </AppContext.Provider>
   )
 }

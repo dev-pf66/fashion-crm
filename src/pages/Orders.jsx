@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSeason } from '../contexts/SeasonContext'
 import { useApp } from '../App'
-import { getPurchaseOrders, createPurchaseOrder, getSuppliers } from '../lib/supabase'
+import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, getSuppliers } from '../lib/supabase'
 import { PO_STATUSES } from '../lib/constants'
 import { exportToCSV } from '../lib/csvExporter'
 import POCard from '../components/POCard'
 import POForm from '../components/POForm'
-import StatusBadge from '../components/StatusBadge'
-import { Plus, Grid3X3, List, ClipboardList, Search, Download } from 'lucide-react'
+import InlineStatusSelect from '../components/InlineStatusSelect'
+import QuickViewDrawer from '../components/QuickViewDrawer'
+import useStickyFilters from '../lib/useStickyFilters'
+import { Plus, Grid3X3, List, ClipboardList, Search, Download, ArrowUpDown, Eye } from 'lucide-react'
 
 export default function Orders() {
   const { currentSeason } = useSeason()
@@ -19,7 +21,9 @@ export default function Orders() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [view, setView] = useState('grid')
-  const [filters, setFilters] = useState({ status: '', supplier_id: '', search: '' })
+  const [sort, setSort] = useState({ key: '', dir: 'asc' })
+  const [quickView, setQuickView] = useState(null)
+  const [filters, setFilters] = useStickyFilters('orders', { status: '', supplier_id: '', search: '' })
 
   useEffect(() => {
     if (currentSeason) loadData()
@@ -50,6 +54,38 @@ export default function Orders() {
     }
     return true
   })
+
+  function toggleSort(key) {
+    setSort(prev => prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' })
+  }
+
+  function sortedItems(items) {
+    if (!sort.key) return items
+    return [...items].sort((a, b) => {
+      let aVal, bVal
+      switch (sort.key) {
+        case 'po_number': aVal = a.po_number || ''; bVal = b.po_number || ''; break
+        case 'supplier': aVal = a.suppliers?.name || ''; bVal = b.suppliers?.name || ''; break
+        case 'issue_date': aVal = a.issue_date || ''; bVal = b.issue_date || ''; break
+        case 'delivery_date': aVal = a.delivery_date || ''; bVal = b.delivery_date || ''; break
+        case 'total_qty': return sort.dir === 'asc' ? (parseInt(a.total_qty) || 0) - (parseInt(b.total_qty) || 0) : (parseInt(b.total_qty) || 0) - (parseInt(a.total_qty) || 0)
+        case 'total_amount': return sort.dir === 'asc' ? (parseFloat(a.total_amount) || 0) - (parseFloat(b.total_amount) || 0) : (parseFloat(b.total_amount) || 0) - (parseFloat(a.total_amount) || 0)
+        case 'assigned': aVal = a.people?.name || ''; bVal = b.people?.name || ''; break
+        default: return 0
+      }
+      const cmp = aVal.localeCompare(bVal)
+      return sort.dir === 'asc' ? cmp : -cmp
+    })
+  }
+
+  async function handleInlineStatusChange(orderId, newStatus) {
+    try {
+      const updated = await updatePurchaseOrder(orderId, { status: newStatus })
+      setOrders(prev => prev.map(o => o.id === orderId ? updated : o))
+    } catch (err) {
+      console.error('Failed to update PO status:', err)
+    }
+  }
 
   async function handleCreatePO(formData) {
     await createPurchaseOrder(formData)
@@ -131,27 +167,33 @@ export default function Orders() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>PO #</th>
-                <th>Supplier</th>
+                <th className="sortable-header" onClick={() => toggleSort('po_number')}>PO # <SortIcon field="po_number" sort={sort} /></th>
+                <th className="sortable-header" onClick={() => toggleSort('supplier')}>Supplier <SortIcon field="supplier" sort={sort} /></th>
                 <th>Status</th>
-                <th>Issue Date</th>
-                <th>Delivery</th>
-                <th>Qty</th>
-                <th>Amount</th>
-                <th>Assigned</th>
+                <th className="sortable-header" onClick={() => toggleSort('issue_date')}>Issue Date <SortIcon field="issue_date" sort={sort} /></th>
+                <th className="sortable-header" onClick={() => toggleSort('delivery_date')}>Delivery <SortIcon field="delivery_date" sort={sort} /></th>
+                <th className="sortable-header" onClick={() => toggleSort('total_qty')}>Qty <SortIcon field="total_qty" sort={sort} /></th>
+                <th className="sortable-header" onClick={() => toggleSort('total_amount')}>Amount <SortIcon field="total_amount" sort={sort} /></th>
+                <th className="sortable-header" onClick={() => toggleSort('assigned')}>Assigned <SortIcon field="assigned" sort={sort} /></th>
+                <th style={{ width: 40 }}></th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(po => (
+              {sortedItems(filtered).map(po => (
                 <tr key={po.id} className="clickable" onClick={() => navigate(`/orders/${po.id}`)}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', fontWeight: 600 }}>{po.po_number}</td>
                   <td>{po.suppliers?.name || '-'}</td>
-                  <td><StatusBadge status={po.status} /></td>
+                  <td onClick={e => e.stopPropagation()}>
+                    <InlineStatusSelect status={po.status} statuses={PO_STATUSES} onChange={v => handleInlineStatusChange(po.id, v)} />
+                  </td>
                   <td>{po.issue_date ? new Date(po.issue_date).toLocaleDateString() : '-'}</td>
                   <td>{po.delivery_date ? new Date(po.delivery_date).toLocaleDateString() : '-'}</td>
                   <td>{po.total_qty || '-'}</td>
                   <td>{po.total_amount ? `$${parseFloat(po.total_amount).toFixed(2)}` : '-'}</td>
                   <td>{po.people?.name || '-'}</td>
+                  <td onClick={e => e.stopPropagation()}>
+                    <button className="btn btn-ghost btn-sm quick-view-btn" onClick={() => setQuickView(po)}><Eye size={14} /></button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -160,6 +202,15 @@ export default function Orders() {
       )}
 
       {showForm && <POForm onClose={() => setShowForm(false)} onSave={handleCreatePO} />}
+
+      {quickView && (
+        <QuickViewDrawer item={quickView} type="order" onClose={() => setQuickView(null)} />
+      )}
     </div>
   )
+}
+
+function SortIcon({ field, sort }) {
+  if (sort.key !== field) return <ArrowUpDown size={12} style={{ opacity: 0.3 }} />
+  return <span style={{ fontSize: '0.75rem' }}>{sort.dir === 'asc' ? '▲' : '▼'}</span>
 }

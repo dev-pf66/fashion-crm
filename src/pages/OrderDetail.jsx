@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../App'
-import { getPurchaseOrder, updatePurchaseOrder, getPOLineItems, createPOLineItem, updatePOLineItem, deletePOLineItem, updatePOTotals } from '../lib/supabase'
+import { getPurchaseOrder, updatePurchaseOrder, createPurchaseOrder, getPOLineItems, createPOLineItem, updatePOLineItem, deletePOLineItem, updatePOTotals } from '../lib/supabase'
 import { PO_STATUSES } from '../lib/constants'
+import { useToast } from '../contexts/ToastContext'
 import StatusBadge from '../components/StatusBadge'
 import POForm from '../components/POForm'
 import POLineItemTable from '../components/POLineItemTable'
-import { ArrowLeft, Edit, Calendar, DollarSign, Package, Truck } from 'lucide-react'
+import Breadcrumbs from '../components/Breadcrumbs'
+import { Edit, Calendar, DollarSign, Package, Truck, Copy } from 'lucide-react'
 
 export default function OrderDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { currentPerson } = useApp()
+  const toast = useToast()
   const [po, setPo] = useState(null)
   const [lineItems, setLineItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -40,9 +43,29 @@ export default function OrderDetail() {
   async function handleStatusChange(newStatus) {
     try {
       await updatePurchaseOrder(id, { status: newStatus })
+      toast.success(`Status changed to ${newStatus}`)
       loadData()
     } catch (err) {
       console.error('Failed to update status:', err)
+      toast.error('Failed to update status')
+    }
+  }
+
+  async function handleDuplicate() {
+    try {
+      const { id: _, created_at, updated_at, total_qty, total_amount, ...rest } = po
+      const newPO = await createPurchaseOrder({
+        ...rest,
+        po_number: `${po.po_number}-COPY`,
+        status: 'draft',
+        total_qty: 0,
+        total_amount: 0,
+      })
+      toast.success('Purchase order duplicated')
+      navigate(`/orders/${newPO.id}`)
+    } catch (err) {
+      console.error('Failed to duplicate PO:', err)
+      toast.error('Failed to duplicate PO')
     }
   }
 
@@ -78,11 +101,10 @@ export default function OrderDetail() {
 
   return (
     <div>
-      <div style={{ marginBottom: '1rem' }}>
-        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/orders')}>
-          <ArrowLeft size={14} /> Back to Orders
-        </button>
-      </div>
+      <Breadcrumbs items={[
+        { label: 'Orders', to: '/orders' },
+        { label: `${po.po_number} - ${po.suppliers?.name || 'Unknown'}` },
+      ]} />
 
       <div className="po-detail-header card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
@@ -98,6 +120,9 @@ export default function OrderDetail() {
             >
               {PO_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
+            <button className="btn btn-secondary btn-sm" onClick={handleDuplicate}>
+              <Copy size={14} /> Duplicate
+            </button>
             <button className="btn btn-secondary btn-sm" onClick={() => setShowEdit(true)}>
               <Edit size={14} /> Edit
             </button>

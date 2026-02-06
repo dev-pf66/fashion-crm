@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useSeason } from '../contexts/SeasonContext'
 import { useApp } from '../App'
-import { getStyles, getSuppliers } from '../lib/supabase'
+import { getStyles, getSuppliers, updateStyle } from '../lib/supabase'
 import { STYLE_STATUSES, STYLE_CATEGORIES } from '../lib/constants'
 import StyleCard from '../components/StyleCard'
 import StyleForm from '../components/StyleForm'
-import StatusBadge from '../components/StatusBadge'
+import InlineStatusSelect from '../components/InlineStatusSelect'
+import QuickViewDrawer from '../components/QuickViewDrawer'
 import { exportToCSV } from '../lib/csvExporter'
-import { Plus, Grid3X3, List, Scissors, Search, Download } from 'lucide-react'
+import useStickyFilters from '../lib/useStickyFilters'
+import { Plus, Grid3X3, List, Scissors, Search, Download, ArrowUpDown, Eye } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 export default function Styles() {
@@ -19,7 +21,9 @@ export default function Styles() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [view, setView] = useState('grid')
-  const [filters, setFilters] = useState({
+  const [sort, setSort] = useState({ key: '', dir: 'asc' })
+  const [quickView, setQuickView] = useState(null)
+  const [filters, setFilters] = useStickyFilters('styles', {
     status: '',
     category: '',
     supplier_id: '',
@@ -63,6 +67,38 @@ export default function Styles() {
 
   function handleFilterChange(field, value) {
     setFilters(prev => ({ ...prev, [field]: value }))
+  }
+
+  function toggleSort(key) {
+    setSort(prev => prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' })
+  }
+
+  function sortedItems(items) {
+    if (!sort.key) return items
+    return [...items].sort((a, b) => {
+      let aVal, bVal
+      switch (sort.key) {
+        case 'style_number': aVal = a.style_number || ''; bVal = b.style_number || ''; break
+        case 'name': aVal = a.name || ''; bVal = b.name || ''; break
+        case 'category': aVal = a.category || ''; bVal = b.category || ''; break
+        case 'supplier': aVal = a.suppliers?.name || ''; bVal = b.suppliers?.name || ''; break
+        case 'status': aVal = a.status || ''; bVal = b.status || ''; break
+        case 'target_fob': return sort.dir === 'asc' ? (parseFloat(a.target_fob) || 0) - (parseFloat(b.target_fob) || 0) : (parseFloat(b.target_fob) || 0) - (parseFloat(a.target_fob) || 0)
+        case 'assigned': aVal = a.people?.name || ''; bVal = b.people?.name || ''; break
+        default: return 0
+      }
+      const cmp = aVal.localeCompare(bVal)
+      return sort.dir === 'asc' ? cmp : -cmp
+    })
+  }
+
+  async function handleInlineStatusChange(styleId, newStatus) {
+    try {
+      const updated = await updateStyle(styleId, { status: newStatus })
+      setStyles(prev => prev.map(s => s.id === styleId ? updated : s))
+    } catch (err) {
+      console.error('Failed to update status:', err)
+    }
   }
 
   if (loading) {
@@ -157,17 +193,18 @@ export default function Styles() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Style #</th>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Supplier</th>
+                <th className="sortable-header" onClick={() => toggleSort('style_number')}>Style # <SortIcon field="style_number" sort={sort} /></th>
+                <th className="sortable-header" onClick={() => toggleSort('name')}>Name <SortIcon field="name" sort={sort} /></th>
+                <th className="sortable-header" onClick={() => toggleSort('category')}>Category <SortIcon field="category" sort={sort} /></th>
+                <th className="sortable-header" onClick={() => toggleSort('supplier')}>Supplier <SortIcon field="supplier" sort={sort} /></th>
                 <th>Status</th>
-                <th>FOB</th>
-                <th>Assigned</th>
+                <th className="sortable-header" onClick={() => toggleSort('target_fob')}>FOB <SortIcon field="target_fob" sort={sort} /></th>
+                <th className="sortable-header" onClick={() => toggleSort('assigned')}>Assigned <SortIcon field="assigned" sort={sort} /></th>
+                <th style={{ width: 40 }}></th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(style => (
+              {sortedItems(filtered).map(style => (
                 <tr key={style.id} className="clickable" onClick={() => navigate(`/styles/${style.id}`)}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', fontWeight: 600 }}>
                     {style.style_number}
@@ -175,9 +212,14 @@ export default function Styles() {
                   <td style={{ fontWeight: 500 }}>{style.name}</td>
                   <td>{style.category || '-'}</td>
                   <td>{style.suppliers?.name || '-'}</td>
-                  <td><StatusBadge status={style.status} /></td>
+                  <td onClick={e => e.stopPropagation()}>
+                    <InlineStatusSelect status={style.status} statuses={STYLE_STATUSES} onChange={v => handleInlineStatusChange(style.id, v)} />
+                  </td>
                   <td>{style.target_fob ? `$${parseFloat(style.target_fob).toFixed(2)}` : '-'}</td>
                   <td>{style.people?.name || '-'}</td>
+                  <td onClick={e => e.stopPropagation()}>
+                    <button className="btn btn-ghost btn-sm quick-view-btn" onClick={() => setQuickView(style)}><Eye size={14} /></button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -191,6 +233,15 @@ export default function Styles() {
           onSave={() => { setShowForm(false); loadData() }}
         />
       )}
+
+      {quickView && (
+        <QuickViewDrawer item={quickView} type="style" onClose={() => setQuickView(null)} />
+      )}
     </div>
   )
+}
+
+function SortIcon({ field, sort }) {
+  if (sort.key !== field) return <ArrowUpDown size={12} style={{ opacity: 0.3 }} />
+  return <span style={{ fontSize: '0.75rem' }}>{sort.dir === 'asc' ? '▲' : '▼'}</span>
 }

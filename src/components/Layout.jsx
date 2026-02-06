@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useSeason } from '../contexts/SeasonContext'
 import { useApp } from '../App'
 import FeedbackButton from './FeedbackButton'
+import CommandPalette from './CommandPalette'
 import {
   LayoutDashboard, Scissors, Factory, Palette,
   FlaskConical, Users, Settings, LogOut,
-  ClipboardList, Clock, HelpCircle, Menu, X
+  ClipboardList, Clock, HelpCircle, Menu, X, Search
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -44,6 +45,18 @@ export default function Layout() {
   const { seasons, currentSeason, changeSeason, loading: seasonsLoading } = useSeason()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setCommandPaletteOpen(prev => !prev)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   async function handleSignOut() {
     await signOut()
@@ -72,6 +85,12 @@ export default function Layout() {
           <div className="logo-icon">&#9986;</div>
           <h1>Sourcing CRM</h1>
         </div>
+
+        <button className="sidebar-search-btn" onClick={() => setCommandPaletteOpen(true)}>
+          <Search size={14} />
+          <span>Search...</span>
+          <kbd>&#8984;K</kbd>
+        </button>
 
         {!seasonsLoading && seasons.length > 0 && (
           <div className="season-selector">
@@ -129,6 +148,7 @@ export default function Layout() {
       </main>
 
       <FeedbackButton />
+      <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
     </div>
   )
 }

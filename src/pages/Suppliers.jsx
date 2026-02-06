@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getSuppliers, createSupplier } from '../lib/supabase'
 import { SUPPLIER_STATUSES, PRODUCT_TYPES, CERTIFICATIONS } from '../lib/constants'
-import StatusBadge from '../components/StatusBadge'
+import InlineStatusSelect from '../components/InlineStatusSelect'
+import QuickViewDrawer from '../components/QuickViewDrawer'
 import Modal from '../components/Modal'
 import { exportToCSV } from '../lib/csvExporter'
-import { Plus, Factory, Search, Grid3X3, List, Download } from 'lucide-react'
+import useStickyFilters from '../lib/useStickyFilters'
+import { Plus, Factory, Search, Grid3X3, List, Download, ArrowUpDown, Eye } from 'lucide-react'
 
 export default function Suppliers() {
   const navigate = useNavigate()
@@ -13,7 +15,9 @@ export default function Suppliers() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [view, setView] = useState('grid')
-  const [filters, setFilters] = useState({ status: '', country: '', search: '' })
+  const [sort, setSort] = useState({ key: '', dir: 'asc' })
+  const [quickView, setQuickView] = useState(null)
+  const [filters, setFilters] = useStickyFilters('suppliers', { status: '', country: '', search: '' })
 
   useEffect(() => { loadData() }, [])
 
@@ -39,6 +43,27 @@ export default function Suppliers() {
   })
 
   const countries = [...new Set(suppliers.map(s => s.country).filter(Boolean))].sort()
+
+  function toggleSort(key) {
+    setSort(prev => prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' })
+  }
+
+  function sortedItems(items) {
+    if (!sort.key) return items
+    return [...items].sort((a, b) => {
+      let aVal, bVal
+      switch (sort.key) {
+        case 'code': aVal = a.code || ''; bVal = b.code || ''; break
+        case 'name': aVal = a.name || ''; bVal = b.name || ''; break
+        case 'country': aVal = a.country || ''; bVal = b.country || ''; break
+        case 'status': aVal = a.status || ''; bVal = b.status || ''; break
+        case 'score': return sort.dir === 'asc' ? (parseFloat(a.overall_score) || 0) - (parseFloat(b.overall_score) || 0) : (parseFloat(b.overall_score) || 0) - (parseFloat(a.overall_score) || 0)
+        default: return 0
+      }
+      const cmp = aVal.localeCompare(bVal)
+      return sort.dir === 'asc' ? cmp : -cmp
+    })
+  }
 
   if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
 
@@ -130,16 +155,29 @@ export default function Suppliers() {
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <table className="data-table">
-            <thead><tr><th>Code</th><th>Name</th><th>Country</th><th>Status</th><th>Types</th><th>Score</th></tr></thead>
+            <thead><tr>
+              <th className="sortable-header" onClick={() => toggleSort('code')}>Code <SortIcon field="code" sort={sort} /></th>
+              <th className="sortable-header" onClick={() => toggleSort('name')}>Name <SortIcon field="name" sort={sort} /></th>
+              <th className="sortable-header" onClick={() => toggleSort('country')}>Country <SortIcon field="country" sort={sort} /></th>
+              <th>Status</th>
+              <th>Types</th>
+              <th className="sortable-header" onClick={() => toggleSort('score')}>Score <SortIcon field="score" sort={sort} /></th>
+              <th style={{ width: 40 }}></th>
+            </tr></thead>
             <tbody>
-              {filtered.map(s => (
+              {sortedItems(filtered).map(s => (
                 <tr key={s.id} className="clickable" onClick={() => navigate(`/suppliers/${s.id}`)}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem' }}>{s.code || '-'}</td>
                   <td style={{ fontWeight: 500 }}>{s.name}</td>
                   <td>{s.country || '-'}</td>
-                  <td><StatusBadge status={s.status} /></td>
+                  <td onClick={e => e.stopPropagation()}>
+                    <InlineStatusSelect status={s.status} statuses={SUPPLIER_STATUSES} onChange={() => {}} />
+                  </td>
                   <td>{(s.product_types || []).join(', ') || '-'}</td>
                   <td>{s.overall_score ? parseFloat(s.overall_score).toFixed(1) : '-'}</td>
+                  <td onClick={e => e.stopPropagation()}>
+                    <button className="btn btn-ghost btn-sm quick-view-btn" onClick={() => setQuickView(s)}><Eye size={14} /></button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -148,8 +186,17 @@ export default function Suppliers() {
       )}
 
       {showForm && <SupplierFormModal onClose={() => setShowForm(false)} onSave={() => { setShowForm(false); loadData() }} />}
+
+      {quickView && (
+        <QuickViewDrawer item={quickView} type="supplier" onClose={() => setQuickView(null)} />
+      )}
     </div>
   )
+}
+
+function SortIcon({ field, sort }) {
+  if (sort.key !== field) return <ArrowUpDown size={12} style={{ opacity: 0.3 }} />
+  return <span style={{ fontSize: '0.75rem' }}>{sort.dir === 'asc' ? '▲' : '▼'}</span>
 }
 
 function SupplierFormModal({ onClose, onSave }) {

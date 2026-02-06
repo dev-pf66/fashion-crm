@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getStyle, updateStyle } from '../lib/supabase'
+import { getStyle, updateStyle, createStyle } from '../lib/supabase'
 import { STYLE_STATUSES } from '../lib/constants'
+import { useToast } from '../contexts/ToastContext'
 import StyleForm from '../components/StyleForm'
 import BomTable from '../components/BomTable'
 import SampleTimeline from '../components/SampleTimeline'
-import { ArrowLeft, Edit, ImageOff } from 'lucide-react'
+import Breadcrumbs from '../components/Breadcrumbs'
+import { Edit, ImageOff, Copy } from 'lucide-react'
 
 export default function StyleDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const toast = useToast()
   const [style, setStyle] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
@@ -33,8 +36,27 @@ export default function StyleDetail() {
     try {
       const updated = await updateStyle(style.id, { status: newStatus })
       setStyle(updated)
+      toast.success(`Status changed to ${newStatus}`)
     } catch (err) {
       console.error('Failed to update status:', err)
+      toast.error('Failed to update status')
+    }
+  }
+
+  async function handleDuplicate() {
+    try {
+      const { id: _, created_at, updated_at, ...rest } = style
+      const newStyle = await createStyle({
+        ...rest,
+        style_number: `${style.style_number}-COPY`,
+        name: `${style.name} (Copy)`,
+        status: 'concept',
+      })
+      toast.success('Style duplicated')
+      navigate(`/styles/${newStyle.id}`)
+    } catch (err) {
+      console.error('Failed to duplicate style:', err)
+      toast.error('Failed to duplicate style')
     }
   }
 
@@ -46,9 +68,10 @@ export default function StyleDetail() {
 
   return (
     <div>
-      <button className="btn btn-ghost" onClick={() => navigate('/styles')} style={{ marginBottom: '1rem' }}>
-        <ArrowLeft size={16} /> Back to Styles
-      </button>
+      <Breadcrumbs items={[
+        { label: 'Styles', to: '/styles' },
+        { label: `${style.style_number} - ${style.name}` },
+      ]} />
 
       <div className="style-header">
         <div className="style-header-image">
@@ -64,6 +87,9 @@ export default function StyleDetail() {
               <select value={style.status} onChange={e => handleStatusChange(e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem', padding: '0.375rem 0.5rem' }}>
                 {STYLE_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
+              <button className="btn btn-secondary btn-sm" onClick={handleDuplicate}>
+                <Copy size={14} /> Duplicate
+              </button>
               <button className="btn btn-secondary btn-sm" onClick={() => setShowEdit(true)}>
                 <Edit size={14} /> Edit
               </button>
