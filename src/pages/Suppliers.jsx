@@ -4,7 +4,8 @@ import { getSuppliers, createSupplier } from '../lib/supabase'
 import { SUPPLIER_STATUSES, PRODUCT_TYPES, CERTIFICATIONS } from '../lib/constants'
 import StatusBadge from '../components/StatusBadge'
 import Modal from '../components/Modal'
-import { Plus, Factory, Search, Grid3X3, List } from 'lucide-react'
+import { exportToCSV } from '../lib/csvExporter'
+import { Plus, Factory, Search, Grid3X3, List, Download } from 'lucide-react'
 
 export default function Suppliers() {
   const navigate = useNavigate()
@@ -49,6 +50,19 @@ export default function Suppliers() {
           <p className="subtitle">{filtered.length} suppliers</p>
         </div>
         <div className="page-header-actions">
+          <button className="btn btn-secondary btn-sm" onClick={() => exportToCSV(filtered, 'suppliers', [
+            { key: 'code', header: 'Code' },
+            { key: 'name', header: 'Name' },
+            { key: 'country', header: 'Country' },
+            { key: 'city', header: 'City' },
+            { key: 'status', header: 'Status' },
+            { header: 'Product Types', format: r => (r.product_types || []).join('; ') },
+            { key: 'contact_name', header: 'Contact' },
+            { key: 'contact_email', header: 'Email' },
+            { key: 'overall_score', header: 'Score' },
+          ])} disabled={filtered.length === 0}>
+            <Download size={14} /> Export
+          </button>
           <div className="view-toggle">
             <button className={view === 'grid' ? 'active' : ''} onClick={() => setView('grid')}><Grid3X3 size={14} /> Grid</button>
             <button className={view === 'table' ? 'active' : ''} onClick={() => setView('table')}><List size={14} /> Table</button>

@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useSeason } from '../contexts/SeasonContext'
 import { useApp } from '../App'
+import FeedbackButton from './FeedbackButton'
 import {
   LayoutDashboard, Scissors, Factory, Palette,
-  FlaskConical, Users, Settings, LogOut
+  FlaskConical, Users, Settings, LogOut,
+  ClipboardList, Clock, HelpCircle, Menu, X
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -14,6 +17,7 @@ const NAV_SECTIONS = [
       { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
       { to: '/styles', icon: Scissors, label: 'Styles' },
       { to: '/suppliers', icon: Factory, label: 'Suppliers' },
+      { to: '/orders', icon: ClipboardList, label: 'Orders' },
     ]
   },
   {
@@ -27,6 +31,8 @@ const NAV_SECTIONS = [
     label: 'Admin',
     items: [
       { to: '/team', icon: Users, label: 'Team' },
+      { to: '/activity', icon: Clock, label: 'Activity' },
+      { to: '/help', icon: HelpCircle, label: 'Help' },
       { to: '/settings', icon: Settings, label: 'Settings' },
     ]
   },
@@ -37,6 +43,7 @@ export default function Layout() {
   const { user, signOut } = useAuth()
   const { seasons, currentSeason, changeSeason, loading: seasonsLoading } = useSeason()
   const navigate = useNavigate()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   async function handleSignOut() {
     await signOut()
@@ -49,9 +56,20 @@ export default function Layout() {
 
   return (
     <div className="app-layout">
-      <aside className="sidebar">
+      {mobileMenuOpen && (
+        <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)} />
+      )}
+
+      <button
+        className="mobile-menu-toggle"
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+      >
+        {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
-          <div className="logo-icon">✂</div>
+          <div className="logo-icon">&#9986;</div>
           <h1>Sourcing CRM</h1>
         </div>
 
@@ -75,7 +93,11 @@ export default function Layout() {
               <ul className="sidebar-nav">
                 {section.items.map(item => (
                   <li key={item.to}>
-                    <NavLink to={item.to} end={item.to === '/'}>
+                    <NavLink
+                      to={item.to}
+                      end={item.to === '/'}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
                       <item.icon size={16} />
                       {item.label}
                     </NavLink>
@@ -105,6 +127,8 @@ export default function Layout() {
           <Outlet />
         </div>
       </main>
+
+      <FeedbackButton />
     </div>
   )
 }

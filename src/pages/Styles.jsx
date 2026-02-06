@@ -6,7 +6,8 @@ import { STYLE_STATUSES, STYLE_CATEGORIES } from '../lib/constants'
 import StyleCard from '../components/StyleCard'
 import StyleForm from '../components/StyleForm'
 import StatusBadge from '../components/StatusBadge'
-import { Plus, Grid3X3, List, Scissors, Search } from 'lucide-react'
+import { exportToCSV } from '../lib/csvExporter'
+import { Plus, Grid3X3, List, Scissors, Search, Download } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 export default function Styles() {
@@ -76,6 +77,17 @@ export default function Styles() {
           <p className="subtitle">{currentSeason?.code} &middot; {filtered.length} styles</p>
         </div>
         <div className="page-header-actions">
+          <button className="btn btn-secondary btn-sm" onClick={() => exportToCSV(filtered, 'styles', [
+            { key: 'style_number', header: 'Style #' },
+            { key: 'name', header: 'Name' },
+            { key: 'category', header: 'Category' },
+            { key: 'status', header: 'Status' },
+            { header: 'Supplier', format: r => r.suppliers?.name || '' },
+            { key: 'target_fob', header: 'Target FOB' },
+            { header: 'Assigned To', format: r => r.people?.name || '' },
+          ])} disabled={filtered.length === 0}>
+            <Download size={14} /> Export
+          </button>
           <div className="view-toggle">
             <button className={view === 'grid' ? 'active' : ''} onClick={() => setView('grid')}>
               <Grid3X3 size={14} /> Grid

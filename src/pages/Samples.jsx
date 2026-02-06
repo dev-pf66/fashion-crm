@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
 import { useSeason } from '../contexts/SeasonContext'
-import { getSamples, getSuppliers } from '../lib/supabase'
+import { getSamples, getSuppliers, updateSample } from '../lib/supabase'
 import { SAMPLE_STATUSES, SAMPLE_ROUNDS } from '../lib/constants'
+import { exportToCSV } from '../lib/csvExporter'
 import SampleCard from '../components/SampleCard'
 import SampleForm from '../components/SampleForm'
 import SampleDetail from '../components/SampleDetail'
-import { Plus, FlaskConical } from 'lucide-react'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import { Plus, FlaskConical, Download } from 'lucide-react'
 
 export default function Samples() {
   const { people } = useApp()
@@ -68,6 +70,41 @@ export default function Samples() {
     samples: filtered.filter(s => s.status === status.value),
   }))
 
+  async function handleDragEnd(result) {
+    const { destination, source, draggableId } = result
+    if (!destination) return
+    if (destination.droppableId === source.droppableId) return
+
+    const sampleId = draggableId.replace('sample-', '')
+    const newStatus = destination.droppableId
+
+    // Optimistic update
+    setSamples(prev =>
+      prev.map(s => s.id === sampleId ? { ...s, status: newStatus } : s)
+    )
+
+    try {
+      await updateSample(sampleId, { status: newStatus })
+    } catch (err) {
+      console.error('Failed to update sample status:', err)
+      loadData() // Revert on error
+    }
+  }
+
+  function handleExport() {
+    exportToCSV(filtered, 'samples', [
+      { header: 'Style #', format: r => r.styles?.style_number || '' },
+      { header: 'Style Name', format: r => r.styles?.name || '' },
+      { key: 'round', header: 'Round' },
+      { key: 'round_number', header: 'Round #' },
+      { key: 'colorway', header: 'Colorway' },
+      { key: 'status', header: 'Status' },
+      { header: 'Supplier', format: r => r.suppliers?.name || '' },
+      { key: 'expected_date', header: 'Expected Date' },
+      { header: 'Assigned To', format: r => r.people?.name || '' },
+    ])
+  }
+
   if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
 
   return (
@@ -78,6 +115,9 @@ export default function Samples() {
           <p className="subtitle">Track sample rounds across all styles</p>
         </div>
         <div className="page-header-actions">
+          <button className="btn btn-secondary btn-sm" onClick={handleExport} disabled={filtered.length === 0}>
+            <Download size={14} /> Export
+          </button>
           <button className="btn btn-primary" onClick={() => setShowForm(true)}>
             <Plus size={16} /> New Sample
           </button>
@@ -123,25 +163,52 @@ export default function Samples() {
           </div>
         </div>
       ) : (
-        <div className="kanban-board">
-          {columns.map(col => (
-            <div key={col.value} className="kanban-column">
-              <div className="kanban-column-header">
-                <span>{col.label}</span>
-                <span className="kanban-count">{col.samples.length}</span>
-              </div>
-              <div className="kanban-column-body">
-                {col.samples.map(sample => (
-                  <SampleCard
-                    key={sample.id}
-                    sample={sample}
-                    onClick={() => setSelectedSampleId(sample.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="kanban-board">
+            {columns.map(col => (
+              <Droppable key={col.value} droppableId={col.value}>
+                {(provided, snapshot) => (
+                  <div
+                    className={`kanban-column ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
+                  >
+                    <div className="kanban-column-header">
+                      <span>{col.label}</span>
+                      <span className="kanban-count">{col.samples.length}</span>
+                    </div>
+                    <div
+                      className="kanban-column-body"
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                    >
+                      {col.samples.map((sample, index) => (
+                        <Draggable
+                          key={sample.id}
+                          draggableId={`sample-${sample.id}`}
+                          index={index}
+                        >
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={snapshot.isDragging ? 'sample-card-dragging' : ''}
+                            >
+                              <SampleCard
+                                sample={sample}
+                                onClick={() => setSelectedSampleId(sample.id)}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  </div>
+                )}
+              </Droppable>
+            ))}
+          </div>
+        </DragDropContext>
       )}
 
       {showForm && (

@@ -14,6 +14,10 @@ import Materials from './pages/Materials'
 import Team from './pages/Team'
 import Samples from './pages/Samples'
 import Settings from './pages/Settings'
+import Orders from './pages/Orders'
+import OrderDetail from './pages/OrderDetail'
+import Activity from './pages/Activity'
+import Help from './pages/Help'
 
 export const AppContext = createContext()
 
@@ -94,7 +98,11 @@ function AppRoutes() {
             <Route path="suppliers/:id" element={<SupplierDetail />} />
             <Route path="materials" element={<Materials />} />
             <Route path="samples" element={<Samples />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="orders/:id" element={<OrderDetail />} />
             <Route path="team" element={<Team />} />
+            <Route path="activity" element={<Activity />} />
+            <Route path="help" element={<Help />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

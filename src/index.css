@@ -1948,3 +1948,552 @@ textarea {
 .flex-col { flex-direction: column; }
 .items-center { align-items: center; }
 .justify-between { justify-content: space-between; }
+
+/* ============================================================
+   PURCHASE ORDER CARDS
+   ============================================================ */
+
+.po-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.po-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.po-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.po-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.po-card-number {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.po-card-supplier {
+  font-size: 0.8125rem;
+  color: var(--gray-500);
+  margin-top: 0.125rem;
+}
+
+.po-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.po-card-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--gray-600);
+}
+
+.po-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--gray-100);
+}
+
+.po-card-date {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--gray-500);
+}
+
+.po-card-date.overdue {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ============================================================
+   ACTIVITY FEED
+   ============================================================ */
+
+.activity-feed-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-feed-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.activity-feed-item:last-child {
+  border-bottom: none;
+}
+
+.activity-feed-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.activity-feed-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-feed-text,
+.activity-feed-message {
+  font-size: 0.8125rem;
+  color: var(--gray-700);
+  line-height: 1.4;
+}
+
+.activity-feed-time {
+  font-size: 0.6875rem;
+  color: var(--gray-400);
+  margin-top: 0.125rem;
+}
+
+.activity-feed-icon {
+  color: var(--gray-400);
+  flex-shrink: 0;
+  padding-top: 0.125rem;
+}
+
+/* ============================================================
+   FEEDBACK BUTTON
+   ============================================================ */
+
+.feedback-button {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  z-index: 999;
+  transition: all 0.2s;
+}
+
+.feedback-button:hover {
+  background: var(--primary-dark);
+  transform: scale(1.05);
+}
+
+.feedback-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+  animation: fadeIn 0.15s ease;
+}
+
+.feedback-modal {
+  background: white;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.2s ease;
+}
+
+.feedback-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+/* ============================================================
+   HELP PAGE
+   ============================================================ */
+
+.help-section {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.help-section h2 {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--gray-100);
+  margin-bottom: 1rem;
+}
+
+.help-section h4 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.help-section ol, .help-section ul {
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.help-section li {
+  margin-bottom: 0.375rem;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   DASHBOARD ENHANCEMENTS
+   ============================================================ */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-top: 0.25rem;
+  line-height: 1;
+}
+
+.stat-sub {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  margin-top: 0.375rem;
+}
+
+.stat-card.alert {
+  border-color: var(--warning);
+  background: var(--warning-light);
+}
+
+.alert-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  margin-bottom: 1.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+/* Chart Bars */
+.chart-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chart-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chart-bar-label {
+  width: 90px;
+  font-size: 0.75rem;
+  color: var(--gray-600);
+  font-weight: 500;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.chart-bar-track {
+  flex: 1;
+  height: 20px;
+  background: var(--gray-100);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.chart-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  transition: width 0.4s ease;
+  min-width: 4px;
+}
+
+.chart-bar-value {
+  width: 30px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gray-700);
+  flex-shrink: 0;
+}
+
+/* Deadline List */
+.deadline-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.deadline-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.deadline-item:last-child {
+  border-bottom: none;
+}
+
+.deadline-item:hover {
+  background: var(--gray-50);
+  border-radius: var(--radius-sm);
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
+}
+
+/* ============================================================
+   DRAG AND DROP
+   ============================================================ */
+
+.kanban-column.dragging-over {
+  background: var(--primary-light);
+}
+
+.sample-card-dragging .sample-card {
+  opacity: 0.9;
+  transform: rotate(2deg);
+  box-shadow: var(--shadow-lg);
+}
+
+.sample-card-dragging {
+  opacity: 0.9;
+}
+
+/* ============================================================
+   MOBILE MENU
+   ============================================================ */
+
+.mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 200;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+  background: white;
+  color: var(--gray-700);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+/* ============================================================
+   RESPONSIVE - TABLET (768px)
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 99;
+    animation: fadeIn 0.15s ease;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .page-container {
+    padding: 1rem;
+    padding-top: 3.5rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+  }
+
+  .page-header-actions {
+    flex-wrap: wrap;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+  }
+
+  .filter-bar input[type="search"],
+  .filter-bar select {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .form-row, .form-row-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .modal {
+    max-width: 100%;
+    margin: 1rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .styles-grid,
+  .suppliers-grid,
+  .materials-grid,
+  .po-grid,
+  .team-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .kanban-column {
+    min-width: 240px;
+  }
+
+  .style-header {
+    flex-direction: column;
+  }
+
+  .style-header-image {
+    width: 100%;
+    height: 200px;
+  }
+
+  .supplier-header {
+    flex-direction: column;
+  }
+
+  .feedback-button {
+    width: 48px;
+    height: 48px;
+    bottom: 1rem;
+    left: 1rem;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE - MOBILE (480px)
+   ============================================================ */
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .styles-grid,
+  .suppliers-grid,
+  .materials-grid,
+  .po-grid,
+  .team-grid {
+    grid-template-columns: 1fr;
+  }
+
+  h1 {
+    font-size: 1.25rem;
+  }
+
+  .btn {
+    padding: 0.4375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .page-container {
+    padding: 0.75rem;
+    padding-top: 3.5rem;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+  }
+
+  .feedback-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .chart-bar-label {
+    width: 70px;
+    font-size: 0.6875rem;
+  }
+}
