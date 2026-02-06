@@ -7,6 +7,9 @@ import StyleForm from '../components/StyleForm'
 import BomTable from '../components/BomTable'
 import SampleTimeline from '../components/SampleTimeline'
 import Breadcrumbs from '../components/Breadcrumbs'
+import CostingSheet from '../components/CostingSheet'
+import ComplianceTracker from '../components/ComplianceTracker'
+import CommentThread from '../components/CommentThread'
 import { Edit, ImageOff, Copy } from 'lucide-react'
 
 export default function StyleDetail() {
@@ -110,6 +113,8 @@ export default function StyleDetail() {
         <button className={`tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</button>
         <button className={`tab ${activeTab === 'bom' ? 'active' : ''}`} onClick={() => setActiveTab('bom')}>BOM</button>
         <button className={`tab ${activeTab === 'samples' ? 'active' : ''}`} onClick={() => setActiveTab('samples')}>Samples</button>
+        <button className={`tab ${activeTab === 'costing' ? 'active' : ''}`} onClick={() => setActiveTab('costing')}>Costing</button>
+        <button className={`tab ${activeTab === 'compliance' ? 'active' : ''}`} onClick={() => setActiveTab('compliance')}>Compliance</button>
       </div>
 
       {activeTab === 'overview' && (
@@ -168,6 +173,21 @@ export default function StyleDetail() {
       {activeTab === 'bom' && <BomTable styleId={style.id} />}
 
       {activeTab === 'samples' && <SampleTimeline styleId={style.id} />}
+
+      {activeTab === 'costing' && (
+        <CostingSheet
+          styleId={style.id}
+          targetFob={style.target_fob}
+          targetRetail={style.target_retail}
+          targetMargin={style.target_margin}
+        />
+      )}
+
+      {activeTab === 'compliance' && <ComplianceTracker styleId={style.id} />}
+
+      <div style={{ marginTop: '1.5rem' }}>
+        <CommentThread entityType="style" entityId={style.id} />
+      </div>
 
       {showEdit && (
         <StyleForm style={style} onClose={() => setShowEdit(false)} onSave={() => { setShowEdit(false); loadStyle() }} />

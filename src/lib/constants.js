@@ -120,3 +120,41 @@ export const ROLES = [
 
 // Currencies
 export const CURRENCIES = ['USD', 'EUR', 'GBP', 'CNY', 'BDT', 'VND', 'INR', 'TRY']
+
+// Costing categories
+export const COST_CATEGORIES = [
+  { key: 'fabric', label: 'Fabric' },
+  { key: 'trims', label: 'Trims & Accessories' },
+  { key: 'labor', label: 'Labor / CMT' },
+  { key: 'washing', label: 'Washing / Finishing' },
+  { key: 'printing', label: 'Printing' },
+  { key: 'embroidery', label: 'Embroidery' },
+  { key: 'packaging', label: 'Packaging' },
+  { key: 'other', label: 'Other Costs' },
+]
+
+// Compliance test types
+export const TEST_TYPES = [
+  'Flammability',
+  'AZO Dyes',
+  'Lead Content',
+  'Phthalates',
+  'Fiber Content',
+  'Care Label Verification',
+  'Colorfastness',
+  'Shrinkage',
+  'Tensile Strength',
+  'pH Level',
+  'Formaldehyde',
+  'Nickel Release',
+]
+
+// Compliance test statuses
+export const TEST_STATUSES = [
+  { value: 'pending', label: 'Pending', color: '#f3f4f6' },
+  { value: 'submitted', label: 'Submitted', color: '#dbeafe' },
+  { value: 'in_testing', label: 'In Testing', color: '#fef3c7' },
+  { value: 'pass', label: 'Pass', color: '#dcfce7' },
+  { value: 'fail', label: 'Fail', color: '#fee2e2' },
+  { value: 'conditional', label: 'Conditional Pass', color: '#fef3c7' },
+]

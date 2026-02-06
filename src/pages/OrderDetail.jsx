@@ -8,6 +8,7 @@ import StatusBadge from '../components/StatusBadge'
 import POForm from '../components/POForm'
 import POLineItemTable from '../components/POLineItemTable'
 import Breadcrumbs from '../components/Breadcrumbs'
+import CommentThread from '../components/CommentThread'
 import { Edit, Calendar, DollarSign, Package, Truck, Copy } from 'lucide-react'
 
 export default function OrderDetail() {
@@ -153,6 +154,10 @@ export default function OrderDetail() {
         onUpdate={handleUpdateLineItem}
         onDelete={handleDeleteLineItem}
       />
+
+      <div style={{ marginTop: '1.5rem' }}>
+        <CommentThread entityType="purchase_order" entityId={po.id} />
+      </div>
 
       {showEdit && <POForm po={po} onClose={() => setShowEdit(false)} onSave={handleUpdate} />}
     </div>

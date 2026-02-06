@@ -8,7 +8,7 @@ import CommandPalette from './CommandPalette'
 import {
   LayoutDashboard, Scissors, Factory, Palette,
   FlaskConical, Users, Settings, LogOut,
-  ClipboardList, Clock, HelpCircle, Menu, X, Search
+  ClipboardList, Clock, HelpCircle, Menu, X, Search, CalendarDays
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -26,6 +26,7 @@ const NAV_SECTIONS = [
     items: [
       { to: '/materials', icon: Palette, label: 'Materials' },
       { to: '/samples', icon: FlaskConical, label: 'Samples' },
+      { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
     ]
   },
   {

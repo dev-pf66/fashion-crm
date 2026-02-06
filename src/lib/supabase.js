@@ -546,6 +546,201 @@ export async function globalSearch(query, seasonId) {
   return results
 }
 
+// ============================================================
+// STYLE COSTINGS
+// ============================================================
+
+export async function getStyleCosting(styleId) {
+  const { data, error } = await supabase
+    .from('style_costings')
+    .select('*')
+    .eq('style_id', styleId)
+    .single()
+  if (error && error.code !== 'PGRST116') throw error
+  return data
+}
+
+export async function upsertStyleCosting(styleId, costingData) {
+  // Try update first
+  const existing = await getStyleCosting(styleId)
+  if (existing) {
+    const { data, error } = await supabase
+      .from('style_costings')
+      .update({ ...costingData, updated_at: new Date().toISOString() })
+      .eq('style_id', styleId)
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  } else {
+    const { data, error } = await supabase
+      .from('style_costings')
+      .insert([{ style_id: styleId, ...costingData }])
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  }
+}
+
+// ============================================================
+// COMPLIANCE TESTS
+// ============================================================
+
+export async function getComplianceTests(styleId) {
+  const { data, error } = await supabase
+    .from('compliance_tests')
+    .select('*, people:submitted_by(id, name)')
+    .eq('style_id', styleId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function createComplianceTest(test) {
+  const { data, error } = await supabase
+    .from('compliance_tests')
+    .insert([test])
+    .select('*, people:submitted_by(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateComplianceTest(id, updates) {
+  const { data, error } = await supabase
+    .from('compliance_tests')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*, people:submitted_by(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteComplianceTest(id) {
+  const { error } = await supabase.from('compliance_tests').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ============================================================
+// COMMENTS
+// ============================================================
+
+export async function getComments(entityType, entityId) {
+  const { data, error } = await supabase
+    .from('comments')
+    .select('*, people:person_id(id, name, email)')
+    .eq('entity_type', entityType)
+    .eq('entity_id', entityId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data
+}
+
+export async function createComment(comment) {
+  const { data, error } = await supabase
+    .from('comments')
+    .insert([comment])
+    .select('*, people:person_id(id, name, email)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteComment(id) {
+  const { error } = await supabase.from('comments').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ============================================================
+// CALENDAR DATA
+// ============================================================
+
+export async function getCalendarEvents(seasonId, startDate, endDate) {
+  const events = []
+
+  const [samples, pos, styles] = await Promise.all([
+    supabase
+      .from('samples')
+      .select('id, expected_date, round, round_number, status, colorway, styles!inner(id, name, style_number, season_id)')
+      .eq('styles.season_id', seasonId)
+      .gte('expected_date', startDate)
+      .lte('expected_date', endDate)
+      .not('status', 'in', '("approved","rejected")'),
+    supabase
+      .from('purchase_orders')
+      .select('id, po_number, status, delivery_date, ex_factory_date, suppliers(id, name)')
+      .eq('season_id', seasonId),
+    supabase
+      .from('styles')
+      .select('id, style_number, name, development_start, target_delivery, status')
+      .eq('season_id', seasonId),
+  ])
+
+  ;(samples.data || []).forEach(s => {
+    if (s.expected_date) {
+      events.push({
+        id: `sample-${s.id}`,
+        date: s.expected_date,
+        title: `${s.styles?.style_number} ${s.round} #${s.round_number}`,
+        type: 'sample',
+        status: s.status,
+        link: '/samples',
+      })
+    }
+  })
+
+  ;(pos.data || []).forEach(p => {
+    if (p.ex_factory_date && p.ex_factory_date >= startDate && p.ex_factory_date <= endDate) {
+      events.push({
+        id: `po-exf-${p.id}`,
+        date: p.ex_factory_date,
+        title: `${p.po_number} Ex-Factory`,
+        type: 'po_exfactory',
+        status: p.status,
+        link: `/orders/${p.id}`,
+      })
+    }
+    if (p.delivery_date && p.delivery_date >= startDate && p.delivery_date <= endDate) {
+      events.push({
+        id: `po-del-${p.id}`,
+        date: p.delivery_date,
+        title: `${p.po_number} Delivery`,
+        type: 'po_delivery',
+        status: p.status,
+        link: `/orders/${p.id}`,
+      })
+    }
+  })
+
+  ;(styles.data || []).forEach(s => {
+    if (s.development_start && s.development_start >= startDate && s.development_start <= endDate) {
+      events.push({
+        id: `style-dev-${s.id}`,
+        date: s.development_start,
+        title: `${s.style_number} Dev Start`,
+        type: 'style_dev',
+        status: s.status,
+        link: `/styles/${s.id}`,
+      })
+    }
+    if (s.target_delivery && s.target_delivery >= startDate && s.target_delivery <= endDate) {
+      events.push({
+        id: `style-del-${s.id}`,
+        date: s.target_delivery,
+        title: `${s.style_number} Target Delivery`,
+        type: 'style_delivery',
+        status: s.status,
+        link: `/styles/${s.id}`,
+      })
+    }
+  })
+
+  events.sort((a, b) => a.date.localeCompare(b.date))
+  return events
+}
+
 export async function getOverdueItems(seasonId) {
   const nowStr = new Date().toISOString().slice(0, 10)
 
