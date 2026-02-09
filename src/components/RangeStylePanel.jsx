@@ -3,6 +3,7 @@ import { useToast } from '../contexts/ToastContext'
 import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile } from '../lib/supabase'
 import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
 import { STYLE_CATEGORIES } from '../lib/constants'
+import CommentSection from './CommentSection'
 import { X, Upload, Trash2, Star, FileText, Image as ImageIcon, Loader } from 'lucide-react'
 
 const STATUSES = [
@@ -285,6 +286,11 @@ export default function RangeStylePanel({ styleId, rangeId, onClose, onUpdate, o
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Comments */}
+            <div className="rp-panel-section" style={{ marginTop: '0.5rem' }}>
+              <CommentSection entityType="range_style" entityId={styleId} rangeId={rangeId} />
             </div>
 
             {/* Delete */}

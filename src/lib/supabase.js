@@ -923,6 +923,60 @@ export async function deleteRangeStyleFile(id) {
 }
 
 // ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+export async function getNotifications(personId) {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('person_id', personId)
+    .order('created_at', { ascending: false })
+    .limit(50)
+  if (error) throw error
+
+  // Fetch from_person names
+  const fromIds = [...new Set((data || []).map(n => n.from_person_id).filter(Boolean))]
+  let peopleMap = {}
+  if (fromIds.length > 0) {
+    const { data: ppl } = await supabase.from('people').select('id, name').in('id', fromIds)
+    if (ppl) ppl.forEach(p => { peopleMap[p.id] = p })
+  }
+
+  return (data || []).map(n => ({
+    ...n,
+    from_person: peopleMap[n.from_person_id] || null,
+  }))
+}
+
+export async function createNotification(notification) {
+  const { data, error } = await supabase
+    .from('notifications')
+    .insert([notification])
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function markNotificationRead(id) {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function markAllNotificationsRead(personId) {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('person_id', personId)
+    .eq('read', false)
+  if (error) throw error
+}
+
+// ============================================================
 // OVERDUE ITEMS
 // ============================================================
 

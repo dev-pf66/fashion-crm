@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSeason } from '../contexts/SeasonContext'
 import { useApp } from '../App'
 import FeedbackButton from './FeedbackButton'
+import NotificationBell from './NotificationBell'
 import CommandPalette from './CommandPalette'
 import {
   LayoutDashboard, Scissors, Factory, Palette,
@@ -137,6 +138,7 @@ export default function Layout() {
               <div className="sidebar-user-name">{currentPerson?.name || 'User'}</div>
               <div className="sidebar-user-email">{user?.email}</div>
             </div>
+            <NotificationBell />
             <button className="sidebar-logout" onClick={handleSignOut} title="Sign out">
               <LogOut size={16} />
             </button>
