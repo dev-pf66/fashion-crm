@@ -151,16 +151,14 @@ function NewRangeForm({ personId, onClose, onSave }) {
     if (!name.trim()) return
     setSaving(true)
     try {
-      await createRange({
-        name: name.trim(),
-        season: season.trim() || null,
-        created_by: personId,
-      })
+      const rangeData = { name: name.trim(), season: season.trim() || null }
+      if (personId) rangeData.created_by = personId
+      await createRange(rangeData)
       toast.success('Range created!')
       onSave()
     } catch (err) {
       console.error('Create range error:', err)
-      toast.error('Failed to create range')
+      toast.error('Failed: ' + (err?.message || err?.details || JSON.stringify(err)))
     } finally {
       setSaving(false)
     }
