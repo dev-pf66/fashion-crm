@@ -741,6 +741,47 @@ export async function getCalendarEvents(seasonId, startDate, endDate) {
   return events
 }
 
+// ============================================================
+// STYLE REQUESTS
+// ============================================================
+
+export async function getStyleRequests(seasonId) {
+  let query = supabase
+    .from('style_requests')
+    .select('*, people:submitted_by(id, name, email)')
+    .order('created_at', { ascending: false })
+  if (seasonId) query = query.eq('season_id', seasonId)
+  const { data, error } = await query
+  if (error) throw error
+  return data
+}
+
+export async function createStyleRequest(request) {
+  const { data, error } = await supabase
+    .from('style_requests')
+    .insert([request])
+    .select('*, people:submitted_by(id, name, email)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateStyleRequest(id, updates) {
+  const { data, error } = await supabase
+    .from('style_requests')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*, people:submitted_by(id, name, email)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteStyleRequest(id) {
+  const { error } = await supabase.from('style_requests').delete().eq('id', id)
+  if (error) throw error
+}
+
 export async function getOverdueItems(seasonId) {
   const nowStr = new Date().toISOString().slice(0, 10)
 

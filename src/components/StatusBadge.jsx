@@ -25,6 +25,10 @@ const STATUS_CONFIG = {
   under_review: { label: 'Under Review', bg: '#fef3c7', color: '#b45309' },
   rejected: { label: 'Rejected', bg: '#fee2e2', color: '#b91c1c' },
   revised: { label: 'Revised', bg: '#fce7f3', color: '#be185d' },
+  // Request statuses
+  new: { label: 'New', bg: '#e0e7ff', color: '#4338ca' },
+  reviewed: { label: 'Reviewed', bg: '#dbeafe', color: '#1d4ed8' },
+  in_development: { label: 'In Development', bg: '#cffafe', color: '#0e7490' },
   // Inspection
   scheduled: { label: 'Scheduled', bg: '#f3f4f6', color: '#4b5563' },
   pass: { label: 'Pass', bg: '#dcfce7', color: '#15803d' },

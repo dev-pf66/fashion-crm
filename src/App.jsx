@@ -20,6 +20,7 @@ import OrderDetail from './pages/OrderDetail'
 import Activity from './pages/Activity'
 import Help from './pages/Help'
 import Calendar from './pages/Calendar'
+import StyleRequests from './pages/StyleRequests'
 
 export const AppContext = createContext()
 
@@ -105,6 +106,7 @@ function AppRoutes() {
             <Route path="orders/:id" element={<OrderDetail />} />
             <Route path="team" element={<Team />} />
             <Route path="calendar" element={<Calendar />} />
+            <Route path="requests" element={<StyleRequests />} />
             <Route path="activity" element={<Activity />} />
             <Route path="help" element={<Help />} />
             <Route path="settings" element={<Settings />} />
