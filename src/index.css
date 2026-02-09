@@ -4307,6 +4307,258 @@ tr:hover .quick-view-btn {
   letter-spacing: 0.04em;
 }
 
+/* Size Toggle */
+.rp-size-toggle {
+  display: flex;
+  background: var(--gray-100);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.rp-size-btn {
+  padding: 0.3125rem 0.5rem;
+  border: none;
+  background: transparent;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--gray-400);
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 28px;
+  text-align: center;
+}
+
+.rp-size-btn.active {
+  background: white;
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Card Size Variants */
+.rp-grid-sm {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.625rem;
+}
+
+.rp-grid-lg {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.rp-card-sm .rp-card-thumb {
+  aspect-ratio: 1 / 1;
+}
+
+.rp-card-sm .rp-card-body {
+  padding: 0.5rem;
+}
+
+.rp-card-sm .rp-card-name {
+  font-size: 0.6875rem;
+  margin-bottom: 0.25rem;
+  -webkit-line-clamp: 1;
+}
+
+.rp-card-sm .rp-card-tags {
+  gap: 0.25rem;
+  margin-bottom: 0;
+}
+
+.rp-card-sm .rp-card-tags .badge {
+  font-size: 0.5625rem;
+  padding: 0.0625rem 0.375rem;
+}
+
+.rp-card-sm .rp-card-tags .tag {
+  font-size: 0.5625rem;
+  padding: 0.0625rem 0.375rem;
+}
+
+.rp-card-lg .rp-card-thumb {
+  aspect-ratio: 2 / 3;
+}
+
+.rp-card-lg .rp-card-body {
+  padding: 1rem;
+}
+
+.rp-card-lg .rp-card-name {
+  font-size: 0.9375rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Thumbnail Zoom Button */
+.rp-thumb-zoom {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  width: 28px;
+  height: 28px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+}
+
+.rp-card-thumb:hover .rp-thumb-zoom {
+  opacity: 1;
+}
+
+.rp-thumb-zoom:hover {
+  background: rgba(0,0,0,0.7);
+}
+
+/* Progress Bar */
+.rp-progress {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.rp-progress-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--gray-100);
+  margin-bottom: 0.625rem;
+}
+
+.rp-progress-segment {
+  transition: width 0.3s ease;
+  min-width: 4px;
+}
+
+.rp-progress-segment:first-child {
+  border-left: none !important;
+  border-radius: 999px 0 0 999px;
+}
+
+.rp-progress-segment:last-child {
+  border-radius: 0 999px 999px 0;
+}
+
+.rp-progress-legend {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.rp-progress-label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--gray-600);
+}
+
+.rp-progress-label strong {
+  color: var(--gray-800);
+}
+
+.rp-progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Lightbox */
+.rp-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0,0,0,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.rp-lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  z-index: 10;
+}
+
+.rp-lightbox-close:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.rp-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  z-index: 10;
+}
+
+.rp-lightbox-nav:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.rp-lightbox-prev {
+  left: 1rem;
+}
+
+.rp-lightbox-next {
+  right: 1rem;
+}
+
+.rp-lightbox-content {
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: default;
+}
+
+.rp-lightbox-content img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: var(--radius);
+}
+
+.rp-lightbox-caption {
+  color: rgba(255,255,255,0.8);
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
 .rp-panel-danger {
   margin-top: 2rem;
   padding-top: 1rem;
@@ -4383,5 +4635,21 @@ tr:hover .quick-view-btn {
   }
   .rp-group-toggle {
     flex-wrap: wrap;
+  }
+  .rp-size-toggle {
+    display: none;
+  }
+  .rp-lightbox-nav {
+    width: 36px;
+    height: 36px;
+  }
+  .rp-lightbox-prev {
+    left: 0.5rem;
+  }
+  .rp-lightbox-next {
+    right: 0.5rem;
+  }
+  .rp-progress-legend {
+    gap: 0.5rem;
   }
 }

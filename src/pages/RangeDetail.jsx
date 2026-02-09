@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useApp } from '../App'
@@ -12,8 +12,9 @@ import Modal from '../components/Modal'
 import Breadcrumbs from '../components/Breadcrumbs'
 import RangeStylePanel from '../components/RangeStylePanel'
 import {
-  LayoutGrid, List, Plus, Search, Edit3, GripVertical,
-  Image as ImageIcon, ChevronLeft, Lock, Unlock, Play,
+  LayoutGrid, List, Plus, Search, Edit3,
+  Image as ImageIcon, Lock, Play,
+  Maximize2, Minimize2, Square, X, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 
 const RANGE_STYLE_STATUSES = [
@@ -27,6 +28,12 @@ const GROUPINGS = [
   { value: 'category', label: 'Category' },
   { value: 'delivery_drop', label: 'Delivery Drop' },
   { value: 'status', label: 'Status' },
+]
+
+const CARD_SIZES = [
+  { value: 'sm', label: 'S', icon: Minimize2 },
+  { value: 'md', label: 'M', icon: Square },
+  { value: 'lg', label: 'L', icon: Maximize2 },
 ]
 
 const COLORWAY_MAP = {
@@ -48,12 +55,6 @@ function getColorDot(colorName) {
   return hex || '#d1d5db'
 }
 
-const RANGE_STATUS_OPTIONS = [
-  { value: 'planning', label: 'Planning', icon: Edit3 },
-  { value: 'active', label: 'Active', icon: Play },
-  { value: 'locked', label: 'Locked', icon: Lock },
-]
-
 export default function RangeDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -66,10 +67,12 @@ export default function RangeDetail() {
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('board')
   const [groupBy, setGroupBy] = useState('category')
+  const [cardSize, setCardSize] = useState('md')
   const [panelStyleId, setPanelStyleId] = useState(null)
   const [editingRange, setEditingRange] = useState(false)
   const [quickAddGroup, setQuickAddGroup] = useState(null)
   const [quickAddName, setQuickAddName] = useState('')
+  const [lightbox, setLightbox] = useState(null) // { url, styleId }
 
   // Filters from URL params
   const filterCategory = searchParams.get('category') || ''
@@ -156,17 +159,65 @@ export default function RangeDetail() {
     return { total: styles.length, byCategory, byStatus }
   }, [styles])
 
-  // Drag and drop handler
+  // All styles with thumbnails for lightbox navigation
+  const thumbStyles = useMemo(() => filtered.filter(s => s.thumbnail_url), [filtered])
+
+  // Lightbox navigation
+  const lightboxNav = useCallback((dir) => {
+    if (!lightbox) return
+    const idx = thumbStyles.findIndex(s => s.id === lightbox.styleId)
+    if (idx < 0) return
+    const next = idx + dir
+    if (next >= 0 && next < thumbStyles.length) {
+      setLightbox({ url: thumbStyles[next].thumbnail_url, styleId: thumbStyles[next].id, name: thumbStyles[next].name })
+    }
+  }, [lightbox, thumbStyles])
+
+  // Lightbox keyboard
+  useEffect(() => {
+    if (!lightbox) return
+    function handleKey(e) {
+      if (e.key === 'Escape') setLightbox(null)
+      if (e.key === 'ArrowLeft') lightboxNav(-1)
+      if (e.key === 'ArrowRight') lightboxNav(1)
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [lightbox, lightboxNav])
+
+  // Drag and drop — supports reorder within AND move between groups
   function handleDragEnd(result) {
     if (!result.destination) return
-    if (result.source.droppableId !== result.destination.droppableId) return
+
+    const srcGroupKey = result.source.droppableId
+    const dstGroupKey = result.destination.droppableId
+    const srcGroup = groups.find(g => g.key === srcGroupKey)
+    if (!srcGroup) return
+
+    const draggedStyle = srcGroup.styles[result.source.index]
+    if (!draggedStyle) return
+
+    // Moving between groups — update the grouping field
+    if (srcGroupKey !== dstGroupKey) {
+      const fieldUpdates = {}
+      if (groupBy === 'category') fieldUpdates.category = dstGroupKey === 'Unassigned' ? null : dstGroupKey
+      else if (groupBy === 'delivery_drop') fieldUpdates.delivery_drop = dstGroupKey === 'Unassigned' ? null : dstGroupKey
+      else if (groupBy === 'status') fieldUpdates.status = dstGroupKey
+
+      // Optimistic update
+      setStyles(prev => prev.map(s => s.id === draggedStyle.id ? { ...s, ...fieldUpdates } : s))
+
+      updateRangeStyle(draggedStyle.id, fieldUpdates).catch(() => {
+        toast.error('Failed to move style')
+        loadData()
+      })
+      return
+    }
+
+    // Reorder within same group
     if (result.source.index === result.destination.index) return
 
-    const groupKey = result.source.droppableId
-    const group = groups.find(g => g.key === groupKey)
-    if (!group) return
-
-    const items = [...group.styles]
+    const items = [...srcGroup.styles]
     const [moved] = items.splice(result.source.index, 1)
     items.splice(result.destination.index, 0, moved)
 
@@ -194,7 +245,7 @@ export default function RangeDetail() {
         delivery_drop: (!isTopLevel && groupBy === 'delivery_drop' && groupKey !== 'Unassigned') ? groupKey : null,
         status: (!isTopLevel && groupBy === 'status') ? groupKey : 'concept',
         sort_order: isTopLevel ? styles.length : (groups.find(g => g.key === groupKey)?.styles.length || 0),
-        created_by: currentPerson?.id,
+        created_by: currentPerson?.id || null,
       }
       await createRangeStyle(newStyle)
       toast.success('Style added')
@@ -231,6 +282,13 @@ export default function RangeDetail() {
       } : s))
     } catch (err) {
       toast.error('Failed to update')
+    }
+  }
+
+  function openLightbox(style, e) {
+    e.stopPropagation()
+    if (style.thumbnail_url) {
+      setLightbox({ url: style.thumbnail_url, styleId: style.id, name: style.name })
     }
   }
 
@@ -277,6 +335,38 @@ export default function RangeDetail() {
         </div>
       </div>
 
+      {/* Progress Bar */}
+      {stats.total > 0 && (
+        <div className="rp-progress">
+          <div className="rp-progress-bar">
+            {RANGE_STYLE_STATUSES.map(s => {
+              const count = stats.byStatus[s.value] || 0
+              if (!count) return null
+              const pct = (count / stats.total) * 100
+              return (
+                <div
+                  key={s.value}
+                  className="rp-progress-segment"
+                  style={{ width: `${pct}%`, background: s.bg, borderLeft: `2px solid ${s.color}` }}
+                  title={`${s.label}: ${count} (${Math.round(pct)}%)`}
+                />
+              )
+            })}
+          </div>
+          <div className="rp-progress-legend">
+            {RANGE_STYLE_STATUSES.map(s => {
+              const count = stats.byStatus[s.value] || 0
+              return (
+                <span key={s.value} className="rp-progress-label">
+                  <span className="rp-progress-dot" style={{ background: s.color }} />
+                  {s.label} <strong>{count}</strong>
+                </span>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="rp-toolbar">
         <div className="rp-toolbar-left">
@@ -289,18 +379,32 @@ export default function RangeDetail() {
             </button>
           </div>
           {view === 'board' && (
-            <div className="rp-group-toggle">
-              <span className="text-sm text-muted">Group by:</span>
-              {GROUPINGS.map(g => (
-                <button
-                  key={g.value}
-                  className={`rp-group-btn ${groupBy === g.value ? 'active' : ''}`}
-                  onClick={() => setGroupBy(g.value)}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="rp-group-toggle">
+                <span className="text-sm text-muted">Group by:</span>
+                {GROUPINGS.map(g => (
+                  <button
+                    key={g.value}
+                    className={`rp-group-btn ${groupBy === g.value ? 'active' : ''}`}
+                    onClick={() => setGroupBy(g.value)}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+              <div className="rp-size-toggle">
+                {CARD_SIZES.map(s => (
+                  <button
+                    key={s.value}
+                    className={`rp-size-btn ${cardSize === s.value ? 'active' : ''}`}
+                    onClick={() => setCardSize(s.value)}
+                    title={`${s.label} cards`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </div>
         <div className="rp-toolbar-right">
@@ -392,7 +496,7 @@ export default function RangeDetail() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`rp-grid ${snapshot.isDraggingOver ? 'drag-over' : ''}`}
+                        className={`rp-grid rp-grid-${cardSize} ${snapshot.isDraggingOver ? 'drag-over' : ''}`}
                       >
                         {group.styles.map((style, index) => (
                           <Draggable key={style.id} draggableId={style.id} index={index}>
@@ -400,15 +504,24 @@ export default function RangeDetail() {
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
-                                className={`rp-card ${snapshot.isDragging ? 'dragging' : ''}`}
+                                className={`rp-card rp-card-${cardSize} ${snapshot.isDragging ? 'dragging' : ''}`}
                                 onClick={() => setPanelStyleId(style.id)}
                               >
                                 <div className="rp-card-thumb" {...provided.dragHandleProps}>
                                   {style.thumbnail_url ? (
-                                    <img src={style.thumbnail_url} alt={style.name} />
+                                    <>
+                                      <img src={style.thumbnail_url} alt={style.name} />
+                                      <button
+                                        className="rp-thumb-zoom"
+                                        onClick={(e) => openLightbox(style, e)}
+                                        title="View full image"
+                                      >
+                                        <Maximize2 size={12} />
+                                      </button>
+                                    </>
                                   ) : (
                                     <div className="rp-card-placeholder">
-                                      <ImageIcon size={24} />
+                                      <ImageIcon size={cardSize === 'sm' ? 16 : 24} />
                                     </div>
                                   )}
                                 </div>
@@ -423,7 +536,7 @@ export default function RangeDetail() {
                                       onChange={(s) => { handleStatusChange(style.id, s) }}
                                     />
                                   </div>
-                                  {style.colorways && style.colorways.length > 0 && (
+                                  {cardSize !== 'sm' && style.colorways && style.colorways.length > 0 && (
                                     <div className="rp-card-colors">
                                       {style.colorways.slice(0, 6).map((c, i) => (
                                         <span
@@ -479,6 +592,7 @@ export default function RangeDetail() {
           onStatusChange={handleStatusChange}
           onInlineEdit={handleInlineEdit}
           onClickStyle={(id) => setPanelStyleId(id)}
+          onOpenLightbox={(style) => setLightbox({ url: style.thumbnail_url, styleId: style.id, name: style.name })}
         />
       )}
 
@@ -501,11 +615,46 @@ export default function RangeDetail() {
           onSave={(updated) => { setRange(updated); setEditingRange(false) }}
         />
       )}
+
+      {/* Lightbox */}
+      {lightbox && (
+        <Lightbox
+          url={lightbox.url}
+          name={lightbox.name}
+          onClose={() => setLightbox(null)}
+          onPrev={() => lightboxNav(-1)}
+          onNext={() => lightboxNav(1)}
+          hasPrev={thumbStyles.findIndex(s => s.id === lightbox.styleId) > 0}
+          hasNext={thumbStyles.findIndex(s => s.id === lightbox.styleId) < thumbStyles.length - 1}
+        />
+      )}
     </div>
   )
 }
 
 /* ----- Sub-components ----- */
+
+function Lightbox({ url, name, onClose, onPrev, onNext, hasPrev, hasNext }) {
+  return (
+    <div className="rp-lightbox" onClick={onClose}>
+      <button className="rp-lightbox-close" onClick={onClose}><X size={24} /></button>
+      {hasPrev && (
+        <button className="rp-lightbox-nav rp-lightbox-prev" onClick={e => { e.stopPropagation(); onPrev() }}>
+          <ChevronLeft size={32} />
+        </button>
+      )}
+      <div className="rp-lightbox-content" onClick={e => e.stopPropagation()}>
+        <img src={url} alt={name || ''} />
+        {name && <div className="rp-lightbox-caption">{name}</div>}
+      </div>
+      {hasNext && (
+        <button className="rp-lightbox-nav rp-lightbox-next" onClick={e => { e.stopPropagation(); onNext() }}>
+          <ChevronRight size={32} />
+        </button>
+      )}
+    </div>
+  )
+}
 
 function StatusDropdown({ status, onChange }) {
   const [open, setOpen] = useState(false)
@@ -563,8 +712,8 @@ function RangeStatusDropdown({ status, onChange }) {
   )
 }
 
-function TableView({ styles, onStatusChange, onInlineEdit, onClickStyle }) {
-  const [editCell, setEditCell] = useState(null) // { id, field }
+function TableView({ styles, onStatusChange, onInlineEdit, onClickStyle, onOpenLightbox }) {
+  const [editCell, setEditCell] = useState(null)
   const [editValue, setEditValue] = useState('')
   const [sortField, setSortField] = useState('name')
   const [sortDir, setSortDir] = useState('asc')
@@ -621,7 +770,8 @@ function TableView({ styles, onStatusChange, onInlineEdit, onClickStyle }) {
                   <img
                     src={style.thumbnail_url}
                     alt=""
-                    style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4 }}
+                    style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                    onClick={() => onOpenLightbox(style)}
                   />
                 ) : (
                   <div style={{ width: 36, height: 36, background: 'var(--gray-100)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -636,57 +786,30 @@ function TableView({ styles, onStatusChange, onInlineEdit, onClickStyle }) {
               </td>
               <td>
                 {editCell?.id === style.id && editCell.field === 'category' ? (
-                  <select
-                    value={editValue}
-                    onChange={e => setEditValue(e.target.value)}
-                    onBlur={() => saveEdit(style.id, 'category')}
-                    autoFocus
-                    style={{ fontSize: '0.8125rem' }}
-                  >
+                  <select value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(style.id, 'category')} autoFocus style={{ fontSize: '0.8125rem' }}>
                     {STYLE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 ) : (
-                  <span className="rp-table-editable" onClick={() => startEdit(style.id, 'category', style.category)}>
-                    {style.category}
-                  </span>
+                  <span className="rp-table-editable" onClick={() => startEdit(style.id, 'category', style.category)}>{style.category}</span>
                 )}
               </td>
               <td>
                 {editCell?.id === style.id && editCell.field === 'sub_category' ? (
-                  <input
-                    type="text"
-                    value={editValue}
-                    onChange={e => setEditValue(e.target.value)}
-                    onBlur={() => saveEdit(style.id, 'sub_category')}
-                    onKeyDown={e => e.key === 'Enter' && saveEdit(style.id, 'sub_category')}
-                    autoFocus
-                    style={{ fontSize: '0.8125rem', width: '100%' }}
-                  />
+                  <input type="text" value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(style.id, 'sub_category')} onKeyDown={e => e.key === 'Enter' && saveEdit(style.id, 'sub_category')} autoFocus style={{ fontSize: '0.8125rem', width: '100%' }} />
                 ) : (
-                  <span className="rp-table-editable" onClick={() => startEdit(style.id, 'sub_category', style.sub_category)}>
-                    {style.sub_category || '—'}
-                  </span>
+                  <span className="rp-table-editable" onClick={() => startEdit(style.id, 'sub_category', style.sub_category)}>{style.sub_category || '—'}</span>
                 )}
               </td>
               <td>
                 {editCell?.id === style.id && editCell.field === 'colorways' ? (
-                  <input
-                    type="text"
-                    value={editValue}
-                    onChange={e => setEditValue(e.target.value)}
-                    onBlur={() => saveEdit(style.id, 'colorways')}
-                    onKeyDown={e => e.key === 'Enter' && saveEdit(style.id, 'colorways')}
-                    autoFocus
-                    style={{ fontSize: '0.8125rem', width: '100%' }}
-                  />
+                  <input type="text" value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(style.id, 'colorways')} onKeyDown={e => e.key === 'Enter' && saveEdit(style.id, 'colorways')} autoFocus style={{ fontSize: '0.8125rem', width: '100%' }} />
                 ) : (
                   <span className="rp-table-editable" onClick={() => startEdit(style.id, 'colorways', style.colorways)}>
                     {(style.colorways || []).length > 0 ? (
                       <span style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         {style.colorways.map((c, i) => (
                           <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.75rem' }}>
-                            <span className="rp-color-dot" style={{ background: getColorDot(c), width: 10, height: 10 }} />
-                            {c}
+                            <span className="rp-color-dot" style={{ background: getColorDot(c), width: 10, height: 10 }} />{c}
                           </span>
                         ))}
                       </span>
@@ -696,26 +819,13 @@ function TableView({ styles, onStatusChange, onInlineEdit, onClickStyle }) {
               </td>
               <td>
                 {editCell?.id === style.id && editCell.field === 'delivery_drop' ? (
-                  <input
-                    type="text"
-                    value={editValue}
-                    onChange={e => setEditValue(e.target.value)}
-                    onBlur={() => saveEdit(style.id, 'delivery_drop')}
-                    onKeyDown={e => e.key === 'Enter' && saveEdit(style.id, 'delivery_drop')}
-                    autoFocus
-                    style={{ fontSize: '0.8125rem', width: '100%' }}
-                  />
+                  <input type="text" value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(style.id, 'delivery_drop')} onKeyDown={e => e.key === 'Enter' && saveEdit(style.id, 'delivery_drop')} autoFocus style={{ fontSize: '0.8125rem', width: '100%' }} />
                 ) : (
-                  <span className="rp-table-editable" onClick={() => startEdit(style.id, 'delivery_drop', style.delivery_drop)}>
-                    {style.delivery_drop || '—'}
-                  </span>
+                  <span className="rp-table-editable" onClick={() => startEdit(style.id, 'delivery_drop', style.delivery_drop)}>{style.delivery_drop || '—'}</span>
                 )}
               </td>
               <td>
-                <StatusDropdown
-                  status={style.status}
-                  onChange={(s) => onStatusChange(style.id, s)}
-                />
+                <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />
               </td>
             </tr>
           ))}
