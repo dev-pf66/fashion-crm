@@ -782,6 +782,137 @@ export async function deleteStyleRequest(id) {
   if (error) throw error
 }
 
+// ============================================================
+// RANGE PLANNING
+// ============================================================
+
+export async function getRanges() {
+  const { data, error } = await supabase
+    .from('ranges')
+    .select('*, range_styles(id, category, status), people:created_by(id, name)')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function getRange(id) {
+  const { data, error } = await supabase
+    .from('ranges')
+    .select('*, people:created_by(id, name)')
+    .eq('id', id)
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function createRange(range) {
+  const { data, error } = await supabase
+    .from('ranges')
+    .insert([range])
+    .select('*, people:created_by(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateRange(id, updates) {
+  const { data, error } = await supabase
+    .from('ranges')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*, people:created_by(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteRange(id) {
+  const { error } = await supabase.from('ranges').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function getRangeStyles(rangeId) {
+  const { data, error } = await supabase
+    .from('range_styles')
+    .select('*, people:created_by(id, name)')
+    .eq('range_id', rangeId)
+    .order('sort_order')
+  if (error) throw error
+  return data
+}
+
+export async function getRangeStyle(id) {
+  const { data, error } = await supabase
+    .from('range_styles')
+    .select('*, people:created_by(id, name), range_style_files(*)')
+    .eq('id', id)
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function createRangeStyle(style) {
+  const { data, error } = await supabase
+    .from('range_styles')
+    .insert([style])
+    .select('*, people:created_by(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateRangeStyle(id, updates) {
+  const { data, error } = await supabase
+    .from('range_styles')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*, people:created_by(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteRangeStyle(id) {
+  const { error } = await supabase.from('range_styles').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function updateRangeStyleOrder(items) {
+  const promises = items.map(({ id, sort_order }) =>
+    supabase.from('range_styles').update({ sort_order }).eq('id', id)
+  )
+  await Promise.all(promises)
+}
+
+export async function getRangeStyleFiles(styleId) {
+  const { data, error } = await supabase
+    .from('range_style_files')
+    .select('*')
+    .eq('style_id', styleId)
+    .order('uploaded_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function createRangeStyleFile(file) {
+  const { data, error } = await supabase
+    .from('range_style_files')
+    .insert([file])
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteRangeStyleFile(id) {
+  const { error } = await supabase.from('range_style_files').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ============================================================
+// OVERDUE ITEMS
+// ============================================================
+
 export async function getOverdueItems(seasonId) {
   const nowStr = new Date().toISOString().slice(0, 10)
 

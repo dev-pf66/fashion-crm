@@ -29,6 +29,10 @@ const STATUS_CONFIG = {
   new: { label: 'New', bg: '#e0e7ff', color: '#4338ca' },
   reviewed: { label: 'Reviewed', bg: '#dbeafe', color: '#1d4ed8' },
   in_development: { label: 'In Development', bg: '#cffafe', color: '#0e7490' },
+  // Range statuses (active already defined above under supplier statuses)
+  planning: { label: 'Planning', bg: '#f3f4f6', color: '#4b5563' },
+  locked: { label: 'Locked', bg: '#dcfce7', color: '#15803d' },
+  review: { label: 'Review', bg: '#fef3c7', color: '#b45309' },
   // Inspection
   scheduled: { label: 'Scheduled', bg: '#f3f4f6', color: '#4b5563' },
   pass: { label: 'Pass', bg: '#dcfce7', color: '#15803d' },

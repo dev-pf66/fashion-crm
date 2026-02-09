@@ -38,6 +38,10 @@ export async function uploadMaterialSwatch(materialId, file) {
   return uploadFile('style-images', `materials/${materialId}`, file)
 }
 
+export async function uploadRangeStyleFile(rangeId, styleId, file) {
+  return uploadFile('style-files', `${rangeId}/${styleId}`, file)
+}
+
 export async function deleteFile(bucket, path) {
   const { error } = await supabase.storage
     .from(bucket)

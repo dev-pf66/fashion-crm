@@ -21,6 +21,8 @@ import Activity from './pages/Activity'
 import Help from './pages/Help'
 import Calendar from './pages/Calendar'
 import StyleRequests from './pages/StyleRequests'
+import RangePlanning from './pages/RangePlanning'
+import RangeDetail from './pages/RangeDetail'
 
 export const AppContext = createContext()
 
@@ -107,6 +109,8 @@ function AppRoutes() {
             <Route path="team" element={<Team />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="requests" element={<StyleRequests />} />
+            <Route path="range-planning" element={<RangePlanning />} />
+            <Route path="range-planning/:id" element={<RangeDetail />} />
             <Route path="activity" element={<Activity />} />
             <Route path="help" element={<Help />} />
             <Route path="settings" element={<Settings />} />
