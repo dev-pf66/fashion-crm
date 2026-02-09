@@ -3927,6 +3927,31 @@ tr:hover .quick-view-btn {
   color: var(--gray-700);
 }
 
+.rp-group-drag-handle {
+  display: flex;
+  align-items: center;
+  color: var(--gray-300);
+  cursor: grab;
+  padding: 0.125rem;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s;
+}
+
+.rp-group-drag-handle:hover {
+  color: var(--gray-500);
+}
+
+.rp-group-drag-handle:active {
+  cursor: grabbing;
+}
+
+.rp-group-dragging {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 1rem;
+}
+
 .rp-group-count {
   background: var(--gray-100);
   color: var(--gray-500);
