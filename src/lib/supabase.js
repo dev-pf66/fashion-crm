@@ -789,19 +789,32 @@ export async function deleteStyleRequest(id) {
 export async function getRanges() {
   const { data, error } = await supabase
     .from('ranges')
-    .select('*, range_styles(id, category, status), people:created_by(id, name)')
+    .select('*, range_styles(id, category, status)')
     .order('created_at', { ascending: false })
   if (error) throw error
+  // Fetch creator names separately
+  if (data?.length) {
+    const creatorIds = [...new Set(data.map(r => r.created_by).filter(Boolean))]
+    if (creatorIds.length) {
+      const { data: people } = await supabase.from('people').select('id, name').in('id', creatorIds)
+      const peopleMap = Object.fromEntries((people || []).map(p => [p.id, p]))
+      data.forEach(r => { r.creator = peopleMap[r.created_by] || null })
+    }
+  }
   return data
 }
 
 export async function getRange(id) {
   const { data, error } = await supabase
     .from('ranges')
-    .select('*, people:created_by(id, name)')
+    .select('*')
     .eq('id', id)
     .single()
   if (error) throw error
+  if (data?.created_by) {
+    const { data: person } = await supabase.from('people').select('id, name').eq('id', data.created_by).single()
+    data.creator = person || null
+  }
   return data
 }
 
@@ -809,7 +822,7 @@ export async function createRange(range) {
   const { data, error } = await supabase
     .from('ranges')
     .insert([range])
-    .select('*, people:created_by(id, name)')
+    .select()
     .single()
   if (error) throw error
   return data
@@ -820,7 +833,7 @@ export async function updateRange(id, updates) {
     .from('ranges')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .select('*, people:created_by(id, name)')
+    .select()
     .single()
   if (error) throw error
   return data
@@ -834,7 +847,7 @@ export async function deleteRange(id) {
 export async function getRangeStyles(rangeId) {
   const { data, error } = await supabase
     .from('range_styles')
-    .select('*, people:created_by(id, name)')
+    .select('*, range_style_files(id)')
     .eq('range_id', rangeId)
     .order('sort_order')
   if (error) throw error
@@ -844,7 +857,7 @@ export async function getRangeStyles(rangeId) {
 export async function getRangeStyle(id) {
   const { data, error } = await supabase
     .from('range_styles')
-    .select('*, people:created_by(id, name), range_style_files(*)')
+    .select('*, range_style_files(*)')
     .eq('id', id)
     .single()
   if (error) throw error
@@ -855,7 +868,7 @@ export async function createRangeStyle(style) {
   const { data, error } = await supabase
     .from('range_styles')
     .insert([style])
-    .select('*, people:created_by(id, name)')
+    .select()
     .single()
   if (error) throw error
   return data
@@ -866,7 +879,7 @@ export async function updateRangeStyle(id, updates) {
     .from('range_styles')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .select('*, people:created_by(id, name)')
+    .select()
     .single()
   if (error) throw error
   return data

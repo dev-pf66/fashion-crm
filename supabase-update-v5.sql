@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS ranges (
   name TEXT NOT NULL,
   season TEXT,
   status TEXT DEFAULT 'planning',
-  created_by UUID REFERENCES people(id),
+  created_by INTEGER REFERENCES people(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS range_styles (
   thumbnail_url TEXT,
   notes TEXT,
   sort_order INTEGER DEFAULT 0,
-  created_by UUID REFERENCES people(id),
+  created_by INTEGER REFERENCES people(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

@@ -120,7 +120,7 @@ export default function RangePlanning() {
                 )}
                 <div className="rp-range-card-footer">
                   <span className="text-sm text-muted">
-                    by {range.people?.name || 'Unknown'} &middot; {new Date(range.created_at).toLocaleDateString()}
+                    by {range.creator?.name || 'Unknown'} &middot; {new Date(range.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </Link>
@@ -159,6 +159,7 @@ function NewRangeForm({ personId, onClose, onSave }) {
       toast.success('Range created!')
       onSave()
     } catch (err) {
+      console.error('Create range error:', err)
       toast.error('Failed to create range')
     } finally {
       setSaving(false)
