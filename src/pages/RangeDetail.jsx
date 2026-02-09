@@ -89,12 +89,15 @@ export default function RangeDetail() {
   async function loadData() {
     setLoading(true)
     try {
-      const [rangeData, stylesData] = await Promise.all([
-        getRange(id),
-        getRangeStyles(id),
-      ])
+      const rangeData = await getRange(id)
       setRange(rangeData)
-      setStyles(stylesData || [])
+      try {
+        const stylesData = await getRangeStyles(id)
+        setStyles(stylesData || [])
+      } catch (err) {
+        console.error('Failed to load styles:', err)
+        setStyles([])
+      }
     } catch (err) {
       console.error('Failed to load range:', err)
       toast.error('Failed to load range')
@@ -183,13 +186,14 @@ export default function RangeDetail() {
   async function handleQuickAdd(groupKey) {
     if (!quickAddName.trim()) return
     try {
+      const isTopLevel = groupKey === '_top'
       const newStyle = {
         range_id: id,
         name: quickAddName.trim(),
-        category: groupBy === 'category' ? groupKey : 'Tops',
-        delivery_drop: groupBy === 'delivery_drop' && groupKey !== 'Unassigned' ? groupKey : null,
-        status: groupBy === 'status' ? groupKey : 'concept',
-        sort_order: (groups.find(g => g.key === groupKey)?.styles.length || 0),
+        category: isTopLevel ? 'Tops' : (groupBy === 'category' ? groupKey : 'Tops'),
+        delivery_drop: (!isTopLevel && groupBy === 'delivery_drop' && groupKey !== 'Unassigned') ? groupKey : null,
+        status: (!isTopLevel && groupBy === 'status') ? groupKey : 'concept',
+        sort_order: isTopLevel ? styles.length : (groups.find(g => g.key === groupKey)?.styles.length || 0),
         created_by: currentPerson?.id,
       }
       await createRangeStyle(newStyle)
@@ -300,6 +304,9 @@ export default function RangeDetail() {
           )}
         </div>
         <div className="rp-toolbar-right">
+          <button className="btn btn-primary btn-sm" onClick={() => { setQuickAddGroup('_top'); setQuickAddName('') }}>
+            <Plus size={14} /> Add Style
+          </button>
           <div className="rp-search">
             <Search size={14} />
             <input
@@ -326,6 +333,31 @@ export default function RangeDetail() {
         </div>
       </div>
 
+      {/* Top-level Quick Add */}
+      {quickAddGroup === '_top' && (
+        <div className="rp-quick-add card" style={{ marginBottom: '1rem', padding: '1rem' }}>
+          <div className="form-row" style={{ marginBottom: '0.5rem' }}>
+            <div className="form-group" style={{ flex: 2 }}>
+              <input
+                type="text"
+                placeholder="Style name..."
+                value={quickAddName}
+                onChange={e => setQuickAddName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && quickAddName.trim()) handleQuickAdd('_top')
+                  if (e.key === 'Escape') { setQuickAddGroup(null); setQuickAddName('') }
+                }}
+                autoFocus
+              />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-primary btn-sm" onClick={() => handleQuickAdd('_top')}>Add Style</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setQuickAddGroup(null); setQuickAddName('') }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
       {/* Board View */}
       {view === 'board' && (
         <DragDropContext onDragEnd={handleDragEnd}>
@@ -335,6 +367,9 @@ export default function RangeDetail() {
                 <ImageIcon size={48} />
                 <h3>No styles yet</h3>
                 <p>Add styles to start building your range.</p>
+                <button className="btn btn-primary" onClick={() => { setQuickAddGroup('_top'); setQuickAddName('') }}>
+                  <Plus size={16} /> Add First Style
+                </button>
               </div>
             </div>
           ) : (
