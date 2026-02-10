@@ -23,6 +23,7 @@ import Calendar from './pages/Calendar'
 import StyleRequests from './pages/StyleRequests'
 import RangePlanning from './pages/RangePlanning'
 import RangeDetail from './pages/RangeDetail'
+import ResetPassword from './pages/ResetPassword'
 
 export const AppContext = createContext()
 
@@ -116,6 +117,7 @@ function AppRoutes() {
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </SeasonProvider>
       </ToastProvider>

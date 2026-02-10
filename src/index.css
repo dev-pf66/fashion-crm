@@ -1339,6 +1339,36 @@ textarea {
   font-size: 0.8125rem;
 }
 
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 500;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  padding: 0;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.reset-sent {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.reset-sent-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.reset-sent p {
+  margin-bottom: 0.375rem;
+  color: var(--gray-700);
+}
+
 /* ============================================================
    SETTINGS PAGE
    ============================================================ */
