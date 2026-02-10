@@ -152,6 +152,27 @@ export default function Layout() {
         </div>
       </main>
 
+      {/* Mobile Bottom Tab Bar */}
+      <nav className="mobile-tab-bar">
+        {[
+          { to: '/', icon: LayoutDashboard, label: 'Home' },
+          { to: '/styles', icon: Scissors, label: 'Styles' },
+          { to: '/range-planning', icon: Layers, label: 'Ranges' },
+          { to: '/samples', icon: FlaskConical, label: 'Samples' },
+          { to: '/orders', icon: ClipboardList, label: 'Orders' },
+        ].map(tab => (
+          <NavLink
+            key={tab.to}
+            to={tab.to}
+            end={tab.to === '/'}
+            className="mobile-tab"
+          >
+            <tab.icon size={20} />
+            <span>{tab.label}</span>
+          </NavLink>
+        ))}
+      </nav>
+
       <FeedbackButton />
       <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
     </div>

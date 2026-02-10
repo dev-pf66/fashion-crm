@@ -12,7 +12,7 @@ import Modal from '../components/Modal'
 import Breadcrumbs from '../components/Breadcrumbs'
 import RangeStylePanel from '../components/RangeStylePanel'
 import {
-  LayoutGrid, List, Plus, Search, Edit3,
+  LayoutGrid, List, Plus, Search, Edit3, Filter,
   Image as ImageIcon, Lock, Play, GripVertical,
   Maximize2, Minimize2, Square, X, ChevronLeft, ChevronRight,
 } from 'lucide-react'
@@ -73,6 +73,21 @@ export default function RangeDetail() {
   const [quickAddGroup, setQuickAddGroup] = useState(null)
   const [quickAddName, setQuickAddName] = useState('')
   const [lightbox, setLightbox] = useState(null) // { url, styleId }
+  const [showFilters, setShowFilters] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    const handler = (e) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  // Auto small cards on mobile
+  useEffect(() => {
+    if (isMobile) setCardSize('sm')
+  }, [isMobile])
+
   const [groupOrder, setGroupOrder] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(`range-group-order-${id}`)) || {}
@@ -441,31 +456,42 @@ export default function RangeDetail() {
         </div>
         <div className="rp-toolbar-right">
           <button className="btn btn-primary btn-sm" onClick={() => { setQuickAddGroup('_top'); setQuickAddName('') }}>
-            <Plus size={14} /> Add Style
+            <Plus size={14} /> <span className="hide-mobile-text">Add Style</span>
           </button>
-          <div className="rp-search">
-            <Search size={14} />
-            <input
-              type="text"
-              placeholder="Search styles..."
-              value={filterSearch}
-              onChange={e => setFilter('q', e.target.value)}
-            />
-          </div>
-          <select value={filterCategory} onChange={e => setFilter('category', e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem' }}>
-            <option value="">All Categories</option>
-            {STYLE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <select value={filterStatus} onChange={e => setFilter('status', e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem' }}>
-            <option value="">All Statuses</option>
-            {RANGE_STYLE_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
-          {allDrops.length > 0 && (
-            <select value={filterDrop} onChange={e => setFilter('drop', e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem' }}>
-              <option value="">All Drops</option>
-              {allDrops.map(d => <option key={d} value={d}>{d}</option>)}
+          <button
+            className={`btn btn-sm mobile-filter-toggle ${showFilters ? 'active' : ''}`}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter size={14} /> Filters
+            {(filterCategory || filterStatus || filterDrop || filterSearch) && (
+              <span className="filter-active-dot" />
+            )}
+          </button>
+          <div className={`rp-filters-collapsible ${showFilters ? 'open' : ''}`}>
+            <div className="rp-search">
+              <Search size={14} />
+              <input
+                type="text"
+                placeholder="Search styles..."
+                value={filterSearch}
+                onChange={e => setFilter('q', e.target.value)}
+              />
+            </div>
+            <select value={filterCategory} onChange={e => setFilter('category', e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem' }}>
+              <option value="">All Categories</option>
+              {STYLE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-          )}
+            <select value={filterStatus} onChange={e => setFilter('status', e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem' }}>
+              <option value="">All Statuses</option>
+              {RANGE_STYLE_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+            {allDrops.length > 0 && (
+              <select value={filterDrop} onChange={e => setFilter('drop', e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem' }}>
+                <option value="">All Drops</option>
+                {allDrops.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            )}
+          </div>
         </div>
       </div>
 
@@ -496,7 +522,7 @@ export default function RangeDetail() {
 
       {/* Board View */}
       {view === 'board' && (
-        <DragDropContext onDragEnd={handleDragEnd}>
+        <>
           {groups.length === 0 ? (
             <div className="card" style={{ marginTop: '1rem' }}>
               <div className="empty-state">
@@ -508,135 +534,116 @@ export default function RangeDetail() {
                 </button>
               </div>
             </div>
-          ) : (
-            <Droppable droppableId="board" type="GROUP" direction="vertical">
-              {(boardProvided) => (
-                <div ref={boardProvided.innerRef} {...boardProvided.droppableProps} className="rp-board">
-                  {groups.map((group, groupIndex) => (
-                    <Draggable key={group.key} draggableId={`group-${group.key}`} index={groupIndex}>
-                      {(groupProvided, groupSnapshot) => (
-                        <div
-                          ref={groupProvided.innerRef}
-                          {...groupProvided.draggableProps}
-                          className={`rp-group ${groupSnapshot.isDragging ? 'rp-group-dragging' : ''}`}
-                        >
-                          <div className="rp-group-header">
-                            <span className="rp-group-drag-handle" {...groupProvided.dragHandleProps}>
-                              <GripVertical size={14} />
-                            </span>
-                            <h3>{group.label}</h3>
-                            <span className="rp-group-count">{group.styles.length}</span>
-                            <button
-                              className="btn btn-ghost btn-sm"
-                              onClick={() => { setQuickAddGroup(group.key); setQuickAddName('') }}
-                            >
-                              <Plus size={14} />
-                            </button>
-                          </div>
-
-                          <Droppable droppableId={group.key} type="CARD">
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                                className={`rp-grid rp-grid-${cardSize} ${snapshot.isDraggingOver ? 'drag-over' : ''}`}
-                              >
-                                {group.styles.map((style, index) => (
-                                  <Draggable key={style.id} draggableId={style.id} index={index}>
-                                    {(provided, snapshot) => (
-                                      <div
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        className={`rp-card rp-card-${cardSize} ${snapshot.isDragging ? 'dragging' : ''}`}
-                                        onClick={() => setPanelStyleId(style.id)}
-                                      >
-                                        <div className="rp-card-thumb" {...provided.dragHandleProps}>
-                                          {style.thumbnail_url ? (
-                                            <>
-                                              <img src={style.thumbnail_url} alt={style.name} />
-                                              <button
-                                                className="rp-thumb-zoom"
-                                                onClick={(e) => openLightbox(style, e)}
-                                                title="View full image"
-                                              >
-                                                <Maximize2 size={12} />
-                                              </button>
-                                            </>
-                                          ) : (
-                                            <div className="rp-card-placeholder">
-                                              <ImageIcon size={cardSize === 'sm' ? 16 : 24} />
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="rp-card-body">
-                                          <div className="rp-card-name">{style.name}</div>
-                                          <div className="rp-card-tags">
-                                            {groupBy !== 'category' && (
-                                              <span className="tag">{style.category}</span>
-                                            )}
-                                            <StatusDropdown
-                                              status={style.status}
-                                              onChange={(s) => { handleStatusChange(style.id, s) }}
-                                            />
-                                          </div>
-                                          {cardSize !== 'sm' && style.colorways && style.colorways.length > 0 && (
-                                            <div className="rp-card-colors">
-                                              {style.colorways.slice(0, 6).map((c, i) => (
-                                                <span
-                                                  key={i}
-                                                  className="rp-color-dot"
-                                                  style={{ background: getColorDot(c) }}
-                                                  title={c}
-                                                />
-                                              ))}
-                                              {style.colorways.length > 6 && (
-                                                <span className="rp-color-more">+{style.colorways.length - 6}</span>
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                ))}
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
-
-                          {quickAddGroup === group.key && (
-                            <div className="rp-quick-add">
-                              <input
-                                type="text"
-                                placeholder="Style name..."
-                                value={quickAddName}
-                                onChange={e => setQuickAddName(e.target.value)}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') handleQuickAdd(group.key)
-                                  if (e.key === 'Escape') { setQuickAddGroup(null); setQuickAddName('') }
-                                }}
-                                autoFocus
-                              />
-                              <button className="btn btn-primary btn-sm" onClick={() => handleQuickAdd(group.key)}>Add</button>
-                              <button className="btn btn-ghost btn-sm" onClick={() => { setQuickAddGroup(null); setQuickAddName('') }}>Cancel</button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {boardProvided.placeholder}
+          ) : isMobile ? (
+            /* Mobile: no drag-and-drop */
+            <div className="rp-board">
+              {groups.map(group => (
+                <div key={group.key} className="rp-group">
+                  <div className="rp-group-header">
+                    <h3>{group.label}</h3>
+                    <span className="rp-group-count">{group.styles.length}</span>
+                    <button className="btn btn-ghost btn-sm" onClick={() => { setQuickAddGroup(group.key); setQuickAddName('') }}>
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                  <div className={`rp-grid rp-grid-${cardSize}`}>
+                    {group.styles.map(style => (
+                      <StyleCard key={style.id} style={style} cardSize={cardSize} groupBy={groupBy}
+                        onStatusChange={handleStatusChange} onOpenLightbox={openLightbox}
+                        onClick={() => setPanelStyleId(style.id)} />
+                    ))}
+                  </div>
+                  <QuickAddInline groupKey={group.key} quickAddGroup={quickAddGroup} quickAddName={quickAddName}
+                    setQuickAddName={setQuickAddName} setQuickAddGroup={setQuickAddGroup} handleQuickAdd={handleQuickAdd} />
                 </div>
-              )}
-            </Droppable>
+              ))}
+            </div>
+          ) : (
+            /* Desktop: full drag-and-drop */
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="board" type="GROUP" direction="vertical">
+                {(boardProvided) => (
+                  <div ref={boardProvided.innerRef} {...boardProvided.droppableProps} className="rp-board">
+                    {groups.map((group, groupIndex) => (
+                      <Draggable key={group.key} draggableId={`group-${group.key}`} index={groupIndex}>
+                        {(groupProvided, groupSnapshot) => (
+                          <div ref={groupProvided.innerRef} {...groupProvided.draggableProps}
+                            className={`rp-group ${groupSnapshot.isDragging ? 'rp-group-dragging' : ''}`}>
+                            <div className="rp-group-header">
+                              <span className="rp-group-drag-handle" {...groupProvided.dragHandleProps}>
+                                <GripVertical size={14} />
+                              </span>
+                              <h3>{group.label}</h3>
+                              <span className="rp-group-count">{group.styles.length}</span>
+                              <button className="btn btn-ghost btn-sm" onClick={() => { setQuickAddGroup(group.key); setQuickAddName('') }}>
+                                <Plus size={14} />
+                              </button>
+                            </div>
+                            <Droppable droppableId={group.key} type="CARD">
+                              {(provided, snapshot) => (
+                                <div ref={provided.innerRef} {...provided.droppableProps}
+                                  className={`rp-grid rp-grid-${cardSize} ${snapshot.isDraggingOver ? 'drag-over' : ''}`}>
+                                  {group.styles.map((style, index) => (
+                                    <Draggable key={style.id} draggableId={style.id} index={index}>
+                                      {(provided, snapshot) => (
+                                        <div ref={provided.innerRef} {...provided.draggableProps}
+                                          className={`rp-card rp-card-${cardSize} ${snapshot.isDragging ? 'dragging' : ''}`}
+                                          onClick={() => setPanelStyleId(style.id)}>
+                                          <div className="rp-card-thumb" {...provided.dragHandleProps}>
+                                            {style.thumbnail_url ? (
+                                              <>
+                                                <img src={style.thumbnail_url} alt={style.name} />
+                                                <button className="rp-thumb-zoom" onClick={(e) => openLightbox(style, e)} title="View full image">
+                                                  <Maximize2 size={12} />
+                                                </button>
+                                              </>
+                                            ) : (
+                                              <div className="rp-card-placeholder"><ImageIcon size={cardSize === 'sm' ? 16 : 24} /></div>
+                                            )}
+                                          </div>
+                                          <div className="rp-card-body">
+                                            <div className="rp-card-name">{style.name}</div>
+                                            <div className="rp-card-tags">
+                                              {groupBy !== 'category' && <span className="tag">{style.category}</span>}
+                                              <StatusDropdown status={style.status} onChange={(s) => handleStatusChange(style.id, s)} />
+                                            </div>
+                                            {cardSize !== 'sm' && style.colorways?.length > 0 && (
+                                              <div className="rp-card-colors">
+                                                {style.colorways.slice(0, 6).map((c, i) => (
+                                                  <span key={i} className="rp-color-dot" style={{ background: getColorDot(c) }} title={c} />
+                                                ))}
+                                                {style.colorways.length > 6 && <span className="rp-color-more">+{style.colorways.length - 6}</span>}
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                            <QuickAddInline groupKey={group.key} quickAddGroup={quickAddGroup} quickAddName={quickAddName}
+                              setQuickAddName={setQuickAddName} setQuickAddGroup={setQuickAddGroup} handleQuickAdd={handleQuickAdd} />
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {boardProvided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           )}
-        </DragDropContext>
+        </>
       )}
 
       {/* Table View */}
       {view === 'table' && (
         <TableView
           styles={filtered}
+          isMobile={isMobile}
           onStatusChange={handleStatusChange}
           onInlineEdit={handleInlineEdit}
           onClickStyle={(id) => setPanelStyleId(id)}
@@ -760,7 +767,59 @@ function RangeStatusDropdown({ status, onChange }) {
   )
 }
 
-function TableView({ styles, onStatusChange, onInlineEdit, onClickStyle, onOpenLightbox }) {
+function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, onClick }) {
+  return (
+    <div className={`rp-card rp-card-${cardSize}`} onClick={onClick}>
+      <div className="rp-card-thumb">
+        {style.thumbnail_url ? (
+          <>
+            <img src={style.thumbnail_url} alt={style.name} />
+            <button className="rp-thumb-zoom" onClick={(e) => onOpenLightbox(style, e)} title="View full image">
+              <Maximize2 size={12} />
+            </button>
+          </>
+        ) : (
+          <div className="rp-card-placeholder"><ImageIcon size={cardSize === 'sm' ? 16 : 24} /></div>
+        )}
+      </div>
+      <div className="rp-card-body">
+        <div className="rp-card-name">{style.name}</div>
+        <div className="rp-card-tags">
+          {groupBy !== 'category' && <span className="tag">{style.category}</span>}
+          <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />
+        </div>
+        {cardSize !== 'sm' && style.colorways?.length > 0 && (
+          <div className="rp-card-colors">
+            {style.colorways.slice(0, 6).map((c, i) => (
+              <span key={i} className="rp-color-dot" style={{ background: getColorDot(c) }} title={c} />
+            ))}
+            {style.colorways.length > 6 && <span className="rp-color-more">+{style.colorways.length - 6}</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function QuickAddInline({ groupKey, quickAddGroup, quickAddName, setQuickAddName, setQuickAddGroup, handleQuickAdd }) {
+  if (quickAddGroup !== groupKey) return null
+  return (
+    <div className="rp-quick-add">
+      <input type="text" placeholder="Style name..." value={quickAddName}
+        onChange={e => setQuickAddName(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') handleQuickAdd(groupKey)
+          if (e.key === 'Escape') { setQuickAddGroup(null); setQuickAddName('') }
+        }}
+        autoFocus
+      />
+      <button className="btn btn-primary btn-sm" onClick={() => handleQuickAdd(groupKey)}>Add</button>
+      <button className="btn btn-ghost btn-sm" onClick={() => { setQuickAddGroup(null); setQuickAddName('') }}>Cancel</button>
+    </div>
+  )
+}
+
+function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyle, onOpenLightbox }) {
   const [editCell, setEditCell] = useState(null)
   const [editValue, setEditValue] = useState('')
   const [sortField, setSortField] = useState('name')
@@ -795,6 +854,42 @@ function TableView({ styles, onStatusChange, onInlineEdit, onClickStyle, onOpenL
       {sortField === field && sortDir === 'desc' ? '▼' : '▲'}
     </span>
   )
+
+  // Mobile: card layout instead of table
+  if (isMobile) {
+    return (
+      <div className="rp-mobile-cards" style={{ marginTop: '1rem' }}>
+        {sorted.map(style => (
+          <div key={style.id} className="rp-mobile-card" onClick={() => onClickStyle(style.id)}>
+            <div className="rp-mobile-card-left">
+              {style.thumbnail_url ? (
+                <img src={style.thumbnail_url} alt="" className="rp-mobile-card-thumb" />
+              ) : (
+                <div className="rp-mobile-card-thumb rp-mobile-card-thumb-empty">
+                  <ImageIcon size={16} />
+                </div>
+              )}
+            </div>
+            <div className="rp-mobile-card-body">
+              <div className="rp-mobile-card-name">{style.name}</div>
+              <div className="rp-mobile-card-meta">
+                <span className="tag">{style.category}</span>
+                <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />
+              </div>
+              {style.delivery_drop && (
+                <div className="text-sm text-muted">{style.delivery_drop}</div>
+              )}
+            </div>
+          </div>
+        ))}
+        {sorted.length === 0 && (
+          <div className="empty-state" style={{ padding: '2rem' }}>
+            <p className="text-muted">No styles match your filters.</p>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="data-table-wrapper" style={{ marginTop: '1rem' }}>
