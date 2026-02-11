@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../App'
 import { useToast } from '../contexts/ToastContext'
 import { getRanges, createRange, deleteRange } from '../lib/supabase'
+import { STYLE_CATEGORIES } from '../lib/constants'
 import Modal from '../components/Modal'
 import StatusBadge from '../components/StatusBadge'
-import { Plus, Layers, Trash2 } from 'lucide-react'
+import { Plus, Layers, Trash2, X, GripVertical } from 'lucide-react'
 
 const RANGE_STATUSES = [
   { value: 'planning', label: 'Planning' },
@@ -145,13 +146,42 @@ function NewRangeForm({ personId, onClose, onSave }) {
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState('')
   const [season, setSeason] = useState('')
+  const [categories, setCategories] = useState([...STYLE_CATEGORIES])
+  const [newCat, setNewCat] = useState('')
+
+  function addCategory() {
+    const cat = newCat.trim()
+    if (!cat || categories.includes(cat)) return
+    setCategories(prev => [...prev, cat])
+    setNewCat('')
+  }
+
+  function removeCategory(cat) {
+    setCategories(prev => prev.filter(c => c !== cat))
+  }
+
+  function toggleDefault(cat) {
+    if (categories.includes(cat)) {
+      removeCategory(cat)
+    } else {
+      setCategories(prev => [...prev, cat])
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!name.trim()) return
+    if (categories.length === 0) {
+      toast.error('Add at least one category')
+      return
+    }
     setSaving(true)
     try {
-      const rangeData = { name: name.trim(), season: season.trim() || null }
+      const rangeData = {
+        name: name.trim(),
+        season: season.trim() || null,
+        categories,
+      }
       if (personId) rangeData.created_by = personId
       await createRange(rangeData)
       toast.success('Range created!')
@@ -165,16 +195,71 @@ function NewRangeForm({ personId, onClose, onSave }) {
   }
 
   return (
-    <Modal title="New Range" onClose={onClose}>
+    <Modal title="New Range" onClose={onClose} large>
       <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Range Name *</label>
-          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. SS26 Womenswear" required autoFocus />
+        <div className="form-row">
+          <div className="form-group">
+            <label>Range Name *</label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. SS26 Womenswear" required autoFocus />
+          </div>
+          <div className="form-group">
+            <label>Season</label>
+            <input type="text" value={season} onChange={e => setSeason(e.target.value)} placeholder="e.g. SS26, AW26" />
+          </div>
         </div>
+
         <div className="form-group">
-          <label>Season</label>
-          <input type="text" value={season} onChange={e => setSeason(e.target.value)} placeholder="e.g. SS26, AW26" />
+          <label>Categories</label>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--gray-500)', margin: '0 0 0.5rem' }}>
+            Select which categories this range will use. You can also add custom ones.
+          </p>
+
+          <div className="range-cat-defaults">
+            {STYLE_CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                type="button"
+                className={`range-cat-chip ${categories.includes(cat) ? 'active' : ''}`}
+                onClick={() => toggleDefault(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {categories.filter(c => !STYLE_CATEGORIES.includes(c)).length > 0 && (
+            <div className="range-cat-custom">
+              <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)', fontWeight: 500 }}>Custom:</span>
+              {categories.filter(c => !STYLE_CATEGORIES.includes(c)).map(cat => (
+                <span key={cat} className="range-cat-chip active">
+                  {cat}
+                  <button type="button" className="range-cat-remove" onClick={() => removeCategory(cat)}>
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="range-cat-add">
+            <input
+              type="text"
+              value={newCat}
+              onChange={e => setNewCat(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCategory() } }}
+              placeholder="Add custom category..."
+              style={{ flex: 1 }}
+            />
+            <button type="button" className="btn btn-secondary btn-sm" onClick={addCategory} disabled={!newCat.trim()}>
+              <Plus size={14} /> Add
+            </button>
+          </div>
+
+          <div style={{ fontSize: '0.75rem', color: 'var(--gray-500)', marginTop: '0.25rem' }}>
+            {categories.length} categor{categories.length === 1 ? 'y' : 'ies'} selected
+          </div>
         </div>
+
         <div className="form-actions">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
           <button type="submit" className="btn btn-primary" disabled={saving}>

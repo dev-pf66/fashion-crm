@@ -7,7 +7,7 @@ import {
   getRange, updateRange,
   getRangeStyles, createRangeStyle, updateRangeStyle, updateRangeStyleOrder,
 } from '../lib/supabase'
-import { STYLE_CATEGORIES } from '../lib/constants'
+import { STYLE_CATEGORIES as DEFAULT_CATEGORIES } from '../lib/constants'
 import Modal from '../components/Modal'
 import Breadcrumbs from '../components/Breadcrumbs'
 import RangeStylePanel from '../components/RangeStylePanel'
@@ -94,6 +94,11 @@ export default function RangeDetail() {
     } catch { return {} }
   })
 
+  // Categories: use range-specific categories, fall back to defaults
+  const rangeCategories = useMemo(() => {
+    return (range?.categories && range.categories.length > 0) ? range.categories : DEFAULT_CATEGORIES
+  }, [range])
+
   // Filters from URL params
   const filterCategory = searchParams.get('category') || ''
   const filterStatus = searchParams.get('status') || ''
@@ -159,7 +164,7 @@ export default function RangeDetail() {
 
     let result
     if (groupBy === 'category') {
-      result = STYLE_CATEGORIES.filter(c => grouped[c]).map(c => ({ key: c, label: c, styles: grouped[c] }))
+      result = rangeCategories.filter(c => grouped[c]).map(c => ({ key: c, label: c, styles: grouped[c] }))
       if (grouped['Unassigned']) result.push({ key: 'Unassigned', label: 'Unassigned', styles: grouped['Unassigned'] })
     } else if (groupBy === 'status') {
       result = RANGE_STYLE_STATUSES.filter(s => grouped[s.value]).map(s => ({ key: s.value, label: s.label, styles: grouped[s.value] }))
@@ -288,7 +293,7 @@ export default function RangeDetail() {
       const newStyle = {
         range_id: id,
         name: quickAddName.trim(),
-        category: isTopLevel ? 'Tops' : (groupBy === 'category' ? groupKey : 'Tops'),
+        category: isTopLevel ? rangeCategories[0] : (groupBy === 'category' ? groupKey : rangeCategories[0]),
         delivery_drop: (!isTopLevel && groupBy === 'delivery_drop' && groupKey !== 'Unassigned') ? groupKey : null,
         status: (!isTopLevel && groupBy === 'status') ? groupKey : 'concept',
         sort_order: isTopLevel ? styles.length : (groups.find(g => g.key === groupKey)?.styles.length || 0),
@@ -479,7 +484,7 @@ export default function RangeDetail() {
             </div>
             <select value={filterCategory} onChange={e => setFilter('category', e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem' }}>
               <option value="">All Categories</option>
-              {STYLE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {rangeCategories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <select value={filterStatus} onChange={e => setFilter('status', e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem' }}>
               <option value="">All Statuses</option>
@@ -656,6 +661,7 @@ export default function RangeDetail() {
         <RangeStylePanel
           styleId={panelStyleId}
           rangeId={id}
+          categories={rangeCategories}
           onClose={() => setPanelStyleId(null)}
           onUpdate={() => loadData()}
           onDelete={() => { setPanelStyleId(null); loadData() }}
@@ -930,7 +936,7 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
               <td>
                 {editCell?.id === style.id && editCell.field === 'category' ? (
                   <select value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(style.id, 'category')} autoFocus style={{ fontSize: '0.8125rem' }}>
-                    {STYLE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {rangeCategories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 ) : (
                   <span className="rp-table-editable" onClick={() => startEdit(style.id, 'category', style.category)}>{style.category}</span>

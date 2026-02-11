@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile } from '../lib/supabase'
 import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
-import { STYLE_CATEGORIES } from '../lib/constants'
+import { STYLE_CATEGORIES as DEFAULT_CATEGORIES } from '../lib/constants'
 import CommentSection from './CommentSection'
 import { X, Upload, Trash2, Star, FileText, Image as ImageIcon, Loader } from 'lucide-react'
 
@@ -13,7 +13,8 @@ const STATUSES = [
   { value: 'approved', label: 'Approved' },
 ]
 
-export default function RangeStylePanel({ styleId, rangeId, onClose, onUpdate, onDelete }) {
+export default function RangeStylePanel({ styleId, rangeId, categories, onClose, onUpdate, onDelete }) {
+  const STYLE_CATEGORIES = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES
   const toast = useToast()
   const fileInputRef = useRef(null)
   const [style, setStyle] = useState(null)
