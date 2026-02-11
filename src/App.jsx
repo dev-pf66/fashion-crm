@@ -23,6 +23,7 @@ import Calendar from './pages/Calendar'
 import StyleRequests from './pages/StyleRequests'
 import RangePlanning from './pages/RangePlanning'
 import RangeDetail from './pages/RangeDetail'
+import Tasks from './pages/Tasks'
 import ResetPassword from './pages/ResetPassword'
 
 export const AppContext = createContext()
@@ -110,6 +111,7 @@ function AppRoutes() {
             <Route path="team" element={<Team />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="requests" element={<StyleRequests />} />
+            <Route path="tasks" element={<Tasks />} />
             <Route path="range-planning" element={<RangePlanning />} />
             <Route path="range-planning/:id" element={<RangeDetail />} />
             <Route path="activity" element={<Activity />} />

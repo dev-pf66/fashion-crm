@@ -31,7 +31,7 @@ function getInitials(name) {
     .toUpperCase()
 }
 
-export default function CommentSection({ entityType, entityId, rangeId }) {
+export default function CommentSection({ entityType, entityId, rangeId, linkPath }) {
   const { currentPerson, people } = useApp()
   const toast = useToast()
 
@@ -265,7 +265,7 @@ export default function CommentSection({ entityType, entityId, rangeId }) {
             type: 'mention',
             title: `${currentPerson.name} mentioned you`,
             message: text.substring(0, 100),
-            link: rangeId ? `/range-planning/${rangeId}` : null,
+            link: linkPath || (rangeId ? `/range-planning/${rangeId}` : null),
             from_person_id: currentPerson.id
           })
         } catch (err) {

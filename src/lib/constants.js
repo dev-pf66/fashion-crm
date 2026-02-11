@@ -149,6 +149,34 @@ export const TEST_TYPES = [
   'Nickel Release',
 ]
 
+// Task statuses
+export const TASK_STATUSES = [
+  { value: 'todo', label: 'To Do' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'review', label: 'Review' },
+  { value: 'done', label: 'Done' },
+]
+
+// Task priorities
+export const TASK_PRIORITIES = [
+  { value: 'low', label: 'Low', color: '#dcfce7', textColor: '#15803d' },
+  { value: 'medium', label: 'Medium', color: '#dbeafe', textColor: '#1d4ed8' },
+  { value: 'high', label: 'High', color: '#fef3c7', textColor: '#b45309' },
+  { value: 'urgent', label: 'Urgent', color: '#fee2e2', textColor: '#b91c1c' },
+]
+
+// Task tags
+export const TASK_TAGS = [
+  { value: 'sourcing', label: 'Sourcing', color: '#818cf8' },
+  { value: 'production', label: 'Production', color: '#fb923c' },
+  { value: 'design', label: 'Design', color: '#f472b6' },
+  { value: 'quality', label: 'Quality', color: '#34d399' },
+  { value: 'shipping', label: 'Shipping', color: '#60a5fa' },
+  { value: 'urgent', label: 'Urgent', color: '#f87171' },
+  { value: 'follow-up', label: 'Follow-up', color: '#a78bfa' },
+  { value: 'client', label: 'Client', color: '#fbbf24' },
+]
+
 // Compliance test statuses
 export const TEST_STATUSES = [
   { value: 'pending', label: 'Pending', color: '#f3f4f6' },

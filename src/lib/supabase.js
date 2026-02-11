@@ -980,6 +980,65 @@ export async function markAllNotificationsRead(personId) {
 // OVERDUE ITEMS
 // ============================================================
 
+// ============================================================
+// TASKS
+// ============================================================
+
+export async function getTasks(filters = {}) {
+  let query = supabase
+    .from('tasks')
+    .select('*, people:assigned_to(id, name), creator:created_by(id, name)')
+    .order('sort_order')
+    .order('created_at', { ascending: false })
+  if (filters.status) query = query.eq('status', filters.status)
+  if (filters.assigned_to) query = query.eq('assigned_to', filters.assigned_to)
+  if (filters.priority) query = query.eq('priority', filters.priority)
+  if (filters.search) query = query.ilike('title', `%${filters.search}%`)
+  const { data, error } = await query
+  if (error) throw error
+  return data
+}
+
+export async function getTask(id) {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*, people:assigned_to(id, name), creator:created_by(id, name)')
+    .eq('id', id)
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function createTask(task) {
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert([task])
+    .select('*, people:assigned_to(id, name), creator:created_by(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateTask(id, updates) {
+  const { data, error } = await supabase
+    .from('tasks')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*, people:assigned_to(id, name), creator:created_by(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteTask(id) {
+  const { error } = await supabase.from('tasks').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ============================================================
+// OVERDUE ITEMS
+// ============================================================
+
 export async function getOverdueItems(seasonId) {
   const nowStr = new Date().toISOString().slice(0, 10)
 

@@ -29,6 +29,9 @@ const STATUS_CONFIG = {
   new: { label: 'New', bg: '#e0e7ff', color: '#4338ca' },
   reviewed: { label: 'Reviewed', bg: '#dbeafe', color: '#1d4ed8' },
   in_development: { label: 'In Development', bg: '#cffafe', color: '#0e7490' },
+  // Task statuses
+  todo: { label: 'To Do', bg: '#f3f4f6', color: '#4b5563' },
+  done: { label: 'Done', bg: '#dcfce7', color: '#15803d' },
   // Range statuses (active already defined above under supplier statuses)
   planning: { label: 'Planning', bg: '#f3f4f6', color: '#4b5563' },
   locked: { label: 'Locked', bg: '#dcfce7', color: '#15803d' },
