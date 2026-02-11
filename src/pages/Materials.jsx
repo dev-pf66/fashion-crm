@@ -117,6 +117,7 @@ function MaterialFormModal({ suppliers, onClose, onSave }) {
     try {
       await createMaterial({
         ...form,
+        code: form.code.trim() || null,
         supplier_id: form.supplier_id || null,
         unit_price: form.unit_price || null,
         moq: form.moq || null,
