@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSeason } from '../contexts/SeasonContext'
-import { getDashboardStats, getStyles, getUpcomingDeadlines, getOverdueItems } from '../lib/supabase'
+import { getDashboardStats, getStyles, getUpcomingDeadlines, getOverdueItems, getTaskMetrics } from '../lib/supabase'
 import { STYLE_STATUSES, SAMPLE_ROUNDS } from '../lib/constants'
 import ActivityFeed from '../components/ActivityFeed'
 import StatusBadge from '../components/StatusBadge'
 import {
   LayoutDashboard, Scissors, FlaskConical, ClipboardList,
-  AlertTriangle, Calendar, Clock
+  AlertTriangle, Calendar, Clock, CheckSquare
 } from 'lucide-react'
 
 export default function Dashboard() {
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [recentStyles, setRecentStyles] = useState([])
   const [deadlines, setDeadlines] = useState([])
   const [overdue, setOverdue] = useState(null)
+  const [taskMetrics, setTaskMetrics] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -26,16 +27,18 @@ export default function Dashboard() {
   async function loadData() {
     setLoading(true)
     try {
-      const [statsData, stylesData, deadlinesData, overdueData] = await Promise.all([
+      const [statsData, stylesData, deadlinesData, overdueData, taskData] = await Promise.all([
         getDashboardStats(currentSeason.id),
         getStyles(currentSeason.id),
         getUpcomingDeadlines(currentSeason.id),
         getOverdueItems(currentSeason.id),
+        getTaskMetrics(),
       ])
       setStats(statsData)
       setRecentStyles(stylesData.slice(0, 5))
       setDeadlines(deadlinesData || [])
       setOverdue(overdueData)
+      setTaskMetrics(taskData)
     } catch (err) {
       console.error('Failed to load dashboard:', err)
     } finally {
@@ -99,6 +102,38 @@ export default function Dashboard() {
           <div className="stat-sub">Issued or in production</div>
         </div>
       </div>
+
+      {/* Task Overview */}
+      {taskMetrics && taskMetrics.total > 0 && (
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <div className="card-header">
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              <CheckSquare size={16} /> Tasks Overview
+            </h3>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/tasks')}>
+              View All
+            </button>
+          </div>
+          <div className="stats-grid" style={{ padding: '0.75rem 1rem' }}>
+            <div className={`stat-card ${taskMetrics.overdue > 0 ? 'alert' : ''}`} onClick={() => navigate('/tasks')} style={{ cursor: 'pointer' }}>
+              <div className="stat-label">Overdue</div>
+              <div className="stat-value">{taskMetrics.overdue}</div>
+            </div>
+            <div className="stat-card" onClick={() => navigate('/tasks')} style={{ cursor: 'pointer' }}>
+              <div className="stat-label">Due Today</div>
+              <div className="stat-value">{taskMetrics.dueToday}</div>
+            </div>
+            <div className="stat-card" onClick={() => navigate('/tasks')} style={{ cursor: 'pointer' }}>
+              <div className="stat-label">In Progress</div>
+              <div className="stat-value">{taskMetrics.inProgress}</div>
+            </div>
+            <div className="stat-card" onClick={() => navigate('/tasks')} style={{ cursor: 'pointer' }}>
+              <div className="stat-label">Completed</div>
+              <div className="stat-value">{taskMetrics.done}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Charts Row */}
       <div className="dashboard-grid">

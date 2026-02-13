@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect, createContext, useContext, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { SeasonProvider } from './contexts/SeasonContext'
@@ -6,25 +6,26 @@ import { ToastProvider } from './contexts/ToastContext'
 import { getPeople, getPersonByEmail, createPerson } from './lib/supabase'
 import Layout from './components/Layout'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Styles from './pages/Styles'
-import StyleDetail from './pages/StyleDetail'
-import Suppliers from './pages/Suppliers'
-import SupplierDetail from './pages/SupplierDetail'
-import Materials from './pages/Materials'
-import Team from './pages/Team'
-import Samples from './pages/Samples'
-import Settings from './pages/Settings'
-import Orders from './pages/Orders'
-import OrderDetail from './pages/OrderDetail'
-import Activity from './pages/Activity'
-import Help from './pages/Help'
-import Calendar from './pages/Calendar'
-import StyleRequests from './pages/StyleRequests'
-import RangePlanning from './pages/RangePlanning'
-import RangeDetail from './pages/RangeDetail'
-import Tasks from './pages/Tasks'
-import ResetPassword from './pages/ResetPassword'
+
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Styles = lazy(() => import('./pages/Styles'))
+const StyleDetail = lazy(() => import('./pages/StyleDetail'))
+const Suppliers = lazy(() => import('./pages/Suppliers'))
+const SupplierDetail = lazy(() => import('./pages/SupplierDetail'))
+const Materials = lazy(() => import('./pages/Materials'))
+const Team = lazy(() => import('./pages/Team'))
+const Samples = lazy(() => import('./pages/Samples'))
+const Settings = lazy(() => import('./pages/Settings'))
+const Orders = lazy(() => import('./pages/Orders'))
+const OrderDetail = lazy(() => import('./pages/OrderDetail'))
+const Activity = lazy(() => import('./pages/Activity'))
+const Help = lazy(() => import('./pages/Help'))
+const Calendar = lazy(() => import('./pages/Calendar'))
+const StyleRequests = lazy(() => import('./pages/StyleRequests'))
+const RangePlanning = lazy(() => import('./pages/RangePlanning'))
+const RangeDetail = lazy(() => import('./pages/RangeDetail'))
+const Tasks = lazy(() => import('./pages/Tasks'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 
 export const AppContext = createContext()
 
@@ -97,6 +98,7 @@ function AppRoutes() {
     <AppContext.Provider value={{ currentPerson, people, setPeople, refreshPeople }}>
       <ToastProvider>
       <SeasonProvider>
+        <Suspense fallback={<div className="loading-container"><div className="loading-spinner" /></div>}>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
@@ -121,6 +123,7 @@ function AppRoutes() {
           </Route>
           <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
+        </Suspense>
       </SeasonProvider>
       </ToastProvider>
     </AppContext.Provider>

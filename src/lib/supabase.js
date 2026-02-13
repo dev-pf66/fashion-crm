@@ -519,7 +519,7 @@ export async function globalSearch(query, seasonId) {
   const q = query.toLowerCase()
   const results = []
 
-  const [styles, suppliers, pos, people] = await Promise.all([
+  const [styles, suppliers, pos, people, tasks] = await Promise.all([
     seasonId
       ? supabase.from('styles').select('id, name, style_number, status, category, suppliers(name), people:assigned_to(name)').eq('season_id', seasonId).or(`name.ilike.%${q}%,style_number.ilike.%${q}%`).limit(5)
       : { data: [] },
@@ -528,6 +528,7 @@ export async function globalSearch(query, seasonId) {
       ? supabase.from('purchase_orders').select('id, po_number, status, suppliers(name), people:assigned_to(name)').eq('season_id', seasonId).ilike('po_number', `%${q}%`).limit(5)
       : { data: [] },
     supabase.from('people').select('id, name, email, role').ilike('name', `%${q}%`).limit(5),
+    supabase.from('tasks').select('id, title, status, priority, people:assigned_to(name)').ilike('title', `%${q}%`).limit(5),
   ])
 
   ;(styles.data || []).forEach(s => {
@@ -541,6 +542,9 @@ export async function globalSearch(query, seasonId) {
   })
   ;(people.data || []).forEach(p => {
     results.push({ type: 'person', id: p.id, label: p.name, sub: p.role || p.email || '' })
+  })
+  ;(tasks.data || []).forEach(t => {
+    results.push({ type: 'task', id: t.id, label: t.title, sub: t.people?.name || t.status || '' })
   })
 
   return results
@@ -660,7 +664,7 @@ export async function deleteComment(id) {
 export async function getCalendarEvents(seasonId, startDate, endDate) {
   const events = []
 
-  const [samples, pos, styles] = await Promise.all([
+  const [samples, pos, styles, tasks] = await Promise.all([
     supabase
       .from('samples')
       .select('id, expected_date, round, round_number, status, colorway, styles!inner(id, name, style_number, season_id)')
@@ -676,6 +680,12 @@ export async function getCalendarEvents(seasonId, startDate, endDate) {
       .from('styles')
       .select('id, style_number, name, development_start, target_delivery, status')
       .eq('season_id', seasonId),
+    supabase
+      .from('tasks')
+      .select('id, title, due_date, status, priority, people:assigned_to(id, name)')
+      .not('due_date', 'is', null)
+      .gte('due_date', startDate)
+      .lte('due_date', endDate),
   ])
 
   ;(samples.data || []).forEach(s => {
@@ -733,6 +743,19 @@ export async function getCalendarEvents(seasonId, startDate, endDate) {
         type: 'style_delivery',
         status: s.status,
         link: `/styles/${s.id}`,
+      })
+    }
+  })
+
+  ;(tasks.data || []).forEach(t => {
+    if (t.due_date) {
+      events.push({
+        id: `task-${t.id}`,
+        date: t.due_date,
+        title: t.title,
+        type: 'task',
+        status: t.status,
+        link: '/tasks',
       })
     }
   })
@@ -984,10 +1007,12 @@ export async function markAllNotificationsRead(personId) {
 // TASKS
 // ============================================================
 
+const TASK_SELECT = '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number)'
+
 export async function getTasks(filters = {}) {
   let query = supabase
     .from('tasks')
-    .select('*, people:assigned_to(id, name), creator:created_by(id, name)')
+    .select(TASK_SELECT)
     .order('sort_order')
     .order('created_at', { ascending: false })
   if (filters.status) query = query.eq('status', filters.status)
@@ -1002,7 +1027,7 @@ export async function getTasks(filters = {}) {
 export async function getTask(id) {
   const { data, error } = await supabase
     .from('tasks')
-    .select('*, people:assigned_to(id, name), creator:created_by(id, name)')
+    .select(TASK_SELECT)
     .eq('id', id)
     .single()
   if (error) throw error
@@ -1013,7 +1038,7 @@ export async function createTask(task) {
   const { data, error } = await supabase
     .from('tasks')
     .insert([task])
-    .select('*, people:assigned_to(id, name), creator:created_by(id, name)')
+    .select(TASK_SELECT)
     .single()
   if (error) throw error
   return data
@@ -1024,7 +1049,7 @@ export async function updateTask(id, updates) {
     .from('tasks')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .select('*, people:assigned_to(id, name), creator:created_by(id, name)')
+    .select(TASK_SELECT)
     .single()
   if (error) throw error
   return data
@@ -1033,6 +1058,88 @@ export async function updateTask(id, updates) {
 export async function deleteTask(id) {
   const { error } = await supabase.from('tasks').delete().eq('id', id)
   if (error) throw error
+}
+
+export async function updateTaskOrder(items) {
+  const promises = items.map(({ id, sort_order }) =>
+    supabase.from('tasks').update({ sort_order }).eq('id', id)
+  )
+  await Promise.all(promises)
+}
+
+// ============================================================
+// TASK SUBTASKS
+// ============================================================
+
+export async function getTaskSubtasks(taskId) {
+  const { data, error } = await supabase
+    .from('task_subtasks')
+    .select('*')
+    .eq('task_id', taskId)
+    .order('sort_order')
+    .order('created_at')
+  if (error) throw error
+  return data
+}
+
+export async function createTaskSubtask(subtask) {
+  const { data, error } = await supabase
+    .from('task_subtasks')
+    .insert([subtask])
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateTaskSubtask(id, updates) {
+  const { data, error } = await supabase
+    .from('task_subtasks')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteTaskSubtask(id) {
+  const { error } = await supabase.from('task_subtasks').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function getTaskSubtaskCounts() {
+  const { data, error } = await supabase
+    .from('task_subtasks')
+    .select('task_id, completed')
+  if (error) throw error
+  const counts = {}
+  ;(data || []).forEach(s => {
+    if (!counts[s.task_id]) counts[s.task_id] = { total: 0, done: 0 }
+    counts[s.task_id].total++
+    if (s.completed) counts[s.task_id].done++
+  })
+  return counts
+}
+
+// ============================================================
+// TASK METRICS
+// ============================================================
+
+export async function getTaskMetrics() {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id, status, due_date')
+  if (error) throw error
+  const now = new Date().toISOString().slice(0, 10)
+  const tasks = data || []
+  return {
+    total: tasks.length,
+    overdue: tasks.filter(t => t.due_date && t.due_date < now && t.status !== 'done').length,
+    dueToday: tasks.filter(t => t.due_date === now && t.status !== 'done').length,
+    inProgress: tasks.filter(t => t.status === 'in_progress').length,
+    done: tasks.filter(t => t.status === 'done').length,
+  }
 }
 
 // ============================================================

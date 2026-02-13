@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
 import { useToast } from '../contexts/ToastContext'
-import { getTask, deleteTask } from '../lib/supabase'
+import { getTask, deleteTask, getTaskSubtasks, createTaskSubtask, updateTaskSubtask, deleteTaskSubtask } from '../lib/supabase'
 import { TASK_PRIORITIES, TASK_TAGS } from '../lib/constants'
 import Modal from './Modal'
 import StatusBadge from './StatusBadge'
 import CommentSection from './CommentSection'
 import TaskForm from './TaskForm'
-import { Pencil, Trash2, Calendar, User, Flag, Tag } from 'lucide-react'
+import { Pencil, Trash2, Calendar, User, Flag, Tag, Link2, Plus, X, CheckSquare } from 'lucide-react'
 
 export default function TaskDetail({ taskId, onClose, onUpdate }) {
   const { currentPerson } = useApp()
@@ -16,6 +16,9 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
   const [loading, setLoading] = useState(true)
   const [showEdit, setShowEdit] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [subtasks, setSubtasks] = useState([])
+  const [newSubtask, setNewSubtask] = useState('')
+  const [addingSubtask, setAddingSubtask] = useState(false)
 
   useEffect(() => {
     loadTask()
@@ -24,8 +27,12 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
   async function loadTask() {
     try {
       setLoading(true)
-      const data = await getTask(taskId)
+      const [data, subs] = await Promise.all([
+        getTask(taskId),
+        getTaskSubtasks(taskId),
+      ])
       setTask(data)
+      setSubtasks(subs || [])
     } catch (err) {
       console.error('Failed to load task:', err)
       toast.error('Failed to load task')
@@ -50,6 +57,45 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
     }
   }
 
+  async function handleAddSubtask(e) {
+    e.preventDefault()
+    if (!newSubtask.trim()) return
+    try {
+      const sub = await createTaskSubtask({
+        task_id: taskId,
+        title: newSubtask.trim(),
+        sort_order: subtasks.length,
+      })
+      setSubtasks(prev => [...prev, sub])
+      setNewSubtask('')
+      setAddingSubtask(false)
+      onUpdate()
+    } catch (err) {
+      console.error('Failed to add subtask:', err)
+      toast.error('Failed to add subtask')
+    }
+  }
+
+  async function handleToggleSubtask(sub) {
+    try {
+      const updated = await updateTaskSubtask(sub.id, { completed: !sub.completed })
+      setSubtasks(prev => prev.map(s => s.id === sub.id ? updated : s))
+      onUpdate()
+    } catch (err) {
+      console.error('Failed to toggle subtask:', err)
+    }
+  }
+
+  async function handleDeleteSubtask(subId) {
+    try {
+      await deleteTaskSubtask(subId)
+      setSubtasks(prev => prev.filter(s => s.id !== subId))
+      onUpdate()
+    } catch (err) {
+      console.error('Failed to delete subtask:', err)
+    }
+  }
+
   if (showEdit && task) {
     return (
       <TaskForm
@@ -66,6 +112,14 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
 
   const priority = task ? TASK_PRIORITIES.find(p => p.value === task.priority) : null
   const isOverdue = task?.due_date && new Date(task.due_date) < new Date() && task.status !== 'done'
+  const subtasksDone = subtasks.filter(s => s.completed).length
+  const subtasksTotal = subtasks.length
+  const subtaskPercent = subtasksTotal > 0 ? Math.round((subtasksDone / subtasksTotal) * 100) : 0
+
+  const linkedEntities = []
+  if (task?.styles) linkedEntities.push({ label: task.styles.style_number, type: 'Style', color: 'var(--info)' })
+  if (task?.suppliers) linkedEntities.push({ label: task.suppliers.name, type: 'Supplier', color: 'var(--warning)' })
+  if (task?.purchase_orders) linkedEntities.push({ label: task.purchase_orders.po_number, type: 'PO', color: 'var(--primary)' })
 
   return (
     <Modal title={loading ? 'Loading...' : task?.title || 'Task'} onClose={onClose} large>
@@ -138,6 +192,34 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
             </div>
           </div>
 
+          {linkedEntities.length > 0 && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div className="text-muted text-sm" style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <Link2 size={12} /> Linked To
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+                {linkedEntities.map((e, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      padding: '3px 10px',
+                      borderRadius: '10px',
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
+                      background: e.color,
+                      color: '#fff',
+                    }}
+                  >
+                    {e.type}: {e.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {task.tags && task.tags.length > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
               <div className="text-muted text-sm" style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -182,6 +264,108 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
               </div>
             </div>
           )}
+
+          {/* Subtasks / Checklist */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <div className="text-muted text-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <CheckSquare size={12} /> Subtasks
+                {subtasksTotal > 0 && <span>({subtasksDone}/{subtasksTotal})</span>}
+              </div>
+              {!addingSubtask && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setAddingSubtask(true)}
+                  style={{ fontSize: '0.75rem' }}
+                >
+                  <Plus size={12} /> Add
+                </button>
+              )}
+            </div>
+
+            {subtasksTotal > 0 && (
+              <div style={{
+                height: 4,
+                background: 'var(--gray-100)',
+                borderRadius: 2,
+                marginBottom: '0.5rem',
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${subtaskPercent}%`,
+                  background: subtaskPercent === 100 ? 'var(--success)' : 'var(--primary)',
+                  borderRadius: 2,
+                  transition: 'width 0.3s ease',
+                }} />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              {subtasks.map(sub => (
+                <div
+                  key={sub.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.375rem 0.5rem',
+                    borderRadius: 'var(--radius)',
+                    background: 'var(--gray-50)',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={sub.completed}
+                    onChange={() => handleToggleSubtask(sub)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <span style={{
+                    flex: 1,
+                    fontSize: '0.8125rem',
+                    textDecoration: sub.completed ? 'line-through' : 'none',
+                    color: sub.completed ? 'var(--gray-400)' : 'var(--gray-700)',
+                  }}>
+                    {sub.title}
+                  </span>
+                  <button
+                    onClick={() => handleDeleteSubtask(sub.id)}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      cursor: 'pointer',
+                      padding: '2px',
+                      color: 'var(--gray-400)',
+                      display: 'flex',
+                    }}
+                    title="Delete subtask"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {addingSubtask && (
+              <form onSubmit={handleAddSubtask} style={{ marginTop: '0.375rem' }}>
+                <div style={{ display: 'flex', gap: '0.375rem' }}>
+                  <input
+                    type="text"
+                    value={newSubtask}
+                    onChange={e => setNewSubtask(e.target.value)}
+                    placeholder="Subtask title..."
+                    autoFocus
+                    onKeyDown={e => { if (e.key === 'Escape') { setAddingSubtask(false); setNewSubtask('') } }}
+                    style={{ flex: 1, fontSize: '0.8125rem', padding: '0.375rem 0.5rem' }}
+                  />
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={!newSubtask.trim()}>Add</button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setAddingSubtask(false); setNewSubtask('') }}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
 
           <CommentSection
             entityType="task"

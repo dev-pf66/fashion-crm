@@ -5,7 +5,7 @@ import { getCalendarEvents } from '../lib/supabase'
 import StatusBadge from '../components/StatusBadge'
 import {
   Calendar as CalendarIcon, ChevronLeft, ChevronRight,
-  FlaskConical, ClipboardList, Scissors, Truck
+  FlaskConical, ClipboardList, Scissors, Truck, CheckSquare
 } from 'lucide-react'
 
 const EVENT_COLORS = {
@@ -14,6 +14,7 @@ const EVENT_COLORS = {
   po_delivery: 'var(--primary)',
   style_dev: 'var(--success)',
   style_delivery: '#8b5cf6',
+  task: '#f97316',
 }
 
 const EVENT_ICONS = {
@@ -22,6 +23,7 @@ const EVENT_ICONS = {
   po_delivery: ClipboardList,
   style_dev: Scissors,
   style_delivery: Scissors,
+  task: CheckSquare,
 }
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']

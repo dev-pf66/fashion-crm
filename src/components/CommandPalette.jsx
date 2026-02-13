@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSeason } from '../contexts/SeasonContext'
 import { globalSearch } from '../lib/supabase'
-import { Search, Scissors, Factory, ClipboardList, FlaskConical, Users, X } from 'lucide-react'
+import { Search, Scissors, Factory, ClipboardList, FlaskConical, Users, CheckSquare, X } from 'lucide-react'
 
 const ICON_MAP = {
   style: Scissors,
@@ -10,6 +10,7 @@ const ICON_MAP = {
   purchase_order: ClipboardList,
   sample: FlaskConical,
   person: Users,
+  task: CheckSquare,
 }
 
 const QUICK_LINKS = [
@@ -21,6 +22,7 @@ const QUICK_LINKS = [
   { label: 'Samples', path: '/samples', section: 'Pages' },
   { label: 'Team', path: '/team', section: 'Pages' },
   { label: 'Activity', path: '/activity', section: 'Pages' },
+  { label: 'Tasks', path: '/tasks', section: 'Pages' },
   { label: 'Help', path: '/help', section: 'Pages' },
 ]
 
@@ -85,6 +87,8 @@ export default function CommandPalette({ isOpen, onClose }) {
       navigate('/team')
     } else if (item.type === 'sample') {
       navigate('/samples')
+    } else if (item.type === 'task') {
+      navigate('/tasks')
     }
   }, [navigate, onClose])
 
@@ -113,7 +117,7 @@ export default function CommandPalette({ isOpen, onClose }) {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search styles, suppliers, orders, people..."
+            placeholder="Search styles, suppliers, orders, tasks, people..."
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}

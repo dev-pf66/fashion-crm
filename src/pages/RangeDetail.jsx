@@ -117,15 +117,15 @@ export default function RangeDetail() {
   async function loadData() {
     setLoading(true)
     try {
-      const rangeData = await getRange(id)
+      const [rangeData, stylesData] = await Promise.all([
+        getRange(id),
+        getRangeStyles(id).catch(err => {
+          console.error('Failed to load styles:', err)
+          return []
+        }),
+      ])
       setRange(rangeData)
-      try {
-        const stylesData = await getRangeStyles(id)
-        setStyles(stylesData || [])
-      } catch (err) {
-        console.error('Failed to load styles:', err)
-        setStyles([])
-      }
+      setStyles(stylesData || [])
     } catch (err) {
       console.error('Failed to load range:', err)
       toast.error('Failed to load range')
