@@ -237,7 +237,6 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                   type="file"
                   multiple
                   accept="image/*,.pdf,.ai,.psd,.sketch"
-                  capture="environment"
                   onChange={handleFileUpload}
                   style={{ display: 'none' }}
                 />
