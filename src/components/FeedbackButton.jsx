@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 import { MessageSquarePlus, X, Send } from 'lucide-react'
 
 const TYPES = ['Bug', 'Suggestion', 'Question']
@@ -9,14 +10,26 @@ export default function FeedbackButton() {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ type: 'Bug', description: '', email: user?.email || '' })
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState(null)
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!form.description.trim()) return
+    setError(null)
 
-    const existing = JSON.parse(localStorage.getItem('feedback') || '[]')
-    existing.push({ ...form, created_at: new Date().toISOString() })
-    localStorage.setItem('feedback', JSON.stringify(existing))
+    const { error: insertError } = await supabase.from('feedback').insert({
+      type: form.type,
+      description: form.description.trim(),
+      email: form.email || null,
+      user_id: user?.id || null,
+      page_url: window.location.pathname,
+    })
+
+    if (insertError) {
+      setError('Failed to submit. Please try again.')
+      console.error('Feedback submit error:', insertError)
+      return
+    }
 
     setSubmitted(true)
     setTimeout(() => {
@@ -47,6 +60,7 @@ export default function FeedbackButton() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} style={{ padding: '1rem' }}>
+                {error && <div className="alert alert-error" style={{ marginBottom: '0.75rem', padding: '0.5rem 0.75rem', fontSize: '0.85rem' }}>{error}</div>}
                 <div className="form-group">
                   <label>Type</label>
                   <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}>
