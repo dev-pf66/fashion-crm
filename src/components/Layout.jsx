@@ -101,7 +101,10 @@ export default function Layout() {
           <div className="season-selector">
             <select
               value={currentSeason?.id || ''}
-              onChange={e => changeSeason(e.target.value)}
+              onChange={e => {
+                const season = seasons.find(s => s.id.toString() === e.target.value)
+                if (season) changeSeason(season)
+              }}
             >
               {seasons.map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>

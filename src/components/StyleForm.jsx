@@ -77,6 +77,12 @@ export default function StyleForm({ style, onClose, onSave }) {
     setError('')
     setSaving(true)
 
+    if (!currentSeason?.id) {
+      setError('No season selected. Please select a season first.')
+      setSaving(false)
+      return
+    }
+
     try {
       const data = {
         ...form,
