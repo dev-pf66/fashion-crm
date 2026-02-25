@@ -5553,3 +5553,29 @@ tr:hover .quick-view-btn {
 .tag-picker-item.selected {
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
+
+/* ============================================================
+   PWA STANDALONE MODE
+   ============================================================ */
+
+/* Disable pull-to-refresh in installed PWA */
+html, body {
+  overscroll-behavior-y: none;
+}
+
+@media (display-mode: standalone) {
+  /* Ensure status bar area is accounted for */
+  body {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Hide any extra browser padding in standalone mode */
+  .app-layout {
+    min-height: calc(100vh - env(safe-area-inset-top));
+  }
+
+  /* Adjust mobile tab bar for home indicator */
+  .mobile-tab-bar {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}

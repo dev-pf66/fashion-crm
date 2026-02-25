@@ -45,7 +45,7 @@ export default function CommentThread({ entityType, entityId }) {
       const mentions = []
       let match
       while ((match = mentionRegex.exec(text)) !== null) {
-        const person = people.find(p => p.name.toLowerCase() === match[1].toLowerCase())
+        const person = people.find(p => p.name?.toLowerCase() === match[1].toLowerCase())
         if (person) mentions.push(person.id)
       }
 
@@ -130,7 +130,7 @@ export default function CommentThread({ entityType, entityId }) {
   }
 
   const filteredPeople = people.filter(p =>
-    p.name.toLowerCase().includes(mentionQuery)
+    p.name?.toLowerCase().includes(mentionQuery)
   ).slice(0, 5)
 
   function renderContent(content) {
