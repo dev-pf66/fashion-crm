@@ -4,6 +4,7 @@ import { getSupplier, updateSupplier } from '../lib/supabase'
 import { SUPPLIER_STATUSES } from '../lib/constants'
 import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../contexts/ToastContext'
+import CommentThread from '../components/CommentThread'
 import { ArrowLeft, Edit, MapPin, Phone, Mail, Globe } from 'lucide-react'
 
 export default function SupplierDetail() {
@@ -78,6 +79,7 @@ export default function SupplierDetail() {
       <div className="tabs">
         <button className={`tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Profile</button>
         <button className={`tab ${activeTab === 'scorecard' ? 'active' : ''}`} onClick={() => setActiveTab('scorecard')}>Scorecard</button>
+        <button className={`tab ${activeTab === 'comments' ? 'active' : ''}`} onClick={() => setActiveTab('comments')}>Comments</button>
       </div>
 
       {activeTab === 'profile' && (
@@ -135,6 +137,10 @@ export default function SupplierDetail() {
             </div>
           )}
         </div>
+      )}
+
+      {activeTab === 'comments' && (
+        <CommentThread entityType="supplier" entityId={supplier.id.toString()} />
       )}
     </div>
   )

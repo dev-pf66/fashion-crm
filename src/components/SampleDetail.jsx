@@ -5,6 +5,7 @@ import { SAMPLE_ROUNDS, SAMPLE_STATUSES } from '../lib/constants'
 import MeasurementTable from './MeasurementTable'
 import PhotoGallery from './PhotoGallery'
 import SampleForm from './SampleForm'
+import CommentThread from './CommentThread'
 import { X, Edit, CheckCircle, XCircle, RotateCcw } from 'lucide-react'
 
 export default function SampleDetail({ sampleId, onClose, onUpdate }) {
@@ -126,6 +127,7 @@ export default function SampleDetail({ sampleId, onClose, onUpdate }) {
             <button className={`tab ${activeTab === 'measurements' ? 'active' : ''}`} onClick={() => setActiveTab('measurements')}>Measurements</button>
             <button className={`tab ${activeTab === 'photos' ? 'active' : ''}`} onClick={() => setActiveTab('photos')}>Photos {sample.photos?.length ? `(${sample.photos.length})` : ''}</button>
             <button className={`tab ${activeTab === 'review' ? 'active' : ''}`} onClick={() => setActiveTab('review')}>Review</button>
+            <button className={`tab ${activeTab === 'comments' ? 'active' : ''}`} onClick={() => setActiveTab('comments')}>Comments</button>
           </div>
 
           <div className="modal-body" style={{ minHeight: 300 }}>
@@ -179,6 +181,10 @@ export default function SampleDetail({ sampleId, onClose, onUpdate }) {
                 sampleId={sample.id}
                 onPhotosChange={handlePhotosChange}
               />
+            )}
+
+            {activeTab === 'comments' && (
+              <CommentThread entityType="sample" entityId={sample.id} />
             )}
 
             {activeTab === 'review' && (
