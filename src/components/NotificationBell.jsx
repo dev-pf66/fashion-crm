@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, Check, X } from 'lucide-react'
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/supabase'
+import { useToast } from '../contexts/ToastContext'
 import { useApp } from '../App'
 
 function timeAgo(date) {
@@ -27,6 +28,7 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(false)
+  const toast = useToast()
   const dropdownRef = useRef(null)
 
   const unreadCount = notifications.filter(n => !n.read).length
@@ -38,6 +40,7 @@ export default function NotificationBell() {
       setNotifications(data || [])
     } catch (err) {
       console.error('Failed to fetch notifications:', err)
+      toast.error('Failed to load notifications')
     }
   }, [currentPerson?.id])
 
@@ -77,6 +80,7 @@ export default function NotificationBell() {
         )
       } catch (err) {
         console.error('Failed to mark notification as read:', err)
+        toast.error('Failed to update notification')
       }
     }
     setOpen(false)
@@ -93,6 +97,7 @@ export default function NotificationBell() {
       setNotifications(prev => prev.map(n => ({ ...n, read: true })))
     } catch (err) {
       console.error('Failed to mark all as read:', err)
+      toast.error('Failed to mark all as read')
     } finally {
       setLoading(false)
     }

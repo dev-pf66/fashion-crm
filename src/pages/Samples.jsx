@@ -9,6 +9,7 @@ import SampleCard from '../components/SampleCard'
 import SampleForm from '../components/SampleForm'
 import SampleDetail from '../components/SampleDetail'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import { useToast } from '../contexts/ToastContext'
 import { Plus, FlaskConical, Download } from 'lucide-react'
 
 export default function Samples() {
@@ -19,6 +20,8 @@ export default function Samples() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selectedSampleId, setSelectedSampleId] = useState(null)
+
+  const toast = useToast()
 
   const [filters, setFilters] = useStickyFilters('samples', {
     search: '',
@@ -43,6 +46,7 @@ export default function Samples() {
       setSuppliers(suppliersData || [])
     } catch (err) {
       console.error('Failed to load samples:', err)
+      toast.error('Failed to load samples')
     } finally {
       setLoading(false)
     }
@@ -88,6 +92,7 @@ export default function Samples() {
       await updateSample(sampleId, { status: newStatus })
     } catch (err) {
       console.error('Failed to update sample status:', err)
+      toast.error('Failed to update sample status')
       loadData() // Revert on error
     }
   }

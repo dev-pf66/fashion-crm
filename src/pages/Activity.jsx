@@ -3,6 +3,7 @@ import { useSeason } from '../contexts/SeasonContext'
 import { useApp } from '../App'
 import { supabase } from '../lib/supabase'
 import { formatActivityMessage, getRelativeTime } from '../lib/activityLogger'
+import { useToast } from '../contexts/ToastContext'
 import { Clock, Filter } from 'lucide-react'
 
 const ENTITY_TYPES = ['style', 'supplier', 'sample', 'material', 'purchase_order']
@@ -14,6 +15,7 @@ export default function Activity() {
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ entity_type: '', person_id: '' })
   const [page, setPage] = useState(0)
+  const toast = useToast()
   const PAGE_SIZE = 30
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export default function Activity() {
       setEntries(data || [])
     } catch (err) {
       console.error('Failed to load activity:', err)
+      toast.error('Failed to load activity')
     } finally {
       setLoading(false)
     }

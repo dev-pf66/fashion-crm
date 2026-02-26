@@ -30,6 +30,7 @@ export default function ComplianceTracker({ styleId }) {
       setTests(data || [])
     } catch (err) {
       console.error('Failed to load compliance tests:', err)
+      toast.error('Failed to load compliance tests')
     } finally {
       setLoading(false)
     }

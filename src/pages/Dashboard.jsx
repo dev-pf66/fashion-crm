@@ -5,6 +5,7 @@ import { getDashboardStats, getStyles, getUpcomingDeadlines, getOverdueItems, ge
 import { STYLE_STATUSES, SAMPLE_ROUNDS } from '../lib/constants'
 import ActivityFeed from '../components/ActivityFeed'
 import StatusBadge from '../components/StatusBadge'
+import { useToast } from '../contexts/ToastContext'
 import {
   LayoutDashboard, Scissors, FlaskConical, ClipboardList,
   AlertTriangle, Calendar, Clock, CheckSquare
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const [overdue, setOverdue] = useState(null)
   const [taskMetrics, setTaskMetrics] = useState(null)
   const [loading, setLoading] = useState(true)
+  const toast = useToast()
 
   useEffect(() => {
     if (currentSeason) loadData()
@@ -41,6 +43,7 @@ export default function Dashboard() {
       setTaskMetrics(taskData)
     } catch (err) {
       console.error('Failed to load dashboard:', err)
+      toast.error('Failed to load dashboard')
     } finally {
       setLoading(false)
     }

@@ -1,10 +1,12 @@
 import { useState, useRef } from 'react'
 import { uploadSamplePhoto } from '../lib/storage'
+import { useToast } from '../contexts/ToastContext'
 import { Upload, X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 
 export default function PhotoGallery({ photos = [], sampleId, onPhotosChange, readOnly = false }) {
   const [lightboxIndex, setLightboxIndex] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const toast = useToast()
   const fileRef = useRef()
 
   async function handleUpload(e) {
@@ -20,6 +22,7 @@ export default function PhotoGallery({ photos = [], sampleId, onPhotosChange, re
       onPhotosChange?.([...photos, ...urls])
     } catch (err) {
       console.error('Failed to upload photo:', err)
+      toast.error('Failed to upload photo')
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ''

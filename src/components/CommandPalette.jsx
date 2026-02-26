@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSeason } from '../contexts/SeasonContext'
 import { globalSearch } from '../lib/supabase'
+import { useToast } from '../contexts/ToastContext'
 import { Search, Scissors, Factory, ClipboardList, FlaskConical, Users, CheckSquare, X } from 'lucide-react'
 
 const ICON_MAP = {
@@ -33,6 +34,7 @@ export default function CommandPalette({ isOpen, onClose }) {
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const toast = useToast()
   const inputRef = useRef(null)
   const debounceRef = useRef(null)
 
@@ -61,6 +63,7 @@ export default function CommandPalette({ isOpen, onClose }) {
         setSelectedIndex(0)
       } catch (err) {
         console.error('Search failed:', err)
+        toast.error('Search failed')
       } finally {
         setLoading(false)
       }

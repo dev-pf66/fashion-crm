@@ -121,6 +121,7 @@ export default function RangeDetail() {
         getRange(id),
         getRangeStyles(id).catch(err => {
           console.error('Failed to load styles:', err)
+          toast.error('Failed to load range styles')
           return []
         }),
       ])
@@ -236,7 +237,7 @@ export default function RangeDetail() {
       newOrder.splice(result.destination.index, 0, moved)
       const updated = { ...groupOrder, [groupBy]: newOrder }
       setGroupOrder(updated)
-      try { localStorage.setItem(`range-group-order-${id}`, JSON.stringify(updated)) } catch {}
+      try { localStorage.setItem(`range-group-order-${id}`, JSON.stringify(updated)) } catch (err) { console.error('Failed to save group order:', err) }
       return
     }
 

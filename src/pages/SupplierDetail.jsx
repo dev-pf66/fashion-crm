@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { getSupplier, updateSupplier } from '../lib/supabase'
 import { SUPPLIER_STATUSES } from '../lib/constants'
 import StatusBadge from '../components/StatusBadge'
+import { useToast } from '../contexts/ToastContext'
 import { ArrowLeft, Edit, MapPin, Phone, Mail, Globe } from 'lucide-react'
 
 export default function SupplierDetail() {
@@ -11,6 +12,7 @@ export default function SupplierDetail() {
   const [supplier, setSupplier] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('profile')
+  const toast = useToast()
 
   useEffect(() => { loadSupplier() }, [id])
 
@@ -20,6 +22,7 @@ export default function SupplierDetail() {
       setSupplier(await getSupplier(id))
     } catch (err) {
       console.error('Failed to load supplier:', err)
+      toast.error('Failed to load supplier')
     } finally {
       setLoading(false)
     }
@@ -31,6 +34,7 @@ export default function SupplierDetail() {
       setSupplier(updated)
     } catch (err) {
       console.error('Failed to update status:', err)
+      toast.error('Failed to update status')
     }
   }
 
