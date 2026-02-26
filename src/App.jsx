@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { SeasonProvider } from './contexts/SeasonContext'
 import { ToastProvider } from './contexts/ToastContext'
-import { getPeople, getPersonByEmail, createPerson } from './lib/supabase'
+import { getPeople, getPersonByEmail, getPersonByUserId, createPerson, updatePerson } from './lib/supabase'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 
@@ -52,11 +52,29 @@ function AppRoutes() {
       const allPeople = await getPeople()
       setPeople(allPeople)
 
-      let person = allPeople.find(p => p.email === user.email)
+      // Primary lookup: by Supabase Auth user_id
+      let person = allPeople.find(p => p.user_id === user.id)
+
+      // Fallback: match by email (legacy records without user_id)
+      if (!person) {
+        person = allPeople.find(p => p.email === user.email)
+        // Backfill user_id on the legacy record
+        if (person && !person.user_id) {
+          try {
+            await updatePerson(person.id, { user_id: user.id })
+            person.user_id = user.id
+          } catch (err) {
+            console.error('Failed to backfill user_id:', err)
+          }
+        }
+      }
+
+      // No record at all — create new person
       if (!person) {
         person = await createPerson({
           name: user.email.split('@')[0],
           email: user.email,
+          user_id: user.id,
         })
         setPeople([...allPeople, person])
       }

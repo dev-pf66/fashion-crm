@@ -31,6 +31,12 @@ export async function getPersonByEmail(email) {
   return data
 }
 
+export async function getPersonByUserId(userId) {
+  const { data, error } = await supabase.from('people').select('*').eq('user_id', userId).single()
+  if (error && error.code !== 'PGRST116') throw error
+  return data
+}
+
 export async function createPerson(person) {
   const { data, error } = await supabase.from('people').insert([person]).select().single()
   if (error) throw error
