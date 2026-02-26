@@ -192,6 +192,7 @@ export default function StyleForm({ style, onClose, onSave }) {
             <input
               type="number"
               step="0.01"
+              min="0"
               value={form.target_fob}
               onChange={e => handleChange('target_fob', e.target.value)}
               placeholder="0.00"
@@ -202,6 +203,7 @@ export default function StyleForm({ style, onClose, onSave }) {
             <input
               type="number"
               step="0.01"
+              min="0"
               value={form.target_retail}
               onChange={e => handleChange('target_retail', e.target.value)}
               placeholder="0.00"
@@ -212,6 +214,8 @@ export default function StyleForm({ style, onClose, onSave }) {
             <input
               type="number"
               step="0.1"
+              min="0"
+              max="100"
               value={form.target_margin}
               onChange={e => handleChange('target_margin', e.target.value)}
               placeholder="0.0"

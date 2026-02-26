@@ -10,7 +10,7 @@ export default function StyleCard({ style }) {
     <div className="style-card" onClick={() => navigate(`/styles/${style.id}`)}>
       <div className="style-card-image">
         {style.thumbnail_url ? (
-          <img src={style.thumbnail_url} alt={style.name} />
+          <img src={style.thumbnail_url} alt={style.name} loading="lazy" />
         ) : (
           <ImageOff size={32} />
         )}

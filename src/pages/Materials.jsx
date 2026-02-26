@@ -77,7 +77,7 @@ export default function Materials() {
           {filtered.map(m => (
             <div key={m.id} className="material-card">
               <div className="material-card-swatch">
-                {m.swatch_image_url ? <img src={m.swatch_image_url} alt={m.name} /> : <ImageOff size={32} />}
+                {m.swatch_image_url ? <img src={m.swatch_image_url} alt={m.name} loading="lazy" /> : <ImageOff size={32} />}
               </div>
               <div className="material-card-body">
                 <div className="material-card-code">{m.code || 'No code'}</div>
@@ -161,9 +161,9 @@ function MaterialFormModal({ suppliers, onClose, onSave }) {
           </div>
         </div>
         <div className="form-row-3">
-          <div className="form-group"><label>Unit Price ($)</label><input type="number" step="0.01" value={form.unit_price} onChange={e => setForm(p => ({ ...p, unit_price: e.target.value }))} /></div>
-          <div className="form-group"><label>MOQ</label><input type="number" value={form.moq} onChange={e => setForm(p => ({ ...p, moq: e.target.value }))} /></div>
-          <div className="form-group"><label>Lead Time (days)</label><input type="number" value={form.lead_time_days} onChange={e => setForm(p => ({ ...p, lead_time_days: e.target.value }))} /></div>
+          <div className="form-group"><label>Unit Price ($)</label><input type="number" step="0.01" min="0" value={form.unit_price} onChange={e => setForm(p => ({ ...p, unit_price: e.target.value }))} /></div>
+          <div className="form-group"><label>MOQ</label><input type="number" min="1" value={form.moq} onChange={e => setForm(p => ({ ...p, moq: e.target.value }))} /></div>
+          <div className="form-group"><label>Lead Time (days)</label><input type="number" min="1" value={form.lead_time_days} onChange={e => setForm(p => ({ ...p, lead_time_days: e.target.value }))} /></div>
         </div>
         <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} /></div>
         <div className="form-actions">

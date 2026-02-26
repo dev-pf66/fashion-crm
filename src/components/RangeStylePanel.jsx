@@ -255,7 +255,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                   {files.map(file => (
                     <div key={file.id} className={`rp-file-item ${style.thumbnail_url === file.file_url ? 'is-thumbnail' : ''}`}>
                       {isImage(file.file_type) ? (
-                        <img src={file.file_url} alt={file.file_name} />
+                        <img src={file.file_url} alt={file.file_name} loading="lazy" />
                       ) : (
                         <div className="rp-file-placeholder">
                           <FileText size={28} />

@@ -249,8 +249,8 @@ function SupplierFormModal({ onClose, onSave }) {
           <div className="form-group"><label>Contact Phone</label><input type="text" value={form.contact_phone} onChange={e => setForm(p => ({ ...p, contact_phone: e.target.value }))} /></div>
         </div>
         <div className="form-row-3">
-          <div className="form-group"><label>MOQ</label><input type="number" value={form.minimum_order_qty} onChange={e => setForm(p => ({ ...p, minimum_order_qty: e.target.value }))} /></div>
-          <div className="form-group"><label>Lead Time (days)</label><input type="number" value={form.lead_time_days} onChange={e => setForm(p => ({ ...p, lead_time_days: e.target.value }))} /></div>
+          <div className="form-group"><label>MOQ</label><input type="number" min="1" value={form.minimum_order_qty} onChange={e => setForm(p => ({ ...p, minimum_order_qty: e.target.value }))} /></div>
+          <div className="form-group"><label>Lead Time (days)</label><input type="number" min="1" value={form.lead_time_days} onChange={e => setForm(p => ({ ...p, lead_time_days: e.target.value }))} /></div>
           <div className="form-group"><label>Payment Terms</label><input type="text" value={form.payment_terms} onChange={e => setForm(p => ({ ...p, payment_terms: e.target.value }))} placeholder="e.g. Net 30" /></div>
         </div>
         <div className="form-group">

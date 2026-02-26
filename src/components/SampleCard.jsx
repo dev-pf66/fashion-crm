@@ -17,7 +17,7 @@ export default function SampleCard({ sample, onClick }) {
       <div className="sample-card-header">
         <div className="sample-card-thumbnail">
           {sample.styles?.thumbnail_url
-            ? <img src={sample.styles.thumbnail_url} alt="" />
+            ? <img src={sample.styles.thumbnail_url} alt="" loading="lazy" />
             : <ImageOff size={16} />
           }
         </div>

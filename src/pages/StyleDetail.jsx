@@ -78,7 +78,7 @@ export default function StyleDetail() {
 
       <div className="style-header">
         <div className="style-header-image">
-          {style.thumbnail_url ? <img src={style.thumbnail_url} alt={style.name} /> : <ImageOff size={48} />}
+          {style.thumbnail_url ? <img src={style.thumbnail_url} alt={style.name} loading="lazy" /> : <ImageOff size={48} />}
         </div>
         <div className="style-header-info">
           <div className="style-header-top">

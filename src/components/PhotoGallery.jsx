@@ -30,6 +30,7 @@ export default function PhotoGallery({ photos = [], sampleId, onPhotosChange, re
   }
 
   function handleDelete(index) {
+    if (!confirm('Remove this photo?')) return
     const updated = photos.filter((_, i) => i !== index)
     onPhotosChange?.(updated)
   }
@@ -55,7 +56,7 @@ export default function PhotoGallery({ photos = [], sampleId, onPhotosChange, re
       <div className="photo-gallery-grid">
         {photos.map((url, i) => (
           <div key={i} className="photo-gallery-item" onClick={() => openLightbox(i)}>
-            <img src={url} alt={`Sample photo ${i + 1}`} />
+            <img src={url} alt={`Sample photo ${i + 1}`} loading="lazy" />
             {!readOnly && (
               <button
                 className="photo-gallery-delete"

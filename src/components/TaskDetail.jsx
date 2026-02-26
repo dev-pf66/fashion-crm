@@ -87,6 +87,7 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
   }
 
   async function handleDeleteSubtask(subId) {
+    if (!confirm('Delete this subtask?')) return
     try {
       await deleteTaskSubtask(subId)
       setSubtasks(prev => prev.filter(s => s.id !== subId))

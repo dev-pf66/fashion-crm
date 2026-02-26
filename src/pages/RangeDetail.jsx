@@ -598,7 +598,7 @@ export default function RangeDetail() {
                                           <div className="rp-card-thumb" {...provided.dragHandleProps}>
                                             {style.thumbnail_url ? (
                                               <>
-                                                <img src={style.thumbnail_url} alt={style.name} />
+                                                <img src={style.thumbnail_url} alt={style.name} loading="lazy" />
                                                 <button className="rp-thumb-zoom" onClick={(e) => openLightbox(style, e)} title="View full image">
                                                   <Maximize2 size={12} />
                                                 </button>
@@ -780,7 +780,7 @@ function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, o
       <div className="rp-card-thumb">
         {style.thumbnail_url ? (
           <>
-            <img src={style.thumbnail_url} alt={style.name} />
+            <img src={style.thumbnail_url} alt={style.name} loading="lazy" />
             <button className="rp-thumb-zoom" onClick={(e) => onOpenLightbox(style, e)} title="View full image">
               <Maximize2 size={12} />
             </button>

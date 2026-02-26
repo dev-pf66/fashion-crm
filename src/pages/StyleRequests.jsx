@@ -501,15 +501,15 @@ function StyleRequestForm({ seasonId, personId, onClose, onSave }) {
             <div className="form-row-3">
               <div className="form-group">
                 <label>Target Retail Price</label>
-                <input type="number" step="0.01" value={form.target_price} onChange={e => updateField('target_price', e.target.value)} placeholder="$0.00" />
+                <input type="number" step="0.01" min="0" value={form.target_price} onChange={e => updateField('target_price', e.target.value)} placeholder="$0.00" />
               </div>
               <div className="form-group">
                 <label>Target FOB</label>
-                <input type="number" step="0.01" value={form.target_fob} onChange={e => updateField('target_fob', e.target.value)} placeholder="$0.00" />
+                <input type="number" step="0.01" min="0" value={form.target_fob} onChange={e => updateField('target_fob', e.target.value)} placeholder="$0.00" />
               </div>
               <div className="form-group">
                 <label>Target Quantity</label>
-                <input type="number" value={form.target_quantity} onChange={e => updateField('target_quantity', e.target.value)} placeholder="e.g. 500" />
+                <input type="number" min="1" value={form.target_quantity} onChange={e => updateField('target_quantity', e.target.value)} placeholder="e.g. 500" />
               </div>
             </div>
             <div className="form-group">

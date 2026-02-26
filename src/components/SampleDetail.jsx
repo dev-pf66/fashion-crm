@@ -6,6 +6,7 @@ import MeasurementTable from './MeasurementTable'
 import PhotoGallery from './PhotoGallery'
 import SampleForm from './SampleForm'
 import CommentThread from './CommentThread'
+import { useToast } from '../contexts/ToastContext'
 import { X, Edit, CheckCircle, XCircle, RotateCcw } from 'lucide-react'
 
 export default function SampleDetail({ sampleId, onClose, onUpdate }) {
@@ -16,6 +17,7 @@ export default function SampleDetail({ sampleId, onClose, onUpdate }) {
   const [showEdit, setShowEdit] = useState(false)
   const [reviewNotes, setReviewNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  const toast = useToast()
 
   useEffect(() => {
     loadSample()
@@ -29,6 +31,7 @@ export default function SampleDetail({ sampleId, onClose, onUpdate }) {
       setReviewNotes(data.review_notes || '')
     } catch (err) {
       console.error('Failed to load sample:', err)
+      toast.error('Failed to load sample')
     } finally {
       setLoading(false)
     }
@@ -42,6 +45,7 @@ export default function SampleDetail({ sampleId, onClose, onUpdate }) {
       onUpdate?.()
     } catch (err) {
       console.error('Failed to save measurements:', err)
+      toast.error('Failed to save measurements')
     } finally {
       setSaving(false)
     }
@@ -54,6 +58,7 @@ export default function SampleDetail({ sampleId, onClose, onUpdate }) {
       onUpdate?.()
     } catch (err) {
       console.error('Failed to update photos:', err)
+      toast.error('Failed to update photos')
     }
   }
 
@@ -79,6 +84,7 @@ export default function SampleDetail({ sampleId, onClose, onUpdate }) {
       onUpdate?.()
     } catch (err) {
       console.error('Failed to review sample:', err)
+      toast.error('Failed to submit review')
     } finally {
       setSaving(false)
     }
