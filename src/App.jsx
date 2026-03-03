@@ -25,6 +25,7 @@ const StyleRequests = lazy(() => import('./pages/StyleRequests'))
 const RangePlanning = lazy(() => import('./pages/RangePlanning'))
 const RangeDetail = lazy(() => import('./pages/RangeDetail'))
 const Tasks = lazy(() => import('./pages/Tasks'))
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 
 export const AppContext = createContext()
@@ -134,6 +135,7 @@ function AppRoutes() {
             <Route path="tasks" element={<Tasks />} />
             <Route path="range-planning" element={<RangePlanning />} />
             <Route path="range-planning/:id" element={<RangeDetail />} />
+            <Route path="admin" element={<AdminDashboard />} />
             <Route path="activity" element={<Activity />} />
             <Route path="help" element={<Help />} />
             <Route path="settings" element={<Settings />} />

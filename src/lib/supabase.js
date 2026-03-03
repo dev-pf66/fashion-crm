@@ -1152,6 +1152,87 @@ export async function getTaskMetrics() {
 // OVERDUE ITEMS
 // ============================================================
 
+// ============================================================
+// ADMIN COMMAND CENTER
+// ============================================================
+
+export async function getRangeProgress() {
+  const { data, error } = await supabase
+    .from('ranges')
+    .select('id, name, status, range_styles(id, category, status, delivery_drop)')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data || []).map(range => {
+    const styles = range.range_styles || []
+    const byStatus = {}
+    const dropMap = {}
+    styles.forEach(s => {
+      byStatus[s.status] = (byStatus[s.status] || 0) + 1
+      if (s.delivery_drop) {
+        if (!dropMap[s.delivery_drop]) dropMap[s.delivery_drop] = { name: s.delivery_drop, styles: [] }
+        dropMap[s.delivery_drop].styles.push(s)
+      }
+    })
+    const totalStyles = styles.length
+    const approved = byStatus.approved || 0
+    return {
+      id: range.id,
+      name: range.name,
+      status: range.status,
+      totalStyles,
+      byStatus,
+      approvedPct: totalStyles > 0 ? Math.round((approved / totalStyles) * 100) : 0,
+      deliveryDrops: Object.values(dropMap),
+    }
+  })
+}
+
+export async function getTeamTaskWorkload() {
+  const today = new Date().toISOString().slice(0, 10)
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id, status, priority, due_date, assigned_to, people:assigned_to(id, name)')
+    .neq('status', 'done')
+  if (error) throw error
+  const byPerson = {}
+  ;(data || []).forEach(t => {
+    const pid = t.assigned_to
+    if (!pid) return
+    if (!byPerson[pid]) {
+      byPerson[pid] = {
+        id: pid,
+        name: t.people?.name || 'Unknown',
+        total: 0,
+        overdue: 0,
+        highPriority: 0,
+        inProgress: 0,
+        todo: 0,
+        review: 0,
+      }
+    }
+    const p = byPerson[pid]
+    p.total++
+    if (t.due_date && t.due_date < today) p.overdue++
+    if (t.priority === 'high' || t.priority === 'urgent') p.highPriority++
+    if (t.status === 'in_progress') p.inProgress++
+    if (t.status === 'todo') p.todo++
+    if (t.status === 'review') p.review++
+  })
+  return Object.values(byPerson).sort((a, b) => b.total - a.total)
+}
+
+export async function getOverdueTasks() {
+  const today = new Date().toISOString().slice(0, 10)
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id, title, status, priority, due_date, people:assigned_to(id, name)')
+    .lt('due_date', today)
+    .neq('status', 'done')
+    .order('due_date')
+  if (error) throw error
+  return data || []
+}
+
 export async function getOverdueItems(seasonId) {
   const nowStr = new Date().toISOString().slice(0, 10)
 
