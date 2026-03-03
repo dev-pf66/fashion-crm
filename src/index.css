@@ -4535,6 +4535,86 @@ tr:hover .quick-view-btn {
   background: rgba(0,0,0,0.7);
 }
 
+/* Thumbnail Upload Button (on existing thumbnails) */
+.rp-thumb-upload-btn {
+  position: absolute;
+  top: 0.375rem;
+  left: 0.375rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+}
+
+.rp-card-thumb:hover .rp-thumb-upload-btn {
+  opacity: 1;
+}
+
+.rp-thumb-upload-btn:hover {
+  background: rgba(0,0,0,0.7);
+}
+
+/* Clickable placeholder for adding thumbnail */
+.rp-card-placeholder-upload {
+  cursor: pointer;
+  flex-direction: column;
+  gap: 2px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.rp-card-placeholder-upload:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.rp-upload-hint {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gray-400);
+}
+
+.rp-card-placeholder-upload:hover .rp-upload-hint {
+  color: var(--primary);
+}
+
+/* Table view: change thumbnail button */
+.rp-table-thumb-change {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+div:hover > .rp-table-thumb-change {
+  opacity: 1;
+}
+
+.rp-table-thumb-change:hover {
+  background: rgba(0,0,0,0.7);
+}
+
 /* Progress Bar */
 .rp-progress {
   background: white;

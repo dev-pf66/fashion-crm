@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useApp } from '../App'
@@ -6,7 +6,9 @@ import { useToast } from '../contexts/ToastContext'
 import {
   getRange, updateRange,
   getRangeStyles, createRangeStyle, updateRangeStyle, updateRangeStyleOrder,
+  createRangeStyleFile,
 } from '../lib/supabase'
+import { uploadRangeStyleFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES } from '../lib/constants'
 import Modal from '../components/Modal'
 import Breadcrumbs from '../components/Breadcrumbs'
@@ -75,6 +77,8 @@ export default function RangeDetail() {
   const [lightbox, setLightbox] = useState(null) // { url, styleId }
   const [showFilters, setShowFilters] = useState(false)
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches)
+  const thumbInputRef = useRef(null)
+  const [thumbUploadId, setThumbUploadId] = useState(null)
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)')
@@ -345,11 +349,42 @@ export default function RangeDetail() {
     }
   }
 
+  function triggerThumbUpload(styleId, e) {
+    e.stopPropagation()
+    setThumbUploadId(styleId)
+    thumbInputRef.current.value = ''
+    thumbInputRef.current.click()
+  }
+
+  async function handleThumbUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file || !thumbUploadId) return
+    const styleId = thumbUploadId
+    setThumbUploadId(null)
+    try {
+      const url = await uploadRangeStyleFile(id, styleId, file)
+      await createRangeStyleFile({ style_id: styleId, file_url: url, file_name: file.name, file_type: file.type })
+      await updateRangeStyle(styleId, { thumbnail_url: url })
+      setStyles(prev => prev.map(s => s.id === styleId ? { ...s, thumbnail_url: url } : s))
+      toast.success('Thumbnail added')
+    } catch (err) {
+      console.error('Thumbnail upload failed:', err)
+      toast.error('Failed to upload thumbnail')
+    }
+  }
+
   if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
   if (!range) return <div className="card"><div className="empty-state"><h3>Range not found</h3></div></div>
 
   return (
     <div>
+      <input
+        ref={thumbInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleThumbUpload}
+      />
       <Breadcrumbs items={[
         { label: 'Range Planning', to: '/range-planning' },
         { label: range.name },
@@ -556,6 +591,7 @@ export default function RangeDetail() {
                     {group.styles.map(style => (
                       <StyleCard key={style.id} style={style} cardSize={cardSize} groupBy={groupBy}
                         onStatusChange={handleStatusChange} onOpenLightbox={openLightbox}
+                        onThumbUpload={triggerThumbUpload}
                         onClick={() => setPanelStyleId(style.id)} />
                     ))}
                   </div>
@@ -602,9 +638,15 @@ export default function RangeDetail() {
                                                 <button className="rp-thumb-zoom" onClick={(e) => openLightbox(style, e)} title="View full image">
                                                   <Maximize2 size={12} />
                                                 </button>
+                                                <button className="rp-thumb-upload-btn" onClick={(e) => triggerThumbUpload(style.id, e)} title="Change thumbnail">
+                                                  <ImageIcon size={12} />
+                                                </button>
                                               </>
                                             ) : (
-                                              <div className="rp-card-placeholder"><ImageIcon size={cardSize === 'sm' ? 16 : 24} /></div>
+                                              <div className="rp-card-placeholder rp-card-placeholder-upload" onClick={(e) => triggerThumbUpload(style.id, e)} title="Add thumbnail">
+                                                <ImageIcon size={cardSize === 'sm' ? 16 : 24} />
+                                                <span className="rp-upload-hint">+ Add</span>
+                                              </div>
                                             )}
                                           </div>
                                           <div className="rp-card-body">
@@ -654,6 +696,7 @@ export default function RangeDetail() {
           onInlineEdit={handleInlineEdit}
           onClickStyle={(id) => setPanelStyleId(id)}
           onOpenLightbox={(style) => setLightbox({ url: style.thumbnail_url, styleId: style.id, name: style.name })}
+          onThumbUpload={triggerThumbUpload}
         />
       )}
 
@@ -774,7 +817,7 @@ function RangeStatusDropdown({ status, onChange }) {
   )
 }
 
-function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, onClick }) {
+function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, onThumbUpload, onClick }) {
   return (
     <div className={`rp-card rp-card-${cardSize}`} onClick={onClick}>
       <div className="rp-card-thumb">
@@ -784,9 +827,15 @@ function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, o
             <button className="rp-thumb-zoom" onClick={(e) => onOpenLightbox(style, e)} title="View full image">
               <Maximize2 size={12} />
             </button>
+            <button className="rp-thumb-upload-btn" onClick={(e) => onThumbUpload(style.id, e)} title="Change thumbnail">
+              <ImageIcon size={12} />
+            </button>
           </>
         ) : (
-          <div className="rp-card-placeholder"><ImageIcon size={cardSize === 'sm' ? 16 : 24} /></div>
+          <div className="rp-card-placeholder rp-card-placeholder-upload" onClick={(e) => onThumbUpload(style.id, e)} title="Add thumbnail">
+            <ImageIcon size={cardSize === 'sm' ? 16 : 24} />
+            <span className="rp-upload-hint">+ Add</span>
+          </div>
         )}
       </div>
       <div className="rp-card-body">
@@ -826,7 +875,7 @@ function QuickAddInline({ groupKey, quickAddGroup, quickAddName, setQuickAddName
   )
 }
 
-function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyle, onOpenLightbox }) {
+function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyle, onOpenLightbox, onThumbUpload }) {
   const [editCell, setEditCell] = useState(null)
   const [editValue, setEditValue] = useState('')
   const [sortField, setSortField] = useState('name')
@@ -870,10 +919,11 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
           <div key={style.id} className="rp-mobile-card" onClick={() => onClickStyle(style.id)}>
             <div className="rp-mobile-card-left">
               {style.thumbnail_url ? (
-                <img src={style.thumbnail_url} alt="" className="rp-mobile-card-thumb" />
+                <img src={style.thumbnail_url} alt="" className="rp-mobile-card-thumb" onClick={(e) => { e.stopPropagation(); onThumbUpload(style.id, e) }} />
               ) : (
-                <div className="rp-mobile-card-thumb rp-mobile-card-thumb-empty">
+                <div className="rp-mobile-card-thumb rp-mobile-card-thumb-empty" onClick={(e) => { e.stopPropagation(); onThumbUpload(style.id, e) }} title="Add thumbnail">
                   <ImageIcon size={16} />
+                  <span style={{ fontSize: '0.5rem', color: 'var(--gray-400)' }}>+ Add</span>
                 </div>
               )}
             </div>
@@ -917,14 +967,27 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
             <tr key={style.id}>
               <td>
                 {style.thumbnail_url ? (
-                  <img
-                    src={style.thumbnail_url}
-                    alt=""
-                    style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
-                    onClick={() => onOpenLightbox(style)}
-                  />
+                  <div style={{ position: 'relative', width: 36, height: 36 }}>
+                    <img
+                      src={style.thumbnail_url}
+                      alt=""
+                      style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                      onClick={() => onOpenLightbox(style)}
+                    />
+                    <button
+                      className="rp-table-thumb-change"
+                      onClick={(e) => { e.stopPropagation(); onThumbUpload(style.id, e) }}
+                      title="Change thumbnail"
+                    >
+                      <ImageIcon size={10} />
+                    </button>
+                  </div>
                 ) : (
-                  <div style={{ width: 36, height: 36, background: 'var(--gray-100)', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div
+                    style={{ width: 36, height: 36, background: 'var(--gray-100)', borderRadius: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                    onClick={(e) => { e.stopPropagation(); onThumbUpload(style.id, e) }}
+                    title="Add thumbnail"
+                  >
                     <ImageIcon size={14} style={{ color: 'var(--gray-400)' }} />
                   </div>
                 )}
