@@ -876,7 +876,7 @@ export async function deleteRange(id) {
 export async function getRangeStyles(rangeId) {
   const { data, error } = await supabase
     .from('range_styles')
-    .select('*')
+    .select('*, suppliers:supplier_id(id, name)')
     .eq('range_id', rangeId)
     .order('sort_order')
   if (error) throw error
@@ -886,7 +886,7 @@ export async function getRangeStyles(rangeId) {
 export async function getRangeStyle(id) {
   const { data, error } = await supabase
     .from('range_styles')
-    .select('*, range_style_files(*)')
+    .select('*, range_style_files(*), suppliers:supplier_id(id, name)')
     .eq('id', id)
     .single()
   if (error) throw error

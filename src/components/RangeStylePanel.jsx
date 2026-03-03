@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
-import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile } from '../lib/supabase'
+import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers } from '../lib/supabase'
 import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES } from '../lib/constants'
 import CommentSection from './CommentSection'
@@ -23,6 +23,11 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [form, setForm] = useState({})
+  const [suppliers, setSuppliers] = useState([])
+
+  useEffect(() => {
+    getSuppliers().then(setSuppliers).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (styleId) loadStyle()
@@ -45,6 +50,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         sub_category: data.sub_category || '',
         colorways: (data.colorways || []).join(', '),
         delivery_drop: data.delivery_drop || '',
+        supplier_id: data.supplier_id || '',
         status: data.status || 'concept',
         notes: data.notes || '',
       })
@@ -75,6 +81,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         sub_category: form.sub_category.trim() || null,
         colorways,
         delivery_drop: form.delivery_drop.trim() || null,
+        supplier_id: form.supplier_id ? parseInt(form.supplier_id) : null,
         status: form.status,
         notes: form.notes.trim() || null,
       })
@@ -203,6 +210,14 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                 <label>Delivery Drop</label>
                 <input type="text" value={form.delivery_drop} onChange={e => updateField('delivery_drop', e.target.value)} placeholder="e.g. Drop 1, Main Delivery" />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label>Supplier</label>
+              <select value={form.supplier_id} onChange={e => updateField('supplier_id', e.target.value)}>
+                <option value="">No supplier</option>
+                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
             </div>
 
             <div className="form-group">

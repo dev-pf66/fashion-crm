@@ -16,7 +16,7 @@ import RangeStylePanel from '../components/RangeStylePanel'
 import {
   LayoutGrid, List, Plus, Search, Edit3, Filter,
   Image as ImageIcon, Lock, Play, GripVertical,
-  Maximize2, Minimize2, Square, X, ChevronLeft, ChevronRight,
+  Maximize2, Minimize2, Square, X, ChevronLeft, ChevronRight, Factory,
 } from 'lucide-react'
 
 const RANGE_STYLE_STATUSES = [
@@ -29,6 +29,7 @@ const RANGE_STYLE_STATUSES = [
 const GROUPINGS = [
   { value: 'category', label: 'Category' },
   { value: 'delivery_drop', label: 'Delivery Drop' },
+  { value: 'supplier', label: 'Supplier' },
   { value: 'status', label: 'Status' },
 ]
 
@@ -161,6 +162,7 @@ export default function RangeDetail() {
     filtered.forEach(s => {
       const key = groupBy === 'status' ? s.status :
                   groupBy === 'delivery_drop' ? (s.delivery_drop || 'Unassigned') :
+                  groupBy === 'supplier' ? (s.suppliers?.name || 'No Supplier') :
                   s.category || 'Unassigned'
       if (!grouped[key]) grouped[key] = []
       grouped[key].push(s)
@@ -259,6 +261,7 @@ export default function RangeDetail() {
       const fieldUpdates = {}
       if (groupBy === 'category') fieldUpdates.category = dstGroupKey === 'Unassigned' ? null : dstGroupKey
       else if (groupBy === 'delivery_drop') fieldUpdates.delivery_drop = dstGroupKey === 'Unassigned' ? null : dstGroupKey
+      else if (groupBy === 'supplier') { /* supplier drag between groups not supported */ return }
       else if (groupBy === 'status') fieldUpdates.status = dstGroupKey
 
       // Optimistic update
@@ -651,6 +654,9 @@ export default function RangeDetail() {
                                           </div>
                                           <div className="rp-card-body">
                                             <div className="rp-card-name">{style.name}</div>
+                                            {cardSize !== 'sm' && style.suppliers?.name && groupBy !== 'supplier' && (
+                                              <div className="rp-card-supplier"><Factory size={11} /> {style.suppliers.name}</div>
+                                            )}
                                             <div className="rp-card-tags">
                                               {groupBy !== 'category' && <span className="tag">{style.category}</span>}
                                               <StatusDropdown status={style.status} onChange={(s) => handleStatusChange(style.id, s)} />
@@ -840,6 +846,9 @@ function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, o
       </div>
       <div className="rp-card-body">
         <div className="rp-card-name">{style.name}</div>
+        {cardSize !== 'sm' && style.suppliers?.name && groupBy !== 'supplier' && (
+          <div className="rp-card-supplier"><Factory size={11} /> {style.suppliers.name}</div>
+        )}
         <div className="rp-card-tags">
           {groupBy !== 'category' && <span className="tag">{style.category}</span>}
           <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />
@@ -959,6 +968,7 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
             <th>Sub-Category</th>
             <th>Colorways</th>
             <th className="sortable" onClick={() => handleSort('delivery_drop')}>Drop <SortIcon field="delivery_drop" /></th>
+            <th>Supplier</th>
             <th className="sortable" onClick={() => handleSort('status')}>Status <SortIcon field="status" /></th>
           </tr>
         </thead>
@@ -1036,6 +1046,9 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
                 ) : (
                   <span className="rp-table-editable" onClick={() => startEdit(style.id, 'delivery_drop', style.delivery_drop)}>{style.delivery_drop || '—'}</span>
                 )}
+              </td>
+              <td style={{ fontSize: '0.8125rem', color: 'var(--gray-600)' }}>
+                {style.suppliers?.name || '—'}
               </td>
               <td>
                 <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />

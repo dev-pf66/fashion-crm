@@ -4473,6 +4473,22 @@ tr:hover .quick-view-btn {
   padding: 0.5rem;
 }
 
+.rp-card-supplier {
+  font-size: 0.6875rem;
+  color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rp-card-sm .rp-card-supplier {
+  display: none;
+}
+
 .rp-card-sm .rp-card-name {
   font-size: 0.6875rem;
   margin-bottom: 0.25rem;
