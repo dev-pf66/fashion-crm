@@ -5695,6 +5695,28 @@ div:hover > .rp-table-thumb-change {
   align-items: center;
 }
 
+.task-age-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: var(--gray-100);
+  color: var(--gray-500);
+}
+
+.task-age-badge.stale {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning);
+}
+
+.task-age-badge.old {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger);
+}
+
 .task-card-date {
   display: flex;
   align-items: center;

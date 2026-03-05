@@ -1233,6 +1233,39 @@ export async function getOverdueTasks() {
   return data || []
 }
 
+export async function getStaleTasks() {
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString()
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id, title, status, priority, created_at, people:assigned_to(id, name), creator:created_by(id, name)')
+    .eq('status', 'todo')
+    .lt('created_at', weekAgo)
+    .order('created_at')
+  if (error) throw error
+  return data || []
+}
+
+export async function flagStaleTasks(fromPersonId) {
+  const staleTasks = await getStaleTasks()
+  let created = 0
+  for (const task of staleTasks) {
+    const recipientId = task.people?.id || task.creator?.id
+    if (!recipientId) continue
+    const age = Math.floor((new Date() - new Date(task.created_at)) / 86400000)
+    await createNotification({
+      person_id: recipientId,
+      from_person_id: fromPersonId || null,
+      type: 'stale_task',
+      title: `Task not started for ${age} days`,
+      message: task.title,
+      link: '/tasks',
+      read: false,
+    })
+    created++
+  }
+  return created
+}
+
 export async function getOverdueItems(seasonId) {
   const nowStr = new Date().toISOString().slice(0, 10)
 

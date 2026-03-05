@@ -7,7 +7,7 @@ import Modal from './Modal'
 import StatusBadge from './StatusBadge'
 import CommentSection from './CommentSection'
 import TaskForm from './TaskForm'
-import { Pencil, Trash2, Calendar, User, Flag, Tag, Link2, Plus, X, CheckSquare } from 'lucide-react'
+import { Pencil, Trash2, Calendar, User, Flag, Tag, Link2, Plus, X, CheckSquare, Timer } from 'lucide-react'
 
 export default function TaskDetail({ taskId, onClose, onUpdate }) {
   const { currentPerson } = useApp()
@@ -113,6 +113,8 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
 
   const priority = task ? TASK_PRIORITIES.find(p => p.value === task.priority) : null
   const isOverdue = task?.due_date && new Date(task.due_date) < new Date() && task.status !== 'done'
+  const taskAge = task?.created_at ? Math.floor((new Date() - new Date(task.created_at)) / 86400000) : 0
+  const isStale = task?.status === 'todo' && taskAge >= 7
   const subtasksDone = subtasks.filter(s => s.completed).length
   const subtasksTotal = subtasks.length
   const subtaskPercent = subtasksTotal > 0 ? Math.round((subtasksDone / subtasksTotal) * 100) : 0
@@ -192,6 +194,36 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
               <div style={{ fontSize: '0.875rem' }}>{task.creator?.name || 'Unknown'}</div>
             </div>
           </div>
+
+          {task.status !== 'done' && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 0.75rem',
+              borderRadius: 'var(--radius)',
+              background: isStale ? 'rgba(245, 158, 11, 0.08)' : 'var(--gray-50)',
+              border: isStale ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid var(--gray-100)',
+              marginBottom: '1.5rem',
+              fontSize: '0.8125rem',
+            }}>
+              <Timer size={14} style={{ color: isStale ? 'var(--warning)' : 'var(--gray-500)' }} />
+              <span>Task created <strong>{taskAge} day{taskAge !== 1 ? 's' : ''} ago</strong></span>
+              {isStale && (
+                <span style={{
+                  marginLeft: 'auto',
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  fontSize: '0.6875rem',
+                  fontWeight: 600,
+                  background: 'var(--warning)',
+                  color: '#fff',
+                }}>
+                  Not started
+                </span>
+              )}
+            </div>
+          )}
 
           {linkedEntities.length > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>

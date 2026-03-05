@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Clock, User, Link2, CheckSquare } from 'lucide-react'
+import { Clock, User, Link2, CheckSquare, Timer } from 'lucide-react'
 import { TASK_PRIORITIES, TASK_TAGS } from '../lib/constants'
 
 function getInitials(name) {
@@ -7,10 +7,17 @@ function getInitials(name) {
   return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
 }
 
+function daysAge(dateStr) {
+  if (!dateStr) return 0
+  return Math.floor((new Date() - new Date(dateStr)) / 86400000)
+}
+
 const TaskCard = memo(function TaskCard({ task, onClick, subtaskCount }) {
   const priority = TASK_PRIORITIES.find(p => p.value === task.priority) || TASK_PRIORITIES[1]
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done'
   const tags = (task.tags || []).slice(0, 3)
+  const age = daysAge(task.created_at)
+  const isStale = task.status === 'todo' && age >= 7
 
   const linkedEntity = task.styles
     ? `${task.styles.style_number}`
@@ -58,6 +65,12 @@ const TaskCard = memo(function TaskCard({ task, onClick, subtaskCount }) {
       )}
       <div className="task-card-footer">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {task.status !== 'done' && (
+            <span className={`task-age-badge ${isStale ? 'stale' : age >= 14 ? 'old' : ''}`} title={`Created ${age} day${age !== 1 ? 's' : ''} ago`}>
+              <Timer size={10} />
+              {age}d
+            </span>
+          )}
           {task.due_date ? (
             <span className={`task-card-date ${isOverdue ? 'overdue' : ''}`}>
               <Clock size={12} />

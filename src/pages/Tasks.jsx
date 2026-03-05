@@ -8,7 +8,7 @@ import TaskForm from '../components/TaskForm'
 import TaskDetail from '../components/TaskDetail'
 import StatusBadge from '../components/StatusBadge'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
-import { Plus, CheckSquare, LayoutGrid, List, X, Clock, User } from 'lucide-react'
+import { Plus, CheckSquare, LayoutGrid, List, X, Clock, User, Timer } from 'lucide-react'
 
 export default function Tasks() {
   const { people } = useApp()
@@ -280,6 +280,7 @@ export default function Tasks() {
                 <th>Title</th>
                 <th>Status</th>
                 <th>Priority</th>
+                <th>Age</th>
                 <th>Assignee</th>
                 <th>Due Date</th>
                 <th>Tags</th>
@@ -319,6 +320,18 @@ export default function Tasks() {
                           {priority.label}
                         </span>
                       )}
+                    </td>
+                    <td>
+                      {task.status !== 'done' && (() => {
+                        const age = Math.floor((new Date() - new Date(task.created_at)) / 86400000)
+                        const isStale = task.status === 'todo' && age >= 7
+                        return (
+                          <span className={`task-age-badge ${isStale ? 'stale' : age >= 14 ? 'old' : ''}`}>
+                            <Timer size={10} />
+                            {age}d
+                          </span>
+                        )
+                      })()}
                     </td>
                     <td>
                       {task.people ? (

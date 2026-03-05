@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
-import { getRangeProgress, getTeamTaskWorkload, getOverdueTasks, getTaskMetrics, getTasks } from '../lib/supabase'
+import { getRangeProgress, getTeamTaskWorkload, getOverdueTasks, getStaleTasks, flagStaleTasks, getTaskMetrics, getTasks } from '../lib/supabase'
+import { useApp } from '../App'
 import StatusBadge from '../components/StatusBadge'
 import {
   Shield, Layers, CheckSquare, AlertTriangle, Clock,
-  Users, BarChart3, Target, Truck, ArrowRight
+  Users, BarChart3, Target, Truck, ArrowRight, Timer, Bell
 } from 'lucide-react'
 
 const STATUS_COLORS = {
@@ -32,6 +33,7 @@ const TASK_STATUS_COLORS = {
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const toast = useToast()
+  const { currentPerson } = useApp()
   const [activeTab, setActiveTab] = useState('ranges')
   const [loading, setLoading] = useState(true)
 
@@ -42,6 +44,7 @@ export default function AdminDashboard() {
   const [taskMetrics, setTaskMetrics] = useState(null)
   const [workload, setWorkload] = useState([])
   const [overdueTasks, setOverdueTasks] = useState([])
+  const [staleTasks, setStaleTasks] = useState([])
   const [pipeline, setPipeline] = useState({ todo: 0, in_progress: 0, review: 0, done: 0 })
 
   useEffect(() => {
@@ -51,17 +54,19 @@ export default function AdminDashboard() {
   async function loadData() {
     setLoading(true)
     try {
-      const [ranges, metrics, team, overdue, allTasks] = await Promise.all([
+      const [ranges, metrics, team, overdue, stale, allTasks] = await Promise.all([
         getRangeProgress(),
         getTaskMetrics(),
         getTeamTaskWorkload(),
         getOverdueTasks(),
+        getStaleTasks(),
         getTasks(),
       ])
       setRangeData(ranges || [])
       setTaskMetrics(metrics)
       setWorkload(team || [])
       setOverdueTasks(overdue || [])
+      setStaleTasks(stale || [])
 
       // Compute pipeline from all tasks
       const p = { todo: 0, in_progress: 0, review: 0, done: 0 }
@@ -143,7 +148,10 @@ export default function AdminDashboard() {
           activeTasks={activeTasks}
           workload={workload}
           overdueTasks={overdueTasks}
+          staleTasks={staleTasks}
           pipeline={pipeline}
+          currentPerson={currentPerson}
+          toast={toast}
         />
       )}
     </div>
@@ -299,8 +307,22 @@ function RangeTab({ rangeData, totalRanges, totalStyles, overallApprovedPct, uni
 
 // ── Tasks Tab ───────────────────────────────────────────────
 
-function TaskTab({ metrics, activeTasks, workload, overdueTasks, pipeline }) {
+function TaskTab({ metrics, activeTasks, workload, overdueTasks, staleTasks, pipeline, currentPerson, toast }) {
+  const [flagging, setFlagging] = useState(false)
   const today = new Date().toISOString().slice(0, 10)
+
+  async function handleFlagStale() {
+    setFlagging(true)
+    try {
+      const count = await flagStaleTasks(currentPerson?.id)
+      toast.success(`Sent ${count} stale task notification${count !== 1 ? 's' : ''}`)
+    } catch (err) {
+      console.error('Failed to flag stale tasks:', err)
+      toast.error('Failed to send notifications')
+    } finally {
+      setFlagging(false)
+    }
+  }
   const pipelineTotal = Math.max(pipeline.todo + pipeline.in_progress + pipeline.review + pipeline.done, 1)
 
   return (
@@ -310,6 +332,15 @@ function TaskTab({ metrics, activeTasks, workload, overdueTasks, pipeline }) {
           <AlertTriangle size={16} />
           <span>
             <strong>{overdueTasks.length} overdue task{overdueTasks.length > 1 ? 's' : ''}</strong> require attention
+          </span>
+        </div>
+      )}
+
+      {staleTasks.length > 0 && (
+        <div className="alert-box" style={{ background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.3)', color: 'var(--warning)' }}>
+          <Timer size={16} />
+          <span>
+            <strong>{staleTasks.length} task{staleTasks.length > 1 ? 's' : ''} not started</strong> for 7+ days
           </span>
         </div>
       )}
@@ -332,6 +363,12 @@ function TaskTab({ metrics, activeTasks, workload, overdueTasks, pipeline }) {
         <div className="stat-card">
           <div className="stat-card-label">Due Today</div>
           <div className="stat-card-value">{metrics?.dueToday || 0}</div>
+        </div>
+        <div className={`stat-card ${staleTasks.length > 0 ? 'alert' : ''}`}>
+          <div className="stat-card-label">Stale (7d+)</div>
+          <div className="stat-card-value" style={{ color: staleTasks.length > 0 ? 'var(--warning)' : undefined }}>
+            {staleTasks.length}
+          </div>
         </div>
       </div>
 
@@ -404,6 +441,42 @@ function TaskTab({ metrics, activeTasks, workload, overdueTasks, pipeline }) {
                   </div>
                   <div className="admin-overdue-days">
                     {daysOverdue} day{daysOverdue !== 1 ? 's' : ''} overdue
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Stale Tasks */}
+      {staleTasks.length > 0 && (
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3><Timer size={16} style={{ marginRight: 6, verticalAlign: -2 }} /> Not Started (7+ days)</h3>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={handleFlagStale}
+              disabled={flagging}
+            >
+              <Bell size={14} /> {flagging ? 'Sending...' : 'Notify Assignees'}
+            </button>
+          </div>
+          <div className="admin-overdue-list">
+            {staleTasks.map(task => {
+              const age = Math.floor((new Date(today) - new Date(task.created_at)) / 86400000)
+              return (
+                <div key={task.id} className="admin-overdue-item">
+                  <div className="admin-overdue-info">
+                    <span className="admin-overdue-title">{task.title}</span>
+                    <span className="admin-overdue-meta">
+                      {task.people?.name || 'Unassigned'}
+                      {' · '}
+                      <span style={{ color: 'var(--warning)', fontWeight: 600 }}>todo</span>
+                    </span>
+                  </div>
+                  <div className="admin-overdue-days" style={{ color: 'var(--warning)' }}>
+                    {age} day{age !== 1 ? 's' : ''} idle
                   </div>
                 </div>
               )
