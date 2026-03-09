@@ -51,7 +51,7 @@ export default function Activity() {
       <div className="page-header">
         <div>
           <h1>Activity Log</h1>
-          <p className="subtitle">Track all changes across your season</p>
+          <p className="subtitle">Track all changes across your division</p>
         </div>
       </div>
 

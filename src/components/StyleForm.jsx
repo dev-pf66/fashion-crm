@@ -78,7 +78,7 @@ export default function StyleForm({ style, onClose, onSave }) {
     setSaving(true)
 
     if (!currentSeason?.id) {
-      setError('No season selected. Please select a season first.')
+      setError('No division selected. Please select a division first.')
       setSaving(false)
       return
     }

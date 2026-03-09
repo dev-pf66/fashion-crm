@@ -174,7 +174,7 @@ export default function Styles() {
           <div className="empty-state">
             <Scissors size={48} />
             <h3>No styles found</h3>
-            <p>{styles.length === 0 ? 'Create your first style for this season.' : 'Try adjusting your filters.'}</p>
+            <p>{styles.length === 0 ? 'Create your first style for this division.' : 'Try adjusting your filters.'}</p>
             {styles.length === 0 && (
               <button className="btn btn-primary" onClick={() => setShowForm(true)}>
                 <Plus size={16} /> Create Style
