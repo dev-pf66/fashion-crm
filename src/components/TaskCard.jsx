@@ -25,6 +25,8 @@ const TaskCard = memo(function TaskCard({ task, onClick, subtaskCount }) {
     ? task.suppliers.name
     : task.purchase_orders
     ? task.purchase_orders.po_number
+    : task.range_styles
+    ? task.range_styles.name
     : null
 
   return (

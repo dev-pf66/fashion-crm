@@ -107,8 +107,23 @@ export default function RangePlanning() {
                 </div>
                 <div className="rp-range-card-stats">
                   <span className="rp-stat-big">{styleCount}</span>
-                  <span className="text-sm text-muted">style{styleCount !== 1 ? 's' : ''}</span>
+                  <span className="text-sm text-muted">
+                    {range.target_styles ? `/ ${range.target_styles} pieces` : `style${styleCount !== 1 ? 's' : ''}`}
+                  </span>
                 </div>
+                {range.target_styles > 0 && (
+                  <div className="rp-range-completion">
+                    <div className="rp-range-completion-bar">
+                      <div
+                        className="rp-range-completion-fill"
+                        style={{ width: `${Math.min(100, Math.round((styleCount / range.target_styles) * 100))}%` }}
+                      />
+                    </div>
+                    <span className="rp-range-completion-pct">
+                      {Math.round((styleCount / range.target_styles) * 100)}%
+                    </span>
+                  </div>
+                )}
                 {styleCount > 0 && (
                   <div className="rp-range-card-breakdown">
                     {Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([cat, count]) => (
@@ -146,6 +161,7 @@ function NewRangeForm({ personId, onClose, onSave }) {
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState('')
   const [season, setSeason] = useState('')
+  const [targetStyles, setTargetStyles] = useState('')
   const [categories, setCategories] = useState([...STYLE_CATEGORIES])
   const [newCat, setNewCat] = useState('')
 
@@ -180,6 +196,7 @@ function NewRangeForm({ personId, onClose, onSave }) {
       const rangeData = {
         name: name.trim(),
         season: season.trim() || null,
+        target_styles: targetStyles ? parseInt(targetStyles) : 0,
         categories,
       }
       if (personId) rangeData.created_by = personId
@@ -205,6 +222,10 @@ function NewRangeForm({ personId, onClose, onSave }) {
           <div className="form-group">
             <label>Division</label>
             <input type="text" value={season} onChange={e => setSeason(e.target.value)} placeholder="e.g. Fashion, Home, Accessories" />
+          </div>
+          <div className="form-group">
+            <label>Target No. of Products</label>
+            <input type="number" min="0" value={targetStyles} onChange={e => setTargetStyles(e.target.value)} placeholder="e.g. 50" />
           </div>
         </div>
 

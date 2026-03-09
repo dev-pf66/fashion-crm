@@ -1013,7 +1013,7 @@ export async function markAllNotificationsRead(personId) {
 // TASKS
 // ============================================================
 
-const TASK_SELECT = '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number)'
+const TASK_SELECT = '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number), range_styles:range_style_id(id, name, range_id)'
 
 export async function getTasks(filters = {}) {
   let query = supabase

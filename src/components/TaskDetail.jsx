@@ -123,6 +123,7 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
   if (task?.styles) linkedEntities.push({ label: task.styles.style_number, type: 'Style', color: 'var(--info)' })
   if (task?.suppliers) linkedEntities.push({ label: task.suppliers.name, type: 'Supplier', color: 'var(--warning)' })
   if (task?.purchase_orders) linkedEntities.push({ label: task.purchase_orders.po_number, type: 'PO', color: 'var(--primary)' })
+  if (task?.range_styles) linkedEntities.push({ label: task.range_styles.name, type: 'Range Piece', color: '#818cf8' })
 
   return (
     <Modal title={loading ? 'Loading...' : task?.title || 'Task'} onClose={onClose} large>

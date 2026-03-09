@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useApp } from '../App'
 import { useSeason } from '../contexts/SeasonContext'
 import { useToast } from '../contexts/ToastContext'
-import { createTask, updateTask, createNotification, getStyles, getSuppliers, getPurchaseOrders } from '../lib/supabase'
+import { createTask, updateTask, createNotification, getStyles, getSuppliers, getPurchaseOrders, getRanges, getRangeStyles } from '../lib/supabase'
 import { TASK_STATUSES, TASK_PRIORITIES, TASK_TAGS } from '../lib/constants'
 import Modal from './Modal'
 
@@ -23,11 +23,14 @@ export default function TaskForm({ task, onClose, onSave }) {
     style_id: '',
     supplier_id: '',
     purchase_order_id: '',
+    range_style_id: '',
   })
   const [saving, setSaving] = useState(false)
   const [styles, setStyles] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [purchaseOrders, setPurchaseOrders] = useState([])
+  const [ranges, setRanges] = useState([])
+  const [rangePieces, setRangePieces] = useState([])
 
   useEffect(() => {
     if (task) {
@@ -42,6 +45,7 @@ export default function TaskForm({ task, onClose, onSave }) {
         style_id: task.style_id || '',
         supplier_id: task.supplier_id || '',
         purchase_order_id: task.purchase_order_id || '',
+        range_style_id: task.range_style_id || '',
       })
     }
   }, [task])
@@ -54,6 +58,7 @@ export default function TaskForm({ task, onClose, onSave }) {
     try {
       const promises = [
         getSuppliers(),
+        getRanges(),
       ]
       if (currentSeason) {
         promises.push(getStyles(currentSeason.id))
@@ -62,10 +67,16 @@ export default function TaskForm({ task, onClose, onSave }) {
         promises.push(Promise.resolve([]))
         promises.push(Promise.resolve([]))
       }
-      const [suppData, styleData, poData] = await Promise.all(promises)
+      const [suppData, rangesData, styleData, poData] = await Promise.all(promises)
       setSuppliers(suppData || [])
       setStyles(styleData || [])
       setPurchaseOrders(poData || [])
+      setRanges(rangesData || [])
+      // Flatten all range pieces
+      const pieces = (rangesData || []).flatMap(r =>
+        (r.range_styles || []).map(rs => ({ ...rs, rangeName: r.name }))
+      )
+      setRangePieces(pieces)
     } catch (err) {
       console.error('Failed to load entities:', err)
     }
@@ -97,6 +108,7 @@ export default function TaskForm({ task, onClose, onSave }) {
         style_id: form.style_id || null,
         supplier_id: form.supplier_id || null,
         purchase_order_id: form.purchase_order_id || null,
+        range_style_id: form.range_style_id || null,
       }
 
       if (isEdit) {
@@ -242,6 +254,15 @@ export default function TaskForm({ task, onClose, onSave }) {
               <option value="">No PO</option>
               {purchaseOrders.map(po => (
                 <option key={po.id} value={po.id}>{po.po_number}</option>
+              ))}
+            </select>
+            <select
+              value={form.range_style_id}
+              onChange={e => setForm(prev => ({ ...prev, range_style_id: e.target.value || '' }))}
+            >
+              <option value="">No Range Piece</option>
+              {rangePieces.map(rp => (
+                <option key={rp.id} value={rp.id}>{rp.rangeName} — {rp.name}</option>
               ))}
             </select>
           </div>

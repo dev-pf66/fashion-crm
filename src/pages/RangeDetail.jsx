@@ -415,8 +415,18 @@ export default function RangeDetail() {
         <div className="rp-summary-stats">
           <div className="rp-summary-stat">
             <span className="rp-stat-big">{stats.total}</span>
-            <span className="text-sm text-muted">Styles</span>
+            <span className="text-sm text-muted">
+              {range.target_styles ? `/ ${range.target_styles} Pieces` : 'Styles'}
+            </span>
           </div>
+          {range.target_styles > 0 && (
+            <div className="rp-summary-stat">
+              <span className="rp-stat-big" style={{ color: Math.round((stats.total / range.target_styles) * 100) >= 100 ? 'var(--success)' : 'var(--primary)' }}>
+                {Math.round((stats.total / range.target_styles) * 100)}%
+              </span>
+              <span className="text-sm text-muted">Complete</span>
+            </div>
+          )}
           {Object.entries(stats.byCategory).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([cat, count]) => (
             <div key={cat} className="rp-summary-stat">
               <span className="rp-stat-big">{count}</span>
@@ -1071,6 +1081,7 @@ function EditRangeModal({ range, onClose, onSave }) {
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState(range.name)
   const [season, setSeason] = useState(range.season || '')
+  const [targetStyles, setTargetStyles] = useState(range.target_styles || '')
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -1080,6 +1091,7 @@ function EditRangeModal({ range, onClose, onSave }) {
       const updated = await updateRange(range.id, {
         name: name.trim(),
         season: season.trim() || null,
+        target_styles: targetStyles ? parseInt(targetStyles) : 0,
       })
       toast.success('Range updated')
       onSave(updated)
@@ -1097,9 +1109,15 @@ function EditRangeModal({ range, onClose, onSave }) {
           <label>Range Name *</label>
           <input type="text" value={name} onChange={e => setName(e.target.value)} required autoFocus />
         </div>
-        <div className="form-group">
-          <label>Division</label>
-          <input type="text" value={season} onChange={e => setSeason(e.target.value)} placeholder="e.g. Fashion, Home, Accessories" />
+        <div className="form-row">
+          <div className="form-group">
+            <label>Division</label>
+            <input type="text" value={season} onChange={e => setSeason(e.target.value)} placeholder="e.g. Fashion, Home, Accessories" />
+          </div>
+          <div className="form-group">
+            <label>Target No. of Products</label>
+            <input type="number" min="0" value={targetStyles} onChange={e => setTargetStyles(e.target.value)} placeholder="e.g. 50" />
+          </div>
         </div>
         <div className="form-actions">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>

@@ -3903,6 +3903,36 @@ tr:hover .quick-view-btn {
   color: var(--gray-600);
 }
 
+.rp-range-completion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.rp-range-completion-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--gray-100);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.rp-range-completion-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.rp-range-completion-pct {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+  min-width: 2.5rem;
+  text-align: right;
+}
+
 .rp-range-card-footer {
   margin-top: 0.75rem;
   padding-top: 0.625rem;
