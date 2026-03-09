@@ -20,24 +20,24 @@ export default function Settings() {
       <div className="page-header">
         <div>
           <h1>Settings</h1>
-          <p className="subtitle">Manage seasons and app configuration</p>
+          <p className="subtitle">Manage divisions and app configuration</p>
         </div>
       </div>
 
       <div className="settings-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--gray-100)' }}>
-          <h3 style={{ margin: 0, padding: 0, border: 'none' }}>Seasons</h3>
+          <h3 style={{ margin: 0, padding: 0, border: 'none' }}>Divisions</h3>
           <button className="btn btn-primary btn-sm" onClick={() => { setEditSeason(null); setShowForm(true) }}>
-            <Plus size={14} /> New Season
+            <Plus size={14} /> New Division
           </button>
         </div>
 
         {seasons.length === 0 ? (
           <div className="empty-state">
             <Calendar size={48} />
-            <h3>No seasons</h3>
-            <p>Create your first season to start tracking styles.</p>
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Create Season</button>
+            <h3>No divisions</h3>
+            <p>Create your first division to start tracking styles.</p>
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Create Division</button>
           </div>
         ) : (
           <div className="seasons-list">
@@ -105,12 +105,12 @@ function SeasonForm({ season, onClose, onSave }) {
   }
 
   return (
-    <Modal title={isEdit ? 'Edit Season' : 'New Season'} onClose={onClose}>
+    <Modal title={isEdit ? 'Edit Division' : 'New Division'} onClose={onClose}>
       {error && <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: '0.75rem', borderRadius: 'var(--radius)', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
         <div className="form-row">
-          <div className="form-group"><label>Name *</label><input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Spring/Summer 2026" required /></div>
-          <div className="form-group"><label>Code *</label><input type="text" value={form.code} onChange={e => setForm(p => ({ ...p, code: e.target.value }))} placeholder="e.g. SS26" required /></div>
+          <div className="form-group"><label>Name *</label><input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Fashion, Home, Accessories" required /></div>
+          <div className="form-group"><label>Code *</label><input type="text" value={form.code} onChange={e => setForm(p => ({ ...p, code: e.target.value }))} placeholder="e.g. FASHION" required /></div>
         </div>
         <div className="form-row">
           <div className="form-group"><label>Start Date</label><input type="date" value={form.start_date} onChange={e => setForm(p => ({ ...p, start_date: e.target.value }))} /></div>
@@ -119,12 +119,12 @@ function SeasonForm({ season, onClose, onSave }) {
         <div className="form-group">
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input type="checkbox" checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))} style={{ width: 'auto' }} />
-            Active Season
+            Active Division
           </label>
         </div>
         <div className="form-actions">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Season'}</button>
+          <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Division'}</button>
         </div>
       </form>
     </Modal>

@@ -1098,8 +1098,8 @@ function EditRangeModal({ range, onClose, onSave }) {
           <input type="text" value={name} onChange={e => setName(e.target.value)} required autoFocus />
         </div>
         <div className="form-group">
-          <label>Season</label>
-          <input type="text" value={season} onChange={e => setSeason(e.target.value)} placeholder="e.g. SS26, AW26" />
+          <label>Division</label>
+          <input type="text" value={season} onChange={e => setSeason(e.target.value)} placeholder="e.g. Fashion, Home, Accessories" />
         </div>
         <div className="form-actions">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>

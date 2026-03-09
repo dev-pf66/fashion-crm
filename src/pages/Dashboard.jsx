@@ -65,7 +65,7 @@ export default function Dashboard() {
       <div className="page-header">
         <div>
           <h1>Dashboard</h1>
-          <p className="subtitle">{currentSeason?.name || 'No season selected'}</p>
+          <p className="subtitle">{currentSeason?.name || 'No division selected'}</p>
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export default function Dashboard() {
         <div className="stat-card" onClick={() => navigate('/styles')} style={{ cursor: 'pointer' }}>
           <div className="stat-label">Total Styles</div>
           <div className="stat-value">{stats?.totalStyles || 0}</div>
-          <div className="stat-sub">This season</div>
+          <div className="stat-sub">This division</div>
         </div>
         <div className="stat-card" onClick={() => navigate('/styles')} style={{ cursor: 'pointer' }}>
           <div className="stat-label">In Development</div>

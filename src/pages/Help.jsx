@@ -42,7 +42,7 @@ export default function Help() {
           <p><strong>Sourcing CRM</strong> helps fashion teams manage the entire product development lifecycle: styles, suppliers, materials, samples, and purchase orders.</p>
           <h4>First Steps</h4>
           <ol>
-            <li><strong>Select a Season</strong> &mdash; Use the season selector in the sidebar to pick your active season.</li>
+            <li><strong>Select a Division</strong> &mdash; Use the division selector in the sidebar to pick your active division (e.g. Fashion, Home, Accessories).</li>
             <li><strong>Add Suppliers</strong> &mdash; Go to Suppliers and add your factory partners.</li>
             <li><strong>Create Styles</strong> &mdash; Build out your line with style numbers, categories, and supplier assignments.</li>
             <li><strong>Track Samples</strong> &mdash; Log sample rounds (Proto, Fit, PP, TOP) and track their status.</li>
@@ -51,7 +51,7 @@ export default function Help() {
         </Section>
 
         <Section id="dashboard" title="Dashboard">
-          <p>The Dashboard gives you a real-time overview of your season:</p>
+          <p>The Dashboard gives you a real-time overview of your division:</p>
           <ul>
             <li><strong>Stat Cards</strong> &mdash; Total styles, in-development count, samples awaiting review, open POs.</li>
             <li><strong>Status Charts</strong> &mdash; Visual breakdown of styles by status and samples by round.</li>
@@ -120,7 +120,7 @@ export default function Help() {
         </Section>
 
         <Section id="activity" title="Activity Log">
-          <p>The Activity Log tracks all changes across your season:</p>
+          <p>The Activity Log tracks all changes across your division:</p>
           <ul>
             <li>See who created, updated, or deleted items.</li>
             <li>Filter by entity type (style, supplier, sample, etc.) or by person.</li>
@@ -144,11 +144,11 @@ export default function Help() {
         </Section>
 
         <Section id="faq" title="Frequently Asked Questions">
-          <FAQ q="How do I switch seasons?" a="Use the season dropdown at the top of the sidebar. All data is filtered by the selected season." />
+          <FAQ q="How do I switch divisions?" a="Use the division dropdown at the top of the sidebar. All data is filtered by the selected division." />
           <FAQ q="Can I delete a style?" a="Yes. Open the style detail page and use the delete option. This will also remove associated BOM items." />
           <FAQ q="How are PO totals calculated?" a="Totals are automatically calculated from line items: quantity x unit price for each line, summed for the PO total." />
           <FAQ q="How do I export data?" a="Click the Export button on the Styles, Suppliers, or Samples page. It downloads a CSV of the currently filtered view." />
-          <FAQ q="Who can see activity logs?" a="All team members can view the activity log for the current season." />
+          <FAQ q="Who can see activity logs?" a="All team members can view the activity log for the current division." />
         </Section>
       </div>
     </div>
