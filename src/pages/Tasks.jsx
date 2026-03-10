@@ -35,18 +35,19 @@ export default function Tasks() {
   async function loadTasks() {
     setLoading(true)
     try {
-      const [data, counts] = await Promise.all([
-        getTasks(),
-        getTaskSubtaskCounts(),
-      ])
+      const data = await getTasks()
       setTasks(data || [])
+    } catch (err) {
+      console.error('Failed to load tasks:', err?.message || err?.code || err?.details || JSON.stringify(err))
+      toast.error('Failed to load tasks')
+    }
+    try {
+      const counts = await getTaskSubtaskCounts()
       setSubtaskCounts(counts || {})
     } catch (err) {
-      console.error('Failed to load tasks:', err)
-      toast.error('Failed to load tasks')
-    } finally {
-      setLoading(false)
+      console.error('Failed to load subtask counts:', err?.message || err?.code || err?.details || JSON.stringify(err))
     }
+    setLoading(false)
   }
 
   const hasActiveFilters = filters.search || filters.assigned_to || filters.priority || filters.status || filters.tag

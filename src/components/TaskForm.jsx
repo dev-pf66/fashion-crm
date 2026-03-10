@@ -55,24 +55,30 @@ export default function TaskForm({ task, onClose, onSave }) {
 
   async function loadEntities() {
     try {
-      const promises = [
-        getSuppliers(),
-        getRanges(),
-      ]
-      if (currentSeason) {
-        promises.push(getStyles(currentSeason.id))
-        promises.push(getPurchaseOrders(currentSeason.id))
-      } else {
-        promises.push(Promise.resolve([]))
-        promises.push(Promise.resolve([]))
-      }
-      const [suppData, rangesData, styleData, poData] = await Promise.all(promises)
+      const suppData = await getSuppliers()
       setSuppliers(suppData || [])
-      setStyles(styleData || [])
-      setPurchaseOrders(poData || [])
+    } catch (err) {
+      console.error('Failed to load suppliers:', err)
+    }
+    try {
+      const rangesData = await getRanges()
       setRanges(rangesData || [])
     } catch (err) {
-      console.error('Failed to load entities:', err)
+      console.error('Failed to load ranges:', err)
+    }
+    if (currentSeason) {
+      try {
+        const styleData = await getStyles(currentSeason.id)
+        setStyles(styleData || [])
+      } catch (err) {
+        console.error('Failed to load styles:', err)
+      }
+      try {
+        const poData = await getPurchaseOrders(currentSeason.id)
+        setPurchaseOrders(poData || [])
+      } catch (err) {
+        console.error('Failed to load purchase orders:', err)
+      }
     }
   }
 
