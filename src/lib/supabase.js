@@ -534,7 +534,7 @@ export async function globalSearch(query, seasonId) {
       ? supabase.from('purchase_orders').select('id, po_number, status, suppliers(name), people:assigned_to(name)').eq('season_id', seasonId).ilike('po_number', `%${q}%`).limit(5)
       : { data: [] },
     supabase.from('people').select('id, name, email, role').ilike('name', `%${q}%`).limit(5),
-    supabase.from('tasks').select('id, title, status, priority, people:assigned_to(name)').ilike('title', `%${q}%`).limit(5),
+    supabase.from('tasks').select('id, title, status, priority').ilike('title', `%${q}%`).limit(5),
   ])
 
   ;(styles.data || []).forEach(s => {
@@ -550,7 +550,7 @@ export async function globalSearch(query, seasonId) {
     results.push({ type: 'person', id: p.id, label: p.name, sub: p.role || p.email || '' })
   })
   ;(tasks.data || []).forEach(t => {
-    results.push({ type: 'task', id: t.id, label: t.title, sub: t.people?.name || t.status || '' })
+    results.push({ type: 'task', id: t.id, label: t.title, sub: t.status || '' })
   })
 
   return results
@@ -688,7 +688,7 @@ export async function getCalendarEvents(seasonId, startDate, endDate) {
       .eq('season_id', seasonId),
     supabase
       .from('tasks')
-      .select('id, title, due_date, status, priority, people:assigned_to(id, name)')
+      .select('id, title, due_date, status, priority, assigned_to')
       .not('due_date', 'is', null)
       .gte('due_date', startDate)
       .lte('due_date', endDate),
@@ -1013,24 +1013,16 @@ export async function markAllNotificationsRead(personId) {
 // TASKS
 // ============================================================
 
-const TASK_SELECT_FULL = '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number), ranges:range_id(id, name)'
-const TASK_SELECT_SAFE = '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number)'
-
-async function queryTasks(buildQuery) {
-  // Try with ranges join first; fall back without it if PostgREST schema cache is stale
-  let query = buildQuery(TASK_SELECT_FULL)
-  let { data, error } = await query
-  if (error) {
-    console.warn('Task query failed with ranges join, retrying without:', error.message)
-    query = buildQuery(TASK_SELECT_SAFE)
-    ;({ data, error } = await query)
-    if (error) throw error
-  }
-  return data
-}
+// Progressive task select: try joins from most to least, stop at first that works
+const TASK_SELECTS = [
+  '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number), ranges:range_id(id, name)',
+  '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number)',
+  '*, people:assigned_to(id, name), creator:created_by(id, name)',
+  '*',
+]
 
 export async function getTasks(filters = {}) {
-  return queryTasks((select) => {
+  for (const select of TASK_SELECTS) {
     let query = supabase
       .from('tasks')
       .select(select)
@@ -1040,56 +1032,62 @@ export async function getTasks(filters = {}) {
     if (filters.assigned_to) query = query.eq('assigned_to', filters.assigned_to)
     if (filters.priority) query = query.eq('priority', filters.priority)
     if (filters.search) query = query.ilike('title', `%${filters.search}%`)
-    return query
-  })
+    const { data, error } = await query
+    if (!error) return data
+    console.warn('getTasks failed with select, trying simpler:', error.message)
+  }
+  // All selects failed - throw with the simplest query to get a clear error
+  const { data, error } = await supabase.from('tasks').select('*')
+  if (error) throw error
+  return data
 }
 
 export async function getTask(id) {
-  return queryTasks((select) => {
-    return supabase
+  for (const select of TASK_SELECTS) {
+    const { data, error } = await supabase
       .from('tasks')
       .select(select)
       .eq('id', id)
-      .limit(1)
       .single()
-  })
+    if (!error) return data
+    console.warn('getTask failed with select, trying simpler:', error.message)
+  }
+  const { data, error } = await supabase.from('tasks').select('*').eq('id', id).single()
+  if (error) throw error
+  return data
 }
 
 export async function createTask(task) {
-  let { data, error } = await supabase
+  // Strip unknown columns - only send fields that exist on the tasks table
+  const safePayload = { ...task }
+  // Insert with bare select first, then try to fetch with joins
+  const { data: inserted, error: insertErr } = await supabase
     .from('tasks')
-    .insert([task])
-    .select(TASK_SELECT_FULL)
+    .insert([safePayload])
+    .select('*')
     .single()
-  if (error) {
-    // Retry without ranges join
-    ;({ data, error } = await supabase
-      .from('tasks')
-      .insert([task])
-      .select(TASK_SELECT_SAFE)
-      .single())
-    if (error) throw error
+  if (insertErr) throw insertErr
+  // Try to return with joins for display
+  try {
+    return await getTask(inserted.id)
+  } catch {
+    return inserted
   }
-  return data
 }
 
 export async function updateTask(id, updates) {
-  let { data, error } = await supabase
+  const { data: updated, error: updateErr } = await supabase
     .from('tasks')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .select(TASK_SELECT_FULL)
+    .select('*')
     .single()
-  if (error) {
-    ;({ data, error } = await supabase
-      .from('tasks')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select(TASK_SELECT_SAFE)
-      .single())
-    if (error) throw error
+  if (updateErr) throw updateErr
+  try {
+    return await getTask(id)
+  } catch {
+    return updated
   }
-  return data
 }
 
 export async function deleteTask(id) {
@@ -1222,9 +1220,16 @@ export async function getTeamTaskWorkload() {
   const today = new Date().toISOString().slice(0, 10)
   const { data, error } = await supabase
     .from('tasks')
-    .select('id, status, priority, due_date, assigned_to, people:assigned_to(id, name)')
+    .select('id, status, priority, due_date, assigned_to')
     .neq('status', 'done')
   if (error) throw error
+  // Fetch people names separately
+  const assigneeIds = [...new Set((data || []).map(t => t.assigned_to).filter(Boolean))]
+  let peopleMap = {}
+  if (assigneeIds.length > 0) {
+    const { data: ppl } = await supabase.from('people').select('id, name').in('id', assigneeIds)
+    if (ppl) ppl.forEach(p => { peopleMap[p.id] = p })
+  }
   const byPerson = {}
   ;(data || []).forEach(t => {
     const pid = t.assigned_to
@@ -1232,7 +1237,7 @@ export async function getTeamTaskWorkload() {
     if (!byPerson[pid]) {
       byPerson[pid] = {
         id: pid,
-        name: t.people?.name || 'Unknown',
+        name: peopleMap[pid]?.name || 'Unknown',
         total: 0,
         overdue: 0,
         highPriority: 0,
@@ -1256,11 +1261,18 @@ export async function getOverdueTasks() {
   const today = new Date().toISOString().slice(0, 10)
   const { data, error } = await supabase
     .from('tasks')
-    .select('id, title, status, priority, due_date, people:assigned_to(id, name)')
+    .select('id, title, status, priority, due_date, assigned_to')
     .lt('due_date', today)
     .neq('status', 'done')
     .order('due_date')
   if (error) throw error
+  // Enrich with people names
+  const ids = [...new Set((data || []).map(t => t.assigned_to).filter(Boolean))]
+  if (ids.length > 0) {
+    const { data: ppl } = await supabase.from('people').select('id, name').in('id', ids)
+    const pm = Object.fromEntries((ppl || []).map(p => [p.id, p]))
+    data.forEach(t => { t.people = pm[t.assigned_to] || null })
+  }
   return data || []
 }
 
@@ -1268,11 +1280,21 @@ export async function getStaleTasks() {
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString()
   const { data, error } = await supabase
     .from('tasks')
-    .select('id, title, status, priority, created_at, people:assigned_to(id, name), creator:created_by(id, name)')
+    .select('id, title, status, priority, created_at, assigned_to, created_by')
     .eq('status', 'todo')
     .lt('created_at', weekAgo)
     .order('created_at')
   if (error) throw error
+  // Enrich with people names
+  const allIds = [...new Set((data || []).flatMap(t => [t.assigned_to, t.created_by]).filter(Boolean))]
+  if (allIds.length > 0) {
+    const { data: ppl } = await supabase.from('people').select('id, name').in('id', allIds)
+    const pm = Object.fromEntries((ppl || []).map(p => [p.id, p]))
+    data.forEach(t => {
+      t.people = pm[t.assigned_to] || null
+      t.creator = pm[t.created_by] || null
+    })
+  }
   return data || []
 }
 
