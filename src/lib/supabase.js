@@ -1058,14 +1058,30 @@ export async function getTask(id) {
 }
 
 export async function createTask(task) {
-  // Strip unknown columns - only send fields that exist on the tasks table
-  const safePayload = { ...task }
-  // Insert with bare select first, then try to fetch with joins
-  const { data: inserted, error: insertErr } = await supabase
+  // Only include known task columns to avoid "column does not exist" errors
+  const KNOWN_COLS = ['title', 'description', 'status', 'priority', 'assigned_to', 'created_by', 'due_date', 'tags', 'sort_order', 'style_id', 'supplier_id', 'purchase_order_id', 'range_id']
+  const safePayload = {}
+  for (const key of KNOWN_COLS) {
+    if (key in task) safePayload[key] = task[key]
+  }
+  // Try insert, if a column doesn't exist strip it and retry
+  let { data: inserted, error: insertErr } = await supabase
     .from('tasks')
     .insert([safePayload])
     .select('*')
     .single()
+  if (insertErr && insertErr.message?.includes('column')) {
+    // Strip entity-link columns and retry with base columns only
+    const basePayload = {}
+    for (const key of ['title', 'description', 'status', 'priority', 'assigned_to', 'created_by', 'due_date', 'tags', 'sort_order']) {
+      if (key in task) basePayload[key] = task[key]
+    }
+    ;({ data: inserted, error: insertErr } = await supabase
+      .from('tasks')
+      .insert([basePayload])
+      .select('*')
+      .single())
+  }
   if (insertErr) throw insertErr
   // Try to return with joins for display
   try {
@@ -1076,12 +1092,29 @@ export async function createTask(task) {
 }
 
 export async function updateTask(id, updates) {
-  const { data: updated, error: updateErr } = await supabase
+  const KNOWN_COLS = ['title', 'description', 'status', 'priority', 'assigned_to', 'created_by', 'due_date', 'tags', 'sort_order', 'style_id', 'supplier_id', 'purchase_order_id', 'range_id', 'updated_at']
+  const safeUpdates = { updated_at: new Date().toISOString() }
+  for (const key of KNOWN_COLS) {
+    if (key in updates) safeUpdates[key] = updates[key]
+  }
+  let { data: updated, error: updateErr } = await supabase
     .from('tasks')
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update(safeUpdates)
     .eq('id', id)
     .select('*')
     .single()
+  if (updateErr && updateErr.message?.includes('column')) {
+    const baseUpdates = { updated_at: new Date().toISOString() }
+    for (const key of ['title', 'description', 'status', 'priority', 'assigned_to', 'created_by', 'due_date', 'tags', 'sort_order']) {
+      if (key in updates) baseUpdates[key] = updates[key]
+    }
+    ;({ data: updated, error: updateErr } = await supabase
+      .from('tasks')
+      .update(baseUpdates)
+      .eq('id', id)
+      .select('*')
+      .single())
+  }
   if (updateErr) throw updateErr
   try {
     return await getTask(id)
@@ -1147,7 +1180,10 @@ export async function getTaskSubtaskCounts() {
   const { data, error } = await supabase
     .from('task_subtasks')
     .select('task_id, completed')
-  if (error) throw error
+  if (error) {
+    console.warn('Failed to load subtask counts:', error.message)
+    return {}
+  }
   const counts = {}
   ;(data || []).forEach(s => {
     if (!counts[s.task_id]) counts[s.task_id] = { total: 0, done: 0 }

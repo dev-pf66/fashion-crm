@@ -16,6 +16,7 @@ export default function Tasks() {
   const [tasks, setTasks] = useState([])
   const [subtaskCounts, setSubtaskCounts] = useState({})
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState(null)
   const [view, setView] = useState('board')
@@ -34,11 +35,14 @@ export default function Tasks() {
 
   async function loadTasks() {
     setLoading(true)
+    setLoadError(null)
     try {
       const data = await getTasks()
       setTasks(data || [])
     } catch (err) {
-      console.error('Failed to load tasks:', err?.message || err?.code || err?.details || JSON.stringify(err))
+      const msg = err?.message || err?.code || err?.details || JSON.stringify(err)
+      console.error('Failed to load tasks:', msg)
+      setLoadError(msg)
       toast.error('Failed to load tasks')
     }
     try {
@@ -203,7 +207,15 @@ export default function Tasks() {
         )}
       </div>
 
-      {tasks.length === 0 ? (
+      {loadError && (
+        <div className="card" style={{ background: '#fef2f2', border: '1px solid #fecaca', marginBottom: '1rem', padding: '1rem' }}>
+          <div style={{ color: '#991b1b', fontWeight: 600, marginBottom: '0.25rem' }}>Failed to load tasks</div>
+          <div style={{ color: '#b91c1c', fontSize: '0.8125rem', fontFamily: 'monospace', wordBreak: 'break-all' }}>{loadError}</div>
+          <button className="btn btn-sm btn-secondary" style={{ marginTop: '0.5rem' }} onClick={loadTasks}>Retry</button>
+        </div>
+      )}
+
+      {tasks.length === 0 && !loadError ? (
         <div className="card">
           <div className="empty-state">
             <CheckSquare size={48} />
