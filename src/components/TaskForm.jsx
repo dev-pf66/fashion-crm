@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useApp } from '../App'
 import { useSeason } from '../contexts/SeasonContext'
 import { useToast } from '../contexts/ToastContext'
-import { createTask, updateTask, createNotification, getStyles, getSuppliers, getPurchaseOrders, getRanges, getRangeStyles } from '../lib/supabase'
+import { createTask, updateTask, createNotification, getStyles, getSuppliers, getPurchaseOrders, getRanges } from '../lib/supabase'
 import { TASK_STATUSES, TASK_PRIORITIES, TASK_TAGS } from '../lib/constants'
 import Modal from './Modal'
 
@@ -23,14 +23,13 @@ export default function TaskForm({ task, onClose, onSave }) {
     style_id: '',
     supplier_id: '',
     purchase_order_id: '',
-    range_style_id: '',
+    range_id: '',
   })
   const [saving, setSaving] = useState(false)
   const [styles, setStyles] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [purchaseOrders, setPurchaseOrders] = useState([])
   const [ranges, setRanges] = useState([])
-  const [rangePieces, setRangePieces] = useState([])
 
   useEffect(() => {
     if (task) {
@@ -45,7 +44,7 @@ export default function TaskForm({ task, onClose, onSave }) {
         style_id: task.style_id || '',
         supplier_id: task.supplier_id || '',
         purchase_order_id: task.purchase_order_id || '',
-        range_style_id: task.range_style_id || '',
+        range_id: task.range_id || '',
       })
     }
   }, [task])
@@ -72,11 +71,6 @@ export default function TaskForm({ task, onClose, onSave }) {
       setStyles(styleData || [])
       setPurchaseOrders(poData || [])
       setRanges(rangesData || [])
-      // Flatten all range pieces
-      const pieces = (rangesData || []).flatMap(r =>
-        (r.range_styles || []).map(rs => ({ ...rs, rangeName: r.name }))
-      )
-      setRangePieces(pieces)
     } catch (err) {
       console.error('Failed to load entities:', err)
     }
@@ -108,7 +102,7 @@ export default function TaskForm({ task, onClose, onSave }) {
         style_id: form.style_id || null,
         supplier_id: form.supplier_id || null,
         purchase_order_id: form.purchase_order_id || null,
-        range_style_id: form.range_style_id || null,
+        range_id: form.range_id || null,
       }
 
       if (isEdit) {
@@ -257,12 +251,12 @@ export default function TaskForm({ task, onClose, onSave }) {
               ))}
             </select>
             <select
-              value={form.range_style_id}
-              onChange={e => setForm(prev => ({ ...prev, range_style_id: e.target.value || '' }))}
+              value={form.range_id}
+              onChange={e => setForm(prev => ({ ...prev, range_id: e.target.value || '' }))}
             >
-              <option value="">No Range Piece</option>
-              {rangePieces.map(rp => (
-                <option key={rp.id} value={rp.id}>{rp.rangeName} — {rp.name}</option>
+              <option value="">No Range Plan</option>
+              {ranges.map(r => (
+                <option key={r.id} value={r.id}>{r.name}</option>
               ))}
             </select>
           </div>
