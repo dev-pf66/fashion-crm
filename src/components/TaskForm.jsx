@@ -23,7 +23,7 @@ export default function TaskForm({ task, onClose, onSave }) {
     style_id: '',
     supplier_id: '',
     purchase_order_id: '',
-    range_style_id: '',
+    range_id: '',
   })
   const [saving, setSaving] = useState(false)
   const [styles, setStyles] = useState([])
@@ -45,7 +45,7 @@ export default function TaskForm({ task, onClose, onSave }) {
         style_id: task.style_id || '',
         supplier_id: task.supplier_id || '',
         purchase_order_id: task.purchase_order_id || '',
-        range_style_id: task.range_style_id || '',
+        range_id: task.range_id || '',
       })
     }
   }, [task])
@@ -108,7 +108,7 @@ export default function TaskForm({ task, onClose, onSave }) {
         style_id: form.style_id || null,
         supplier_id: form.supplier_id || null,
         purchase_order_id: form.purchase_order_id || null,
-        range_style_id: form.range_style_id || null,
+        range_id: form.range_id || null,
       }
 
       if (isEdit) {
@@ -257,8 +257,8 @@ export default function TaskForm({ task, onClose, onSave }) {
               ))}
             </select>
             <select
-              value={form.range_style_id}
-              onChange={e => setForm(prev => ({ ...prev, range_style_id: e.target.value || '' }))}
+              value={form.range_id}
+              onChange={e => setForm(prev => ({ ...prev, range_id: e.target.value || '' }))}
             >
               <option value="">No Range Piece</option>
               {rangePieces.map(rp => (
