@@ -1013,51 +1013,82 @@ export async function markAllNotificationsRead(personId) {
 // TASKS
 // ============================================================
 
-const TASK_SELECT = 'id, title, description, status, priority, assigned_to, created_by, created_at, updated_at, due_date, tags, sort_order, style_id, supplier_id, purchase_order_id, range_id, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number), ranges:range_id(id, name)'
+const TASK_SELECT_FULL = '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number), ranges:range_id(id, name)'
+const TASK_SELECT_SAFE = '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number)'
+
+async function queryTasks(buildQuery) {
+  // Try with ranges join first; fall back without it if PostgREST schema cache is stale
+  let query = buildQuery(TASK_SELECT_FULL)
+  let { data, error } = await query
+  if (error) {
+    console.warn('Task query failed with ranges join, retrying without:', error.message)
+    query = buildQuery(TASK_SELECT_SAFE)
+    ;({ data, error } = await query)
+    if (error) throw error
+  }
+  return data
+}
 
 export async function getTasks(filters = {}) {
-  let query = supabase
-    .from('tasks')
-    .select(TASK_SELECT)
-    .order('sort_order')
-    .order('created_at', { ascending: false })
-  if (filters.status) query = query.eq('status', filters.status)
-  if (filters.assigned_to) query = query.eq('assigned_to', filters.assigned_to)
-  if (filters.priority) query = query.eq('priority', filters.priority)
-  if (filters.search) query = query.ilike('title', `%${filters.search}%`)
-  const { data, error } = await query
-  if (error) throw error
-  return data
+  return queryTasks((select) => {
+    let query = supabase
+      .from('tasks')
+      .select(select)
+      .order('sort_order')
+      .order('created_at', { ascending: false })
+    if (filters.status) query = query.eq('status', filters.status)
+    if (filters.assigned_to) query = query.eq('assigned_to', filters.assigned_to)
+    if (filters.priority) query = query.eq('priority', filters.priority)
+    if (filters.search) query = query.ilike('title', `%${filters.search}%`)
+    return query
+  })
 }
 
 export async function getTask(id) {
-  const { data, error } = await supabase
-    .from('tasks')
-    .select(TASK_SELECT)
-    .eq('id', id)
-    .single()
-  if (error) throw error
-  return data
+  return queryTasks((select) => {
+    return supabase
+      .from('tasks')
+      .select(select)
+      .eq('id', id)
+      .limit(1)
+      .single()
+  })
 }
 
 export async function createTask(task) {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('tasks')
     .insert([task])
-    .select(TASK_SELECT)
+    .select(TASK_SELECT_FULL)
     .single()
-  if (error) throw error
+  if (error) {
+    // Retry without ranges join
+    ;({ data, error } = await supabase
+      .from('tasks')
+      .insert([task])
+      .select(TASK_SELECT_SAFE)
+      .single())
+    if (error) throw error
+  }
   return data
 }
 
 export async function updateTask(id, updates) {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('tasks')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .select(TASK_SELECT)
+    .select(TASK_SELECT_FULL)
     .single()
-  if (error) throw error
+  if (error) {
+    ;({ data, error } = await supabase
+      .from('tasks')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select(TASK_SELECT_SAFE)
+      .single())
+    if (error) throw error
+  }
   return data
 }
 
