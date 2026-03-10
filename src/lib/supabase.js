@@ -534,7 +534,7 @@ export async function globalSearch(query, seasonId) {
       ? supabase.from('purchase_orders').select('id, po_number, status, suppliers(name), people:assigned_to(name)').eq('season_id', seasonId).ilike('po_number', `%${q}%`).limit(5)
       : { data: [] },
     supabase.from('people').select('id, name, email, role').ilike('name', `%${q}%`).limit(5),
-    supabase.from('tasks').select('id, title, status, priority, people:assigned_to(name)').ilike('title', `%${q}%`).limit(5),
+    supabase.from('tasks').select('id, title, status, priority').ilike('title', `%${q}%`).limit(5),
   ])
 
   ;(styles.data || []).forEach(s => {
@@ -550,7 +550,7 @@ export async function globalSearch(query, seasonId) {
     results.push({ type: 'person', id: p.id, label: p.name, sub: p.role || p.email || '' })
   })
   ;(tasks.data || []).forEach(t => {
-    results.push({ type: 'task', id: t.id, label: t.title, sub: t.people?.name || t.status || '' })
+    results.push({ type: 'task', id: t.id, label: t.title, sub: t.status || '' })
   })
 
   return results
@@ -688,7 +688,7 @@ export async function getCalendarEvents(seasonId, startDate, endDate) {
       .eq('season_id', seasonId),
     supabase
       .from('tasks')
-      .select('id, title, due_date, status, priority, people:assigned_to(id, name)')
+      .select('id, title, due_date, status, priority, assigned_to')
       .not('due_date', 'is', null)
       .gte('due_date', startDate)
       .lte('due_date', endDate),
@@ -1013,52 +1013,114 @@ export async function markAllNotificationsRead(personId) {
 // TASKS
 // ============================================================
 
-const TASK_SELECT = '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number), range_styles:range_style_id(id, name, range_id)'
+// Progressive task select: try joins from most to least, stop at first that works
+const TASK_SELECTS = [
+  '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number), ranges:range_id(id, name)',
+  '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number)',
+  '*, people:assigned_to(id, name), creator:created_by(id, name)',
+  '*',
+]
 
 export async function getTasks(filters = {}) {
-  let query = supabase
-    .from('tasks')
-    .select(TASK_SELECT)
-    .order('sort_order')
-    .order('created_at', { ascending: false })
-  if (filters.status) query = query.eq('status', filters.status)
-  if (filters.assigned_to) query = query.eq('assigned_to', filters.assigned_to)
-  if (filters.priority) query = query.eq('priority', filters.priority)
-  if (filters.search) query = query.ilike('title', `%${filters.search}%`)
-  const { data, error } = await query
+  for (const select of TASK_SELECTS) {
+    let query = supabase
+      .from('tasks')
+      .select(select)
+      .order('sort_order')
+      .order('created_at', { ascending: false })
+    if (filters.status) query = query.eq('status', filters.status)
+    if (filters.assigned_to) query = query.eq('assigned_to', filters.assigned_to)
+    if (filters.priority) query = query.eq('priority', filters.priority)
+    if (filters.search) query = query.ilike('title', `%${filters.search}%`)
+    const { data, error } = await query
+    if (!error) return data
+    console.warn('getTasks failed with select, trying simpler:', error.message)
+  }
+  // All selects failed - throw with the simplest query to get a clear error
+  const { data, error } = await supabase.from('tasks').select('*')
   if (error) throw error
   return data
 }
 
 export async function getTask(id) {
-  const { data, error } = await supabase
-    .from('tasks')
-    .select(TASK_SELECT)
-    .eq('id', id)
-    .single()
+  for (const select of TASK_SELECTS) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select(select)
+      .eq('id', id)
+      .single()
+    if (!error) return data
+    console.warn('getTask failed with select, trying simpler:', error.message)
+  }
+  const { data, error } = await supabase.from('tasks').select('*').eq('id', id).single()
   if (error) throw error
   return data
 }
 
 export async function createTask(task) {
-  const { data, error } = await supabase
+  // Only include known task columns to avoid "column does not exist" errors
+  const KNOWN_COLS = ['title', 'description', 'status', 'priority', 'assigned_to', 'created_by', 'due_date', 'tags', 'sort_order', 'style_id', 'supplier_id', 'purchase_order_id', 'range_id']
+  const safePayload = {}
+  for (const key of KNOWN_COLS) {
+    if (key in task) safePayload[key] = task[key]
+  }
+  // Try insert, if a column doesn't exist strip it and retry
+  let { data: inserted, error: insertErr } = await supabase
     .from('tasks')
-    .insert([task])
-    .select(TASK_SELECT)
+    .insert([safePayload])
+    .select('*')
     .single()
-  if (error) throw error
-  return data
+  if (insertErr && insertErr.message?.includes('column')) {
+    // Strip entity-link columns and retry with base columns only
+    const basePayload = {}
+    for (const key of ['title', 'description', 'status', 'priority', 'assigned_to', 'created_by', 'due_date', 'tags', 'sort_order']) {
+      if (key in task) basePayload[key] = task[key]
+    }
+    ;({ data: inserted, error: insertErr } = await supabase
+      .from('tasks')
+      .insert([basePayload])
+      .select('*')
+      .single())
+  }
+  if (insertErr) throw insertErr
+  // Try to return with joins for display
+  try {
+    return await getTask(inserted.id)
+  } catch {
+    return inserted
+  }
 }
 
 export async function updateTask(id, updates) {
-  const { data, error } = await supabase
+  const KNOWN_COLS = ['title', 'description', 'status', 'priority', 'assigned_to', 'created_by', 'due_date', 'tags', 'sort_order', 'style_id', 'supplier_id', 'purchase_order_id', 'range_id', 'updated_at']
+  const safeUpdates = { updated_at: new Date().toISOString() }
+  for (const key of KNOWN_COLS) {
+    if (key in updates) safeUpdates[key] = updates[key]
+  }
+  let { data: updated, error: updateErr } = await supabase
     .from('tasks')
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update(safeUpdates)
     .eq('id', id)
-    .select(TASK_SELECT)
+    .select('*')
     .single()
-  if (error) throw error
-  return data
+  if (updateErr && updateErr.message?.includes('column')) {
+    const baseUpdates = { updated_at: new Date().toISOString() }
+    for (const key of ['title', 'description', 'status', 'priority', 'assigned_to', 'created_by', 'due_date', 'tags', 'sort_order']) {
+      if (key in updates) baseUpdates[key] = updates[key]
+    }
+    ;({ data: updated, error: updateErr } = await supabase
+      .from('tasks')
+      .update(baseUpdates)
+      .eq('id', id)
+      .select('*')
+      .single())
+  }
+  if (updateErr) throw updateErr
+  try {
+    return await getTask(id)
+  } catch {
+    return updated
+  }
 }
 
 export async function deleteTask(id) {
@@ -1118,7 +1180,10 @@ export async function getTaskSubtaskCounts() {
   const { data, error } = await supabase
     .from('task_subtasks')
     .select('task_id, completed')
-  if (error) throw error
+  if (error) {
+    console.warn('Failed to load subtask counts:', error.message)
+    return {}
+  }
   const counts = {}
   ;(data || []).forEach(s => {
     if (!counts[s.task_id]) counts[s.task_id] = { total: 0, done: 0 }
@@ -1191,9 +1256,16 @@ export async function getTeamTaskWorkload() {
   const today = new Date().toISOString().slice(0, 10)
   const { data, error } = await supabase
     .from('tasks')
-    .select('id, status, priority, due_date, assigned_to, people:assigned_to(id, name)')
+    .select('id, status, priority, due_date, assigned_to')
     .neq('status', 'done')
   if (error) throw error
+  // Fetch people names separately
+  const assigneeIds = [...new Set((data || []).map(t => t.assigned_to).filter(Boolean))]
+  let peopleMap = {}
+  if (assigneeIds.length > 0) {
+    const { data: ppl } = await supabase.from('people').select('id, name').in('id', assigneeIds)
+    if (ppl) ppl.forEach(p => { peopleMap[p.id] = p })
+  }
   const byPerson = {}
   ;(data || []).forEach(t => {
     const pid = t.assigned_to
@@ -1201,7 +1273,7 @@ export async function getTeamTaskWorkload() {
     if (!byPerson[pid]) {
       byPerson[pid] = {
         id: pid,
-        name: t.people?.name || 'Unknown',
+        name: peopleMap[pid]?.name || 'Unknown',
         total: 0,
         overdue: 0,
         highPriority: 0,
@@ -1225,11 +1297,18 @@ export async function getOverdueTasks() {
   const today = new Date().toISOString().slice(0, 10)
   const { data, error } = await supabase
     .from('tasks')
-    .select('id, title, status, priority, due_date, people:assigned_to(id, name)')
+    .select('id, title, status, priority, due_date, assigned_to')
     .lt('due_date', today)
     .neq('status', 'done')
     .order('due_date')
   if (error) throw error
+  // Enrich with people names
+  const ids = [...new Set((data || []).map(t => t.assigned_to).filter(Boolean))]
+  if (ids.length > 0) {
+    const { data: ppl } = await supabase.from('people').select('id, name').in('id', ids)
+    const pm = Object.fromEntries((ppl || []).map(p => [p.id, p]))
+    data.forEach(t => { t.people = pm[t.assigned_to] || null })
+  }
   return data || []
 }
 
@@ -1237,11 +1316,21 @@ export async function getStaleTasks() {
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString()
   const { data, error } = await supabase
     .from('tasks')
-    .select('id, title, status, priority, created_at, people:assigned_to(id, name), creator:created_by(id, name)')
+    .select('id, title, status, priority, created_at, assigned_to, created_by')
     .eq('status', 'todo')
     .lt('created_at', weekAgo)
     .order('created_at')
   if (error) throw error
+  // Enrich with people names
+  const allIds = [...new Set((data || []).flatMap(t => [t.assigned_to, t.created_by]).filter(Boolean))]
+  if (allIds.length > 0) {
+    const { data: ppl } = await supabase.from('people').select('id, name').in('id', allIds)
+    const pm = Object.fromEntries((ppl || []).map(p => [p.id, p]))
+    data.forEach(t => {
+      t.people = pm[t.assigned_to] || null
+      t.creator = pm[t.created_by] || null
+    })
+  }
   return data || []
 }
 
