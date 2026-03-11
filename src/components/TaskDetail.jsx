@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
 import { useToast } from '../contexts/ToastContext'
-import { getTask, deleteTask, getTaskSubtasks, createTaskSubtask, updateTaskSubtask, deleteTaskSubtask } from '../lib/supabase'
+import { getTask, deleteTask, getTaskSubtasks, createTaskSubtask, updateTaskSubtask, deleteTaskSubtask, resolveCollaborators } from '../lib/supabase'
 import { TASK_PRIORITIES, TASK_TAGS, maskSupplierName } from '../lib/constants'
 import Modal from './Modal'
 import StatusBadge from './StatusBadge'
@@ -17,6 +17,7 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
   const [showEdit, setShowEdit] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [subtasks, setSubtasks] = useState([])
+  const [collaboratorPeople, setCollaboratorPeople] = useState([])
   const [newSubtask, setNewSubtask] = useState('')
   const [addingSubtask, setAddingSubtask] = useState(false)
 
@@ -33,6 +34,12 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
       ])
       setTask(data)
       setSubtasks(subs || [])
+      if (data?.collaborators?.length) {
+        const collabs = await resolveCollaborators(data.collaborators)
+        setCollaboratorPeople(collabs)
+      } else {
+        setCollaboratorPeople([])
+      }
     } catch (err) {
       console.error('Failed to load task:', err)
       toast.error('Failed to load task')
@@ -174,7 +181,7 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
             </div>
             <div>
               <div className="text-muted text-sm" style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <User size={12} /> Assigned To
+                <User size={12} /> Main POC
               </div>
               <div style={{ fontSize: '0.875rem' }}>{task.people?.name || 'Unassigned'}</div>
             </div>
@@ -195,6 +202,34 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
               <div style={{ fontSize: '0.875rem' }}>{task.creator?.name || 'Unknown'}</div>
             </div>
           </div>
+
+          {collaboratorPeople.length > 0 && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div className="text-muted text-sm" style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <User size={12} /> Collaborators
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
+                {collaboratorPeople.map(p => (
+                  <span
+                    key={p.id}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      padding: '3px 10px',
+                      borderRadius: '10px',
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
+                      background: '#6366f1',
+                      color: '#fff',
+                    }}
+                  >
+                    {p.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {task.status !== 'done' && (
             <div style={{

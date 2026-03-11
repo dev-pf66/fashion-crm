@@ -6,7 +6,7 @@ import { getRanges, createRange, deleteRange } from '../lib/supabase'
 import { STYLE_CATEGORIES } from '../lib/constants'
 import Modal from '../components/Modal'
 import StatusBadge from '../components/StatusBadge'
-import { Plus, Layers, Trash2, X, GripVertical } from 'lucide-react'
+import { Plus, Layers, Trash2, X, GripVertical, Calendar } from 'lucide-react'
 
 const RANGE_STATUSES = [
   { value: 'planning', label: 'Planning' },
@@ -146,6 +146,19 @@ export default function RangePlanning() {
                   <span className="text-sm text-muted">
                     by {range.creator?.name || 'Unknown'} &middot; {new Date(range.created_at).toLocaleDateString()}
                   </span>
+                  {range.deadline && (
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      fontSize: '0.75rem',
+                      color: new Date(range.deadline) < new Date() ? 'var(--danger)' : 'var(--gray-500)',
+                      fontWeight: 500,
+                    }}>
+                      <Calendar size={12} />
+                      {new Date(range.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  )}
                 </div>
               </Link>
             )
@@ -170,6 +183,7 @@ function NewRangeForm({ personId, onClose, onSave }) {
   const [name, setName] = useState('')
   const [season, setSeason] = useState('')
   const [targetStyles, setTargetStyles] = useState('')
+  const [deadline, setDeadline] = useState('')
   const [categories, setCategories] = useState([...STYLE_CATEGORIES])
   const [newCat, setNewCat] = useState('')
 
@@ -205,6 +219,7 @@ function NewRangeForm({ personId, onClose, onSave }) {
         name: name.trim(),
         season: season.trim() || null,
         target_styles: targetStyles ? parseInt(targetStyles) : 0,
+        deadline: deadline || null,
         categories,
       }
       if (personId) rangeData.created_by = personId
@@ -235,6 +250,11 @@ function NewRangeForm({ personId, onClose, onSave }) {
             <label>Target No. of Products</label>
             <input type="number" min="0" value={targetStyles} onChange={e => setTargetStyles(e.target.value)} placeholder="e.g. 50" />
           </div>
+        </div>
+
+        <div className="form-group">
+          <label>Deadline</label>
+          <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
         </div>
 
         <div className="form-group">

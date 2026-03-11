@@ -1014,7 +1014,7 @@ export async function markAllNotificationsRead(personId) {
 // TASKS
 // ============================================================
 
-const TASK_SELECT = '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number), ranges:range_id(id, name)'
+const TASK_SELECT = '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number), ranges:range_id(id, name), collaborators'
 
 export async function getTasks(filters = {}) {
   let query = supabase
@@ -1113,6 +1113,27 @@ export async function updateTaskSubtask(id, updates) {
 export async function deleteTaskSubtask(id) {
   const { error } = await supabase.from('task_subtasks').delete().eq('id', id)
   if (error) throw error
+}
+
+export async function getTasksForRange(rangeId) {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select(TASK_SELECT)
+    .eq('range_id', rangeId)
+    .order('sort_order')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function resolveCollaborators(collaboratorIds) {
+  if (!collaboratorIds?.length) return []
+  const { data, error } = await supabase
+    .from('people')
+    .select('id, name')
+    .in('id', collaboratorIds)
+  if (error) throw error
+  return data || []
 }
 
 export async function getTaskSubtaskCounts() {

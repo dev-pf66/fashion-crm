@@ -10,6 +10,8 @@ import { X, Upload, Trash2, Star, FileText, Image as ImageIcon, Loader } from 'l
 const STATUSES = [
   { value: 'concept', label: 'Concept' },
   { value: 'in_progress', label: 'In Progress' },
+  { value: 'sampling', label: 'Sampling' },
+  { value: 'swatching', label: 'Swatching' },
   { value: 'review', label: 'Review' },
   { value: 'approved', label: 'Approved' },
 ]
@@ -55,6 +57,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         supplier_id: data.supplier_id || '',
         status: data.status || 'concept',
         production_qty: data.production_qty || '',
+        due_date: data.due_date || '',
         notes: data.notes || '',
       })
       setFiles(data.range_style_files || [])
@@ -87,6 +90,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         supplier_id: form.supplier_id ? parseInt(form.supplier_id) : null,
         status: form.status,
         production_qty: form.production_qty ? parseInt(form.production_qty) : 0,
+        due_date: form.due_date || null,
         notes: form.notes.trim() || null,
       })
       toast.success('Style updated')
@@ -216,12 +220,18 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Supplier</label>
-              <select value={form.supplier_id} onChange={e => updateField('supplier_id', e.target.value)}>
-                <option value="">No supplier</option>
-                {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson)}</option>)}
-              </select>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Supplier</label>
+                <select value={form.supplier_id} onChange={e => updateField('supplier_id', e.target.value)}>
+                  <option value="">No supplier</option>
+                  {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson)}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Due Date</label>
+                <input type="date" value={form.due_date} onChange={e => updateField('due_date', e.target.value)} />
+              </div>
             </div>
 
             <div className="form-group">

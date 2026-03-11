@@ -7,21 +7,28 @@ import {
   getRange, updateRange,
   getRangeStyles, createRangeStyle, updateRangeStyle, updateRangeStyleOrder,
   createRangeStyleFile,
+  getTasksForRange, createTask, updateTask, deleteTask, getTaskSubtaskCounts,
 } from '../lib/supabase'
 import { uploadRangeStyleFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
 import Modal from '../components/Modal'
 import Breadcrumbs from '../components/Breadcrumbs'
 import RangeStylePanel from '../components/RangeStylePanel'
+import TaskCard from '../components/TaskCard'
+import TaskDetail from '../components/TaskDetail'
+import TaskForm from '../components/TaskForm'
 import {
   LayoutGrid, List, Plus, Search, Edit3, Filter,
   Image as ImageIcon, Lock, Play, GripVertical,
   Maximize2, Minimize2, Square, X, ChevronLeft, ChevronRight, Factory,
+  CheckSquare, Clock, Calendar,
 } from 'lucide-react'
 
 const RANGE_STYLE_STATUSES = [
   { value: 'concept', label: 'Concept', bg: '#f3f4f6', color: '#4b5563' },
   { value: 'in_progress', label: 'In Progress', bg: '#dbeafe', color: '#1d4ed8' },
+  { value: 'sampling', label: 'Sampling', bg: '#fce7f3', color: '#be185d' },
+  { value: 'swatching', label: 'Swatching', bg: '#ede9fe', color: '#6d28d9' },
   { value: 'review', label: 'Review', bg: '#fef3c7', color: '#b45309' },
   { value: 'approved', label: 'Approved', bg: '#dcfce7', color: '#15803d' },
 ]
@@ -77,6 +84,11 @@ export default function RangeDetail() {
   const [quickAddName, setQuickAddName] = useState('')
   const [lightbox, setLightbox] = useState(null) // { url, styleId }
   const [showFilters, setShowFilters] = useState(false)
+  const [tab, setTab] = useState('styles')
+  const [tasks, setTasks] = useState([])
+  const [subtaskCounts, setSubtaskCounts] = useState({})
+  const [taskDetailId, setTaskDetailId] = useState(null)
+  const [showTaskForm, setShowTaskForm] = useState(false)
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches)
   const thumbInputRef = useRef(null)
   const [thumbUploadId, setThumbUploadId] = useState(null)
@@ -122,16 +134,23 @@ export default function RangeDetail() {
   async function loadData() {
     setLoading(true)
     try {
-      const [rangeData, stylesData] = await Promise.all([
+      const [rangeData, stylesData, tasksData, subtaskCountsData] = await Promise.all([
         getRange(id),
         getRangeStyles(id).catch(err => {
           console.error('Failed to load styles:', err)
           toast.error('Failed to load range styles')
           return []
         }),
+        getTasksForRange(id).catch(err => {
+          console.error('Failed to load tasks:', err)
+          return []
+        }),
+        getTaskSubtaskCounts().catch(() => ({})),
       ])
       setRange(rangeData)
       setStyles(stylesData || [])
+      setTasks(tasksData || [])
+      setSubtaskCounts(subtaskCountsData || {})
     } catch (err) {
       console.error('Failed to load range:', err)
       toast.error('Failed to load range')
@@ -399,6 +418,19 @@ export default function RangeDetail() {
           <h1>{range.name}</h1>
           <div className="rp-summary-meta">
             {range.season && <span className="tag">{range.season}</span>}
+            {range.deadline && (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                fontSize: '0.8125rem',
+                color: new Date(range.deadline) < new Date() ? 'var(--danger)' : 'var(--gray-600)',
+                fontWeight: 500,
+              }}>
+                <Calendar size={13} />
+                {new Date(range.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            )}
             <RangeStatusDropdown
               status={range.status}
               onChange={async (status) => {
@@ -468,6 +500,108 @@ export default function RangeDetail() {
         </div>
       )}
 
+      {/* Tab Bar */}
+      <div style={{
+        display: 'flex',
+        gap: '0',
+        borderBottom: '2px solid var(--gray-100)',
+        marginBottom: '1rem',
+      }}>
+        <button
+          onClick={() => setTab('styles')}
+          style={{
+            padding: '0.625rem 1.25rem',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            background: 'none',
+            border: 'none',
+            borderBottom: tab === 'styles' ? '2px solid var(--primary)' : '2px solid transparent',
+            color: tab === 'styles' ? 'var(--primary)' : 'var(--gray-500)',
+            cursor: 'pointer',
+            marginBottom: '-2px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
+          }}
+        >
+          <LayoutGrid size={15} />
+          Styles ({styles.length})
+        </button>
+        <button
+          onClick={() => setTab('tasks')}
+          style={{
+            padding: '0.625rem 1.25rem',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            background: 'none',
+            border: 'none',
+            borderBottom: tab === 'tasks' ? '2px solid var(--primary)' : '2px solid transparent',
+            color: tab === 'tasks' ? 'var(--primary)' : 'var(--gray-500)',
+            cursor: 'pointer',
+            marginBottom: '-2px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
+          }}
+        >
+          <CheckSquare size={15} />
+          Tasks ({tasks.length})
+        </button>
+      </div>
+
+      {/* Tasks Tab */}
+      {tab === 'tasks' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, fontSize: '1rem' }}>Tasks</h3>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowTaskForm(true)}>
+              <Plus size={14} /> Add Task
+            </button>
+          </div>
+          {tasks.length === 0 ? (
+            <div className="card">
+              <div className="empty-state">
+                <CheckSquare size={48} />
+                <h3>No tasks yet</h3>
+                <p>Create tasks to track work for this range.</p>
+                <button className="btn btn-primary" onClick={() => setShowTaskForm(true)}>
+                  <Plus size={16} /> Add First Task
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
+              {tasks.map(task => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onClick={setTaskDetailId}
+                  subtaskCount={subtaskCounts[task.id]}
+                />
+              ))}
+            </div>
+          )}
+
+          {taskDetailId && (
+            <TaskDetail
+              taskId={taskDetailId}
+              onClose={() => setTaskDetailId(null)}
+              onUpdate={loadData}
+            />
+          )}
+
+          {showTaskForm && (
+            <TaskForm
+              task={{ range_id: id }}
+              onClose={() => setShowTaskForm(false)}
+              onSave={() => { setShowTaskForm(false); loadData() }}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Styles Tab */}
+      {tab === 'styles' && <>
       {/* Toolbar */}
       <div className="rp-toolbar">
         <div className="rp-toolbar-left">
@@ -682,6 +816,12 @@ export default function RangeDetail() {
                                                 {style.colorways.length > 6 && <span className="rp-color-more">+{style.colorways.length - 6}</span>}
                                               </div>
                                             )}
+                                            {cardSize !== 'sm' && style.due_date && (
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.6875rem', color: new Date(style.due_date) < new Date() ? 'var(--danger)' : 'var(--gray-500)', marginTop: '0.25rem' }}>
+                                                <Clock size={11} />
+                                                {new Date(style.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                       )}
@@ -718,6 +858,7 @@ export default function RangeDetail() {
           onThumbUpload={triggerThumbUpload}
         />
       )}
+      </>}
 
       {/* Style Detail Panel */}
       {panelStyleId && (
@@ -877,6 +1018,12 @@ function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, o
             {style.colorways.length > 6 && <span className="rp-color-more">+{style.colorways.length - 6}</span>}
           </div>
         )}
+        {cardSize !== 'sm' && style.due_date && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.6875rem', color: new Date(style.due_date) < new Date() ? 'var(--danger)' : 'var(--gray-500)', marginTop: '0.25rem' }}>
+            <Clock size={11} />
+            {new Date(style.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -985,6 +1132,7 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
             <th>Colorways</th>
             <th className="sortable" onClick={() => handleSort('delivery_drop')}>Drop <SortIcon field="delivery_drop" /></th>
             <th>Supplier</th>
+            <th className="sortable" onClick={() => handleSort('due_date')}>Due Date <SortIcon field="due_date" /></th>
             <th className="sortable" onClick={() => handleSort('status')}>Status <SortIcon field="status" /></th>
           </tr>
         </thead>
@@ -1066,6 +1214,11 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
               <td style={{ fontSize: '0.8125rem', color: 'var(--gray-600)' }}>
                 {style.suppliers?.name ? maskSupplierName(style.suppliers.name, currentPerson) : '—'}
               </td>
+              <td style={{ fontSize: '0.8125rem', color: style.due_date && new Date(style.due_date) < new Date() ? 'var(--danger)' : 'var(--gray-600)' }}>
+                {style.due_date
+                  ? new Date(style.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : '—'}
+              </td>
               <td>
                 <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />
               </td>
@@ -1088,6 +1241,7 @@ function EditRangeModal({ range, onClose, onSave }) {
   const [name, setName] = useState(range.name)
   const [season, setSeason] = useState(range.season || '')
   const [targetStyles, setTargetStyles] = useState(range.target_styles || '')
+  const [deadline, setDeadline] = useState(range.deadline || '')
   const [categories, setCategories] = useState(range.categories?.length > 0 ? [...range.categories] : [...DEFAULT_CATEGORIES])
   const [newCat, setNewCat] = useState('')
 
@@ -1123,6 +1277,7 @@ function EditRangeModal({ range, onClose, onSave }) {
         name: name.trim(),
         season: season.trim() || null,
         target_styles: targetStyles ? parseInt(targetStyles) : 0,
+        deadline: deadline || null,
         categories,
       })
       toast.success('Range updated')
@@ -1149,6 +1304,10 @@ function EditRangeModal({ range, onClose, onSave }) {
           <div className="form-group">
             <label>Target No. of Products</label>
             <input type="number" min="0" value={targetStyles} onChange={e => setTargetStyles(e.target.value)} placeholder="e.g. 50" />
+          </div>
+          <div className="form-group">
+            <label>Deadline</label>
+            <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Clock, User, Link2, CheckSquare, Timer } from 'lucide-react'
+import { Clock, User, Users, Link2, CheckSquare, Timer } from 'lucide-react'
 import { TASK_PRIORITIES, TASK_TAGS, maskSupplierName } from '../lib/constants'
 import { useApp } from '../App'
 
@@ -92,15 +92,32 @@ const TaskCard = memo(function TaskCard({ task, onClick, subtaskCount }) {
             </span>
           )}
         </div>
-        {task.people ? (
-          <span className="task-card-avatar" title={task.people.name}>
-            {getInitials(task.people.name)}
-          </span>
-        ) : (
-          <span className="task-card-avatar unassigned" title="Unassigned">
-            <User size={12} />
-          </span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+          {task.collaborators?.length > 0 && (
+            <span
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.15rem',
+                fontSize: '0.625rem',
+                color: 'var(--gray-500)',
+              }}
+              title={`+${task.collaborators.length} collaborator${task.collaborators.length !== 1 ? 's' : ''}`}
+            >
+              <Users size={11} />
+              +{task.collaborators.length}
+            </span>
+          )}
+          {task.people ? (
+            <span className="task-card-avatar" title={task.people.name}>
+              {getInitials(task.people.name)}
+            </span>
+          ) : (
+            <span className="task-card-avatar unassigned" title="Unassigned">
+              <User size={12} />
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )

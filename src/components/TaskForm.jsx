@@ -18,6 +18,7 @@ export default function TaskForm({ task, onClose, onSave }) {
     status: 'todo',
     priority: 'medium',
     assigned_to: '',
+    collaborators: [],
     due_date: '',
     tags: [],
     style_id: '',
@@ -39,6 +40,7 @@ export default function TaskForm({ task, onClose, onSave }) {
         status: task.status || 'todo',
         priority: task.priority || 'medium',
         assigned_to: task.assigned_to || '',
+        collaborators: task.collaborators || [],
         due_date: task.due_date || '',
         tags: task.tags || [],
         style_id: task.style_id || '',
@@ -76,6 +78,16 @@ export default function TaskForm({ task, onClose, onSave }) {
     }
   }
 
+  function toggleCollaborator(personId) {
+    const id = parseInt(personId)
+    setForm(prev => ({
+      ...prev,
+      collaborators: prev.collaborators.includes(id)
+        ? prev.collaborators.filter(c => c !== id)
+        : [...prev.collaborators, id],
+    }))
+  }
+
   function toggleTag(tagValue) {
     setForm(prev => ({
       ...prev,
@@ -97,6 +109,7 @@ export default function TaskForm({ task, onClose, onSave }) {
         status: form.status,
         priority: form.priority,
         assigned_to: form.assigned_to || null,
+        collaborators: form.collaborators.length > 0 ? form.collaborators : [],
         due_date: form.due_date || null,
         tags: form.tags,
         style_id: form.style_id || null,
@@ -196,7 +209,7 @@ export default function TaskForm({ task, onClose, onSave }) {
 
         <div className="form-row">
           <div className="form-group">
-            <label>Assigned To</label>
+            <label>Main POC</label>
             <select
               value={form.assigned_to}
               onChange={e => setForm(prev => ({ ...prev, assigned_to: e.target.value ? parseInt(e.target.value) : '' }))}
@@ -215,6 +228,33 @@ export default function TaskForm({ task, onClose, onSave }) {
               onChange={e => setForm(prev => ({ ...prev, due_date: e.target.value }))}
             />
           </div>
+        </div>
+
+        <div className="form-group">
+          <label>Collaborators <span className="text-muted text-sm" style={{ fontWeight: 400 }}>(optional)</span></label>
+          <div className="tag-picker">
+            {people.filter(p => p.id !== form.assigned_to).map(p => (
+              <button
+                key={p.id}
+                type="button"
+                className={`tag-picker-item ${form.collaborators.includes(p.id) ? 'selected' : ''}`}
+                style={{
+                  '--tag-color': '#6366f1',
+                  background: form.collaborators.includes(p.id) ? '#6366f1' : 'transparent',
+                  color: form.collaborators.includes(p.id) ? '#fff' : '#6366f1',
+                  borderColor: '#6366f1',
+                }}
+                onClick={() => toggleCollaborator(p.id)}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+          {form.collaborators.length > 0 && (
+            <div style={{ fontSize: '0.75rem', color: 'var(--gray-500)', marginTop: '0.25rem' }}>
+              {form.collaborators.length} collaborator{form.collaborators.length !== 1 ? 's' : ''} selected
+            </div>
+          )}
         </div>
 
         <div className="form-group">
