@@ -14,7 +14,6 @@ import { Plus, FlaskConical, Download } from 'lucide-react'
 
 export default function Samples() {
   const { people, currentPerson } = useApp()
-  const mn = currentPerson?.name
   const { currentSeason } = useSeason()
   const [samples, setSamples] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -106,7 +105,7 @@ export default function Samples() {
       { key: 'round_number', header: 'Round #' },
       { key: 'colorway', header: 'Colorway' },
       { key: 'status', header: 'Status' },
-      { header: 'Supplier', format: r => r.suppliers?.name ? maskSupplierName(r.suppliers.name, mn) : '' },
+      { header: 'Supplier', format: r => r.suppliers?.name ? maskSupplierName(r.suppliers.name, currentPerson) : '' },
       { key: 'expected_date', header: 'Expected Date' },
       { header: 'Assigned To', format: r => r.people?.name || '' },
     ])
@@ -147,7 +146,7 @@ export default function Samples() {
         <select value={filters.supplier_id} onChange={e => setFilters(prev => ({ ...prev, supplier_id: e.target.value }))}>
           <option value="">All Suppliers</option>
           {suppliers.map(s => (
-            <option key={s.id} value={s.id}>{maskSupplierName(s.name, mn)}</option>
+            <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson)}</option>
           ))}
         </select>
         <select value={filters.assigned_to} onChange={e => setFilters(prev => ({ ...prev, assigned_to: e.target.value }))}>

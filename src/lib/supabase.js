@@ -508,7 +508,7 @@ export async function getUpcomingDeadlines(seasonId, personName) {
     deadlines.push({
       type: 'po',
       id: p.id,
-      label: `${p.po_number} - ${p.suppliers?.name ? maskSupplierName(p.suppliers.name, personName) : ''}`,
+      label: `${p.po_number} - ${p.suppliers?.name ? maskSupplierName(p.suppliers.name, adminAccess) : ''}`,
       date: p.delivery_date,
       status: p.status,
     })
@@ -522,7 +522,7 @@ export async function getUpcomingDeadlines(seasonId, personName) {
 // GLOBAL SEARCH
 // ============================================================
 
-export async function globalSearch(query, seasonId, personName) {
+export async function globalSearch(query, seasonId, adminAccess) {
   const q = query.toLowerCase()
   const results = []
 
@@ -539,13 +539,13 @@ export async function globalSearch(query, seasonId, personName) {
   ])
 
   ;(styles.data || []).forEach(s => {
-    results.push({ type: 'style', id: s.id, label: `${s.style_number} - ${s.name}`, sub: s.suppliers?.name ? maskSupplierName(s.suppliers.name, personName) : (s.category || '') })
+    results.push({ type: 'style', id: s.id, label: `${s.style_number} - ${s.name}`, sub: s.suppliers?.name ? maskSupplierName(s.suppliers.name, adminAccess) : (s.category || '') })
   })
   ;(suppliers.data || []).forEach(s => {
-    results.push({ type: 'supplier', id: s.id, label: maskSupplierName(s.name, personName), sub: [s.code, s.country].filter(Boolean).join(' · ') })
+    results.push({ type: 'supplier', id: s.id, label: maskSupplierName(s.name, adminAccess), sub: [s.code, s.country].filter(Boolean).join(' · ') })
   })
   ;(pos.data || []).forEach(p => {
-    results.push({ type: 'purchase_order', id: p.id, label: p.po_number, sub: p.suppliers?.name ? maskSupplierName(p.suppliers.name, personName) : '' })
+    results.push({ type: 'purchase_order', id: p.id, label: p.po_number, sub: p.suppliers?.name ? maskSupplierName(p.suppliers.name, adminAccess) : '' })
   })
   ;(people.data || []).forEach(p => {
     results.push({ type: 'person', id: p.id, label: p.name, sub: p.role || p.email || '' })

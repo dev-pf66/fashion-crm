@@ -13,7 +13,7 @@ export default function POCard({ po, onClick }) {
       <div className="po-card-header">
         <div>
           <div className="po-card-number">{po.po_number}</div>
-          <div className="po-card-supplier">{po.suppliers?.name ? maskSupplierName(po.suppliers.name, currentPerson?.name) : 'No supplier'}</div>
+          <div className="po-card-supplier">{po.suppliers?.name ? maskSupplierName(po.suppliers.name, currentPerson) : 'No supplier'}</div>
         </div>
         <StatusBadge status={po.status} />
       </div>

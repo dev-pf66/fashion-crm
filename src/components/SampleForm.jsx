@@ -127,7 +127,7 @@ export default function SampleForm({ sample, styleId, onClose, onSave }) {
             <select value={form.supplier_id} onChange={e => handleChange('supplier_id', e.target.value)}>
               <option value="">Select...</option>
               {suppliers.map(s => (
-                <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson?.name)}</option>
+                <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson)}</option>
               ))}
             </select>
           </div>

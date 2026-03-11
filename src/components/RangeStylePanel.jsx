@@ -220,7 +220,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               <label>Supplier</label>
               <select value={form.supplier_id} onChange={e => updateField('supplier_id', e.target.value)}>
                 <option value="">No supplier</option>
-                {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson?.name)}</option>)}
+                {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson)}</option>)}
               </select>
             </div>
 

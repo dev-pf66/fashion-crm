@@ -63,7 +63,7 @@ function StyleQuickView({ item, currentPerson }) {
       <h2 className="quick-view-name">{item.name}</h2>
       <div className="quick-view-meta">
         <MetaRow label="Category" value={item.category || '-'} />
-        <MetaRow label="Supplier" value={item.suppliers?.name ? maskSupplierName(item.suppliers.name, currentPerson?.name) : '-'} />
+        <MetaRow label="Supplier" value={item.suppliers?.name ? maskSupplierName(item.suppliers.name, currentPerson) : '-'} />
         <MetaRow label="Assigned To" value={item.people?.name || '-'} />
         <MetaRow label="Target FOB" value={item.target_fob ? `$${parseFloat(item.target_fob).toFixed(2)}` : '-'} />
         <MetaRow label="Target Retail" value={item.target_retail ? `$${parseFloat(item.target_retail).toFixed(2)}` : '-'} />
@@ -86,7 +86,7 @@ function OrderQuickView({ item, currentPerson }) {
         <span className="quick-view-number">{item.po_number}</span>
         <StatusBadge status={item.status} />
       </div>
-      <h2 className="quick-view-name">{item.suppliers?.name ? maskSupplierName(item.suppliers.name, currentPerson?.name) : 'Unknown Supplier'}</h2>
+      <h2 className="quick-view-name">{item.suppliers?.name ? maskSupplierName(item.suppliers.name, currentPerson) : 'Unknown Supplier'}</h2>
       <div className="quick-view-meta">
         <MetaRow label="Issue Date" value={formatDate(item.issue_date)} />
         <MetaRow label="Delivery" value={formatDate(item.delivery_date)} />

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getSupplier, updateSupplier, deleteSupplier } from '../lib/supabase'
-import { SUPPLIER_STATUSES, maskSupplierName } from '../lib/constants'
+import { SUPPLIER_STATUSES, maskSupplierName, isAdmin as checkAdmin } from '../lib/constants'
 import { useApp } from '../App'
 import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../contexts/ToastContext'
@@ -17,7 +17,7 @@ export default function SupplierDetail() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('profile')
   const toast = useToast()
-  const isAdmin = currentPerson?.role === 'admin'
+  const isAdmin = checkAdmin(currentPerson)
 
   useEffect(() => { loadSupplier() }, [id])
 

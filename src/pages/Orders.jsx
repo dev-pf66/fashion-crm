@@ -15,7 +15,6 @@ import { Plus, Grid3X3, List, ClipboardList, Search, Download, ArrowUpDown, Eye 
 export default function Orders() {
   const { currentSeason } = useSeason()
   const { people, currentPerson } = useApp()
-  const mn = currentPerson?.name
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -98,7 +97,7 @@ export default function Orders() {
     exportToCSV(filtered, 'purchase-orders', [
       { key: 'po_number', header: 'PO Number' },
       { key: 'status', header: 'Status' },
-      { header: 'Supplier', format: r => r.suppliers?.name ? maskSupplierName(r.suppliers.name, mn) : '' },
+      { header: 'Supplier', format: r => r.suppliers?.name ? maskSupplierName(r.suppliers.name, currentPerson) : '' },
       { key: 'issue_date', header: 'Issue Date' },
       { key: 'delivery_date', header: 'Delivery Date' },
       { key: 'total_qty', header: 'Total Qty' },
@@ -142,7 +141,7 @@ export default function Orders() {
         </select>
         <select value={filters.supplier_id} onChange={e => setFilters(p => ({ ...p, supplier_id: e.target.value }))}>
           <option value="">All Suppliers</option>
-          {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, mn)}</option>)}
+          {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson)}</option>)}
         </select>
       </div>
 
@@ -183,7 +182,7 @@ export default function Orders() {
               {sortedItems(filtered).map(po => (
                 <tr key={po.id} className="clickable" onClick={() => navigate(`/orders/${po.id}`)}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', fontWeight: 600 }}>{po.po_number}</td>
-                  <td>{po.suppliers?.name ? maskSupplierName(po.suppliers.name, mn) : '-'}</td>
+                  <td>{po.suppliers?.name ? maskSupplierName(po.suppliers.name, currentPerson) : '-'}</td>
                   <td onClick={e => e.stopPropagation()}>
                     <InlineStatusSelect status={po.status} statuses={PO_STATUSES} onChange={v => handleInlineStatusChange(po.id, v)} />
                   </td>

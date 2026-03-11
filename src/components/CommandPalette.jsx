@@ -73,7 +73,7 @@ export default function CommandPalette({ isOpen, onClose }) {
     debounceRef.current = setTimeout(async () => {
       setLoading(true)
       try {
-        const data = await globalSearch(query.trim(), currentSeason?.id, currentPerson?.name)
+        const data = await globalSearch(query.trim(), currentSeason?.id, currentPerson?.role === 'admin')
         setResults(data)
         setSelectedIndex(0)
       } catch (err) {

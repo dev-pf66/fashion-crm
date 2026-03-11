@@ -6,7 +6,7 @@ import { ToastProvider } from './contexts/ToastContext'
 import { getPeople, getPersonByEmail, getPersonByUserId, createPerson, updatePerson } from './lib/supabase'
 import Layout from './components/Layout'
 import Login from './pages/Login'
-import { ADMIN_NAMES } from './lib/constants'
+import { isAdmin } from './lib/constants'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Styles = lazy(() => import('./pages/Styles'))
@@ -124,8 +124,8 @@ function AppRoutes() {
             <Route index element={<Dashboard />} />
             <Route path="styles" element={<Styles />} />
             <Route path="styles/:id" element={<StyleDetail />} />
-            <Route path="suppliers" element={ADMIN_NAMES.includes(currentPerson?.name) ? <Suppliers /> : <Navigate to="/" replace />} />
-            <Route path="suppliers/:id" element={ADMIN_NAMES.includes(currentPerson?.name) ? <SupplierDetail /> : <Navigate to="/" replace />} />
+            <Route path="suppliers" element={isAdmin(currentPerson) ? <Suppliers /> : <Navigate to="/" replace />} />
+            <Route path="suppliers/:id" element={isAdmin(currentPerson) ? <SupplierDetail /> : <Navigate to="/" replace />} />
             <Route path="materials" element={<Materials />} />
             <Route path="samples" element={<Samples />} />
             <Route path="orders" element={<Orders />} />
@@ -136,7 +136,7 @@ function AppRoutes() {
             <Route path="tasks" element={<Tasks />} />
             <Route path="range-planning" element={<RangePlanning />} />
             <Route path="range-planning/:id" element={<RangeDetail />} />
-            <Route path="admin" element={ADMIN_NAMES.includes(currentPerson?.name) ? <AdminDashboard /> : <Navigate to="/" replace />} />
+            <Route path="admin" element={isAdmin(currentPerson) ? <AdminDashboard /> : <Navigate to="/" replace />} />
             <Route path="activity" element={<Activity />} />
             <Route path="help" element={<Help />} />
             <Route path="settings" element={<Settings />} />

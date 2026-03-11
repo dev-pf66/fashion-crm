@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { ADMIN_NAMES } from '../lib/constants'
+import { isAdmin as checkAdmin } from '../lib/constants'
 import { useSeason } from '../contexts/SeasonContext'
 import { useApp } from '../App'
 import FeedbackButton from './FeedbackButton'
@@ -117,7 +117,7 @@ export default function Layout() {
 
         <nav>
           {NAV_SECTIONS.map(section => {
-            const isAdmin = ADMIN_NAMES.includes(currentPerson?.name)
+            const isAdmin = checkAdmin(currentPerson)
             const items = section.items.filter(item => {
               if (item.to === '/admin') return isAdmin
               if (item.to === '/suppliers') return isAdmin

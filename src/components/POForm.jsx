@@ -65,7 +65,7 @@ export default function POForm({ po, onClose, onSave }) {
             <label>Supplier *</label>
             <select value={form.supplier_id} onChange={e => set('supplier_id', e.target.value)} required>
               <option value="">Select supplier...</option>
-              {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson?.name)}</option>)}
+              {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson)}</option>)}
             </select>
           </div>
         </div>

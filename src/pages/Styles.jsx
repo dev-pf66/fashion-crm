@@ -118,7 +118,7 @@ export default function Styles() {
             { key: 'name', header: 'Name' },
             { key: 'category', header: 'Category' },
             { key: 'status', header: 'Status' },
-            { header: 'Supplier', format: r => r.suppliers?.name ? maskSupplierName(r.suppliers.name, currentPerson?.name) : '' },
+            { header: 'Supplier', format: r => r.suppliers?.name ? maskSupplierName(r.suppliers.name, currentPerson) : '' },
             { key: 'target_fob', header: 'Target FOB' },
             { header: 'Assigned To', format: r => r.people?.name || '' },
           ])} disabled={filtered.length === 0}>
@@ -211,7 +211,7 @@ export default function Styles() {
                   </td>
                   <td style={{ fontWeight: 500 }}>{style.name}</td>
                   <td>{style.category || '-'}</td>
-                  <td>{style.suppliers?.name ? maskSupplierName(style.suppliers.name, currentPerson?.name) : '-'}</td>
+                  <td>{style.suppliers?.name ? maskSupplierName(style.suppliers.name, currentPerson) : '-'}</td>
                   <td onClick={e => e.stopPropagation()}>
                     <InlineStatusSelect status={style.status} statuses={STYLE_STATUSES} onChange={v => handleInlineStatusChange(style.id, v)} />
                   </td>

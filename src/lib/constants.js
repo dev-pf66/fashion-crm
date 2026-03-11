@@ -1,10 +1,14 @@
-// Admin access list
-export const ADMIN_NAMES = ['dev', 'trisha.b', 'monica']
+// Check admin by role (set role to 'admin' on the people table)
+export function isAdmin(person) {
+  return person?.role === 'admin'
+}
 
 // Mask supplier name: show only first 3 characters for non-admins
-export function maskSupplierName(name, currentPersonName) {
+// Accepts a person object (checks role) or a boolean
+export function maskSupplierName(name, personOrBool) {
   if (!name) return name
-  if (ADMIN_NAMES.includes(currentPersonName)) return name
+  const allowed = typeof personOrBool === 'object' ? isAdmin(personOrBool) : !!personOrBool
+  if (allowed) return name
   return name.slice(0, 3) + '***'
 }
 

@@ -23,7 +23,7 @@ export default function StyleCard({ style }) {
         <div className="style-card-name">{style.name}</div>
         <div className="style-card-meta">
           <span className="style-card-supplier">
-            {style.suppliers?.name ? maskSupplierName(style.suppliers.name, currentPerson?.name) : 'No supplier'}
+            {style.suppliers?.name ? maskSupplierName(style.suppliers.name, currentPerson) : 'No supplier'}
           </span>
           {style.target_fob && (
             <span className="style-card-price">${parseFloat(style.target_fob).toFixed(2)}</span>

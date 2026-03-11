@@ -102,7 +102,7 @@ export default function StyleDetail() {
           </div>
           <div className="style-header-meta">
             <div className="meta-item"><span className="meta-label">Category</span><span className="meta-value">{style.category || '-'}</span></div>
-            <div className="meta-item"><span className="meta-label">Supplier</span><span className="meta-value">{style.suppliers?.name ? maskSupplierName(style.suppliers.name, currentPerson?.name) : '-'}</span></div>
+            <div className="meta-item"><span className="meta-label">Supplier</span><span className="meta-value">{style.suppliers?.name ? maskSupplierName(style.suppliers.name, currentPerson) : '-'}</span></div>
             <div className="meta-item"><span className="meta-label">Assigned To</span><span className="meta-value">{style.people?.name || '-'}</span></div>
             <div className="meta-item"><span className="meta-label">Target FOB</span><span className="meta-value">{style.target_fob ? `$${parseFloat(style.target_fob).toFixed(2)}` : '-'}</span></div>
             <div className="meta-item"><span className="meta-label">Target Retail</span><span className="meta-value">{style.target_retail ? `$${parseFloat(style.target_retail).toFixed(2)}` : '-'}</span></div>

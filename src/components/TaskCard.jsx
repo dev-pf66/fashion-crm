@@ -15,7 +15,6 @@ function daysAge(dateStr) {
 
 const TaskCard = memo(function TaskCard({ task, onClick, subtaskCount }) {
   const { currentPerson } = useApp()
-  const mn = currentPerson?.name
   const priority = TASK_PRIORITIES.find(p => p.value === task.priority) || TASK_PRIORITIES[1]
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done'
   const tags = (task.tags || []).slice(0, 3)
@@ -25,7 +24,7 @@ const TaskCard = memo(function TaskCard({ task, onClick, subtaskCount }) {
   const linkedEntity = task.styles
     ? `${task.styles.style_number}`
     : task.suppliers
-    ? maskSupplierName(task.suppliers.name, mn)
+    ? maskSupplierName(task.suppliers.name, currentPerson)
     : task.purchase_orders
     ? task.purchase_orders.po_number
     : null

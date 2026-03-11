@@ -7,7 +7,6 @@ import { Plus, Palette, Search, ImageOff } from 'lucide-react'
 
 export default function Materials() {
   const { currentPerson } = useApp()
-  const mn = currentPerson?.name
   const [materials, setMaterials] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -64,7 +63,7 @@ export default function Materials() {
         </select>
         <select value={filters.supplier_id} onChange={e => setFilters(p => ({ ...p, supplier_id: e.target.value }))}>
           <option value="">All Suppliers</option>
-          {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, mn)}</option>)}
+          {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson)}</option>)}
         </select>
       </div>
 
@@ -90,7 +89,7 @@ export default function Materials() {
                   {m.composition && <span>{m.composition}</span>}
                 </div>
                 <div className="material-card-details" style={{ marginTop: '0.25rem' }}>
-                  {m.suppliers?.name && <span>{maskSupplierName(m.suppliers.name, mn)}</span>}
+                  {m.suppliers?.name && <span>{maskSupplierName(m.suppliers.name, currentPerson)}</span>}
                   {m.unit_price && <span style={{ marginLeft: '0.5rem', fontWeight: 600 }}>${parseFloat(m.unit_price).toFixed(2)}/{m.price_unit || 'yd'}</span>}
                 </div>
               </div>
@@ -106,7 +105,6 @@ export default function Materials() {
 
 function MaterialFormModal({ suppliers, onClose, onSave }) {
   const { currentPerson } = useApp()
-  const mn = currentPerson?.name
   const [form, setForm] = useState({
     name: '', code: '', type: 'fabric', description: '',
     composition: '', weight: '', width: '', color: '',
@@ -161,7 +159,7 @@ function MaterialFormModal({ suppliers, onClose, onSave }) {
             <label>Supplier</label>
             <select value={form.supplier_id} onChange={e => setForm(p => ({ ...p, supplier_id: e.target.value }))}>
               <option value="">Select...</option>
-              {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, mn)}</option>)}
+              {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson)}</option>)}
             </select>
           </div>
         </div>
