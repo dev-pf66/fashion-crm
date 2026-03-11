@@ -7,7 +7,7 @@ import {
   getRange, updateRange,
   getRangeStyles, createRangeStyle, updateRangeStyle, updateRangeStyleOrder,
   createRangeStyleFile,
-  getTasksForRange, createTask, updateTask, deleteTask, getTaskSubtaskCounts,
+  getTasksForRange, getTaskSubtaskCounts,
 } from '../lib/supabase'
 import { uploadRangeStyleFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
@@ -15,8 +15,6 @@ import Modal from '../components/Modal'
 import Breadcrumbs from '../components/Breadcrumbs'
 import RangeStylePanel from '../components/RangeStylePanel'
 import TaskCard from '../components/TaskCard'
-import TaskDetail from '../components/TaskDetail'
-import TaskForm from '../components/TaskForm'
 import {
   LayoutGrid, List, Plus, Search, Edit3, Filter,
   Image as ImageIcon, Lock, Play, GripVertical,
@@ -87,8 +85,6 @@ export default function RangeDetail() {
   const [tab, setTab] = useState('styles')
   const [tasks, setTasks] = useState([])
   const [subtaskCounts, setSubtaskCounts] = useState({})
-  const [taskDetailId, setTaskDetailId] = useState(null)
-  const [showTaskForm, setShowTaskForm] = useState(false)
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches)
   const thumbInputRef = useRef(null)
   const [thumbUploadId, setThumbUploadId] = useState(null)
@@ -552,21 +548,12 @@ export default function RangeDetail() {
       {/* Tasks Tab */}
       {tab === 'tasks' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1rem' }}>Tasks</h3>
-            <button className="btn btn-primary btn-sm" onClick={() => setShowTaskForm(true)}>
-              <Plus size={14} /> Add Task
-            </button>
-          </div>
           {tasks.length === 0 ? (
             <div className="card">
               <div className="empty-state">
                 <CheckSquare size={48} />
-                <h3>No tasks yet</h3>
-                <p>Create tasks to track work for this range.</p>
-                <button className="btn btn-primary" onClick={() => setShowTaskForm(true)}>
-                  <Plus size={16} /> Add First Task
-                </button>
+                <h3>No tasks linked to this range</h3>
+                <p>Tasks linked to this range will appear here.</p>
               </div>
             </div>
           ) : (
@@ -575,27 +562,11 @@ export default function RangeDetail() {
                 <TaskCard
                   key={task.id}
                   task={task}
-                  onClick={setTaskDetailId}
+                  onClick={() => {}}
                   subtaskCount={subtaskCounts[task.id]}
                 />
               ))}
             </div>
-          )}
-
-          {taskDetailId && (
-            <TaskDetail
-              taskId={taskDetailId}
-              onClose={() => setTaskDetailId(null)}
-              onUpdate={loadData}
-            />
-          )}
-
-          {showTaskForm && (
-            <TaskForm
-              task={{ range_id: id }}
-              onClose={() => setShowTaskForm(false)}
-              onSave={() => { setShowTaskForm(false); loadData() }}
-            />
           )}
         </div>
       )}
