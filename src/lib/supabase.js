@@ -819,7 +819,7 @@ export async function deleteStyleRequest(id) {
 export async function getRanges() {
   const { data, error } = await supabase
     .from('ranges')
-    .select('*, range_styles(id, category, status)')
+    .select('*, range_styles(id, category, status, production_qty)')
     .order('created_at', { ascending: false })
   if (error) throw error
   // Fetch creator names separately

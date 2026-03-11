@@ -83,9 +83,11 @@ export default function RangePlanning() {
             const styleCount = range.range_styles?.length || 0
             const byCategory = {}
             const byStatus = {}
+            let totalQty = 0
             ;(range.range_styles || []).forEach(s => {
               byCategory[s.category] = (byCategory[s.category] || 0) + 1
               byStatus[s.status] = (byStatus[s.status] || 0) + 1
+              totalQty += s.production_qty || 0
             })
             return (
               <Link key={range.id} to={`/range-planning/${range.id}`} className="rp-range-card card">
@@ -125,14 +127,20 @@ export default function RangePlanning() {
                   </div>
                 )}
                 {styleCount > 0 && (
-                  <div className="rp-range-card-breakdown">
-                    {Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([cat, count]) => (
-                      <span key={cat} className="rp-breakdown-item">{cat}: {count}</span>
-                    ))}
-                    {Object.keys(byCategory).length > 4 && (
-                      <span className="rp-breakdown-item text-muted">+{Object.keys(byCategory).length - 4} more</span>
-                    )}
-                  </div>
+                  <>
+                    <div className="rp-range-card-meta" style={{ display: 'flex', gap: '1rem', fontSize: '0.8125rem', color: 'var(--gray-600)' }}>
+                      <span>Approved: {byStatus.approved || 0} / {styleCount}</span>
+                      {totalQty > 0 && <span>Total Qty: {totalQty.toLocaleString()}</span>}
+                    </div>
+                    <div className="rp-range-card-breakdown">
+                      {Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([cat, count]) => (
+                        <span key={cat} className="rp-breakdown-item">{cat}: {count}</span>
+                      ))}
+                      {Object.keys(byCategory).length > 4 && (
+                        <span className="rp-breakdown-item text-muted">+{Object.keys(byCategory).length - 4} more</span>
+                      )}
+                    </div>
+                  </>
                 )}
                 <div className="rp-range-card-footer">
                   <span className="text-sm text-muted">

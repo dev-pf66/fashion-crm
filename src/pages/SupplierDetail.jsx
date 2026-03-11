@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getSupplier, updateSupplier } from '../lib/supabase'
+import { getSupplier, updateSupplier, deleteSupplier } from '../lib/supabase'
 import { SUPPLIER_STATUSES, maskSupplierName } from '../lib/constants'
 import { useApp } from '../App'
 import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../contexts/ToastContext'
 import CommentThread from '../components/CommentThread'
-import { ArrowLeft, Edit, MapPin, Phone, Mail, Globe } from 'lucide-react'
+import { ArrowLeft, Edit, MapPin, Phone, Mail, Globe, Trash2 } from 'lucide-react'
 
 export default function SupplierDetail() {
   const { id } = useParams()
@@ -17,6 +17,7 @@ export default function SupplierDetail() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('profile')
   const toast = useToast()
+  const isAdmin = currentPerson?.role === 'admin'
 
   useEffect(() => { loadSupplier() }, [id])
 
@@ -39,6 +40,18 @@ export default function SupplierDetail() {
     } catch (err) {
       console.error('Failed to update status:', err)
       toast.error('Failed to update status')
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm(`Delete "${supplier.name}"? This will also delete all associated materials, styles, and purchase orders. This cannot be undone.`)) return
+    try {
+      await deleteSupplier(supplier.id)
+      toast.success('Supplier deleted')
+      navigate('/suppliers')
+    } catch (err) {
+      console.error('Failed to delete supplier:', err)
+      toast.error('Failed to delete supplier')
     }
   }
 
@@ -66,6 +79,11 @@ export default function SupplierDetail() {
               <select value={supplier.status} onChange={e => handleStatusChange(e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem', padding: '0.375rem 0.5rem' }}>
                 {SUPPLIER_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
+              {isAdmin && (
+                <button className="btn btn-sm" onClick={handleDelete} style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>
+                  <Trash2 size={14} /> Delete
+                </button>
+              )}
             </div>
           </div>
           <div className="info-grid">

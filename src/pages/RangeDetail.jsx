@@ -671,6 +671,9 @@ export default function RangeDetail() {
                                               {groupBy !== 'category' && <span className="tag">{style.category}</span>}
                                               <StatusDropdown status={style.status} onChange={(s) => handleStatusChange(style.id, s)} />
                                             </div>
+                                            {cardSize !== 'sm' && style.production_qty > 0 && (
+                                              <div className="text-sm text-muted" style={{ marginTop: '0.125rem' }}>Qty: {style.production_qty.toLocaleString()}</div>
+                                            )}
                                             {cardSize !== 'sm' && style.colorways?.length > 0 && (
                                               <div className="rp-card-colors">
                                                 {style.colorways.slice(0, 6).map((c, i) => (
@@ -863,6 +866,9 @@ function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, o
           {groupBy !== 'category' && <span className="tag">{style.category}</span>}
           <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />
         </div>
+        {cardSize !== 'sm' && style.production_qty > 0 && (
+          <div className="text-sm text-muted" style={{ marginTop: '0.125rem' }}>Qty: {style.production_qty.toLocaleString()}</div>
+        )}
         {cardSize !== 'sm' && style.colorways?.length > 0 && (
           <div className="rp-card-colors">
             {style.colorways.slice(0, 6).map((c, i) => (
@@ -1082,16 +1088,42 @@ function EditRangeModal({ range, onClose, onSave }) {
   const [name, setName] = useState(range.name)
   const [season, setSeason] = useState(range.season || '')
   const [targetStyles, setTargetStyles] = useState(range.target_styles || '')
+  const [categories, setCategories] = useState(range.categories?.length > 0 ? [...range.categories] : [...DEFAULT_CATEGORIES])
+  const [newCat, setNewCat] = useState('')
+
+  function addCategory() {
+    const cat = newCat.trim()
+    if (!cat || categories.includes(cat)) return
+    setCategories(prev => [...prev, cat])
+    setNewCat('')
+  }
+
+  function removeCategory(cat) {
+    setCategories(prev => prev.filter(c => c !== cat))
+  }
+
+  function toggleDefault(cat) {
+    if (categories.includes(cat)) {
+      removeCategory(cat)
+    } else {
+      setCategories(prev => [...prev, cat])
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!name.trim()) return
+    if (categories.length === 0) {
+      toast.error('Add at least one category')
+      return
+    }
     setSaving(true)
     try {
       const updated = await updateRange(range.id, {
         name: name.trim(),
         season: season.trim() || null,
         target_styles: targetStyles ? parseInt(targetStyles) : 0,
+        categories,
       })
       toast.success('Range updated')
       onSave(updated)
@@ -1103,7 +1135,7 @@ function EditRangeModal({ range, onClose, onSave }) {
   }
 
   return (
-    <Modal title="Edit Range" onClose={onClose}>
+    <Modal title="Edit Range" onClose={onClose} large>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label>Range Name *</label>
@@ -1119,6 +1151,59 @@ function EditRangeModal({ range, onClose, onSave }) {
             <input type="number" min="0" value={targetStyles} onChange={e => setTargetStyles(e.target.value)} placeholder="e.g. 50" />
           </div>
         </div>
+
+        <div className="form-group">
+          <label>Categories</label>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--gray-500)', margin: '0 0 0.5rem' }}>
+            Select which categories this range will use. You can also add custom ones.
+          </p>
+
+          <div className="range-cat-defaults">
+            {DEFAULT_CATEGORIES.map(cat => (
+              <button
+                key={cat}
+                type="button"
+                className={`range-cat-chip ${categories.includes(cat) ? 'active' : ''}`}
+                onClick={() => toggleDefault(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {categories.filter(c => !DEFAULT_CATEGORIES.includes(c)).length > 0 && (
+            <div className="range-cat-custom">
+              <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)', fontWeight: 500 }}>Custom:</span>
+              {categories.filter(c => !DEFAULT_CATEGORIES.includes(c)).map(cat => (
+                <span key={cat} className="range-cat-chip active">
+                  {cat}
+                  <button type="button" className="range-cat-remove" onClick={() => removeCategory(cat)}>
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="range-cat-add">
+            <input
+              type="text"
+              value={newCat}
+              onChange={e => setNewCat(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCategory() } }}
+              placeholder="Add custom category..."
+              style={{ flex: 1 }}
+            />
+            <button type="button" className="btn btn-secondary btn-sm" onClick={addCategory} disabled={!newCat.trim()}>
+              <Plus size={14} /> Add
+            </button>
+          </div>
+
+          <div style={{ fontSize: '0.75rem', color: 'var(--gray-500)', marginTop: '0.25rem' }}>
+            {categories.length} categor{categories.length === 1 ? 'y' : 'ies'} selected
+          </div>
+        </div>
+
         <div className="form-actions">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
           <button type="submit" className="btn btn-primary" disabled={saving}>

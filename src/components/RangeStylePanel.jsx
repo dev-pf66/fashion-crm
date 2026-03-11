@@ -54,6 +54,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         delivery_drop: data.delivery_drop || '',
         supplier_id: data.supplier_id || '',
         status: data.status || 'concept',
+        production_qty: data.production_qty || '',
         notes: data.notes || '',
       })
       setFiles(data.range_style_files || [])
@@ -85,6 +86,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         delivery_drop: form.delivery_drop.trim() || null,
         supplier_id: form.supplier_id ? parseInt(form.supplier_id) : null,
         status: form.status,
+        production_qty: form.production_qty ? parseInt(form.production_qty) : 0,
         notes: form.notes.trim() || null,
       })
       toast.success('Style updated')
@@ -225,6 +227,11 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
             <div className="form-group">
               <label>Colorways <span className="text-muted text-sm">(comma-separated)</span></label>
               <input type="text" value={form.colorways} onChange={e => updateField('colorways', e.target.value)} placeholder="e.g. White, Navy, Sage" />
+            </div>
+
+            <div className="form-group">
+              <label>Production Quantity</label>
+              <input type="number" min="0" value={form.production_qty} onChange={e => updateField('production_qty', e.target.value)} placeholder="e.g. 500" />
             </div>
 
             <div className="form-group">
