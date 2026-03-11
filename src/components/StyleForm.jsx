@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { useApp } from '../App'
 import { useSeason } from '../contexts/SeasonContext'
 import { getSuppliers, createStyle, updateStyle } from '../lib/supabase'
-import { STYLE_CATEGORIES, STYLE_STATUSES, SIZE_PRESETS } from '../lib/constants'
+import { STYLE_CATEGORIES, STYLE_STATUSES, SIZE_PRESETS, maskSupplierName } from '../lib/constants'
 import Modal from './Modal'
 import ColorwayInput from './ColorwayInput'
 import SizeRunInput from './SizeRunInput'
 
 export default function StyleForm({ style, onClose, onSave }) {
-  const { people } = useApp()
+  const { people, currentPerson } = useApp()
   const { currentSeason } = useSeason()
   const [suppliers, setSuppliers] = useState([])
   const [saving, setSaving] = useState(false)
@@ -159,7 +159,7 @@ export default function StyleForm({ style, onClose, onSave }) {
             <select value={form.supplier_id} onChange={e => handleChange('supplier_id', e.target.value)}>
               <option value="">Select...</option>
               {suppliers.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson?.name)}</option>
               ))}
             </select>
           </div>

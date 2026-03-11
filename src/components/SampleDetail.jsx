@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
 import { getSample, updateSample } from '../lib/supabase'
-import { SAMPLE_ROUNDS, SAMPLE_STATUSES } from '../lib/constants'
+import { SAMPLE_ROUNDS, SAMPLE_STATUSES, maskSupplierName } from '../lib/constants'
 import MeasurementTable from './MeasurementTable'
 import PhotoGallery from './PhotoGallery'
 import SampleForm from './SampleForm'
@@ -141,7 +141,7 @@ export default function SampleDetail({ sampleId, onClose, onUpdate }) {
               <div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="meta-item"><span className="meta-label">Style</span><span className="meta-value">{sample.styles?.style_number} - {sample.styles?.name}</span></div>
-                  <div className="meta-item"><span className="meta-label">Supplier</span><span className="meta-value">{sample.suppliers?.name || '-'}</span></div>
+                  <div className="meta-item"><span className="meta-label">Supplier</span><span className="meta-value">{sample.suppliers?.name ? maskSupplierName(sample.suppliers.name, currentPerson?.name) : '-'}</span></div>
                   <div className="meta-item"><span className="meta-label">Round</span><span className="meta-value">{round?.label} #{sample.round_number}</span></div>
                   <div className="meta-item"><span className="meta-label">Status</span><span className="meta-value">{status?.label || sample.status}</span></div>
                   <div className="meta-item"><span className="meta-label">Colorway</span><span className="meta-value">{sample.colorway || '-'}</span></div>

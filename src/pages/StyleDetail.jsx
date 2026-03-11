@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getStyle, updateStyle, createStyle } from '../lib/supabase'
-import { STYLE_STATUSES } from '../lib/constants'
+import { STYLE_STATUSES, maskSupplierName } from '../lib/constants'
+import { useApp } from '../App'
 import { useToast } from '../contexts/ToastContext'
 import StyleForm from '../components/StyleForm'
 import BomTable from '../components/BomTable'
@@ -15,6 +16,7 @@ import { Edit, ImageOff, Copy } from 'lucide-react'
 export default function StyleDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { currentPerson } = useApp()
   const toast = useToast()
   const [style, setStyle] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -100,7 +102,7 @@ export default function StyleDetail() {
           </div>
           <div className="style-header-meta">
             <div className="meta-item"><span className="meta-label">Category</span><span className="meta-value">{style.category || '-'}</span></div>
-            <div className="meta-item"><span className="meta-label">Supplier</span><span className="meta-value">{style.suppliers?.name || '-'}</span></div>
+            <div className="meta-item"><span className="meta-label">Supplier</span><span className="meta-value">{style.suppliers?.name ? maskSupplierName(style.suppliers.name, currentPerson?.name) : '-'}</span></div>
             <div className="meta-item"><span className="meta-label">Assigned To</span><span className="meta-value">{style.people?.name || '-'}</span></div>
             <div className="meta-item"><span className="meta-label">Target FOB</span><span className="meta-value">{style.target_fob ? `$${parseFloat(style.target_fob).toFixed(2)}` : '-'}</span></div>
             <div className="meta-item"><span className="meta-label">Target Retail</span><span className="meta-value">{style.target_retail ? `$${parseFloat(style.target_retail).toFixed(2)}` : '-'}</span></div>

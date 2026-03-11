@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useApp } from '../App'
 import { getPurchaseOrder, updatePurchaseOrder, createPurchaseOrder, getPOLineItems, createPOLineItem, updatePOLineItem, deletePOLineItem, updatePOTotals } from '../lib/supabase'
-import { PO_STATUSES } from '../lib/constants'
+import { PO_STATUSES, maskSupplierName } from '../lib/constants'
 import { useToast } from '../contexts/ToastContext'
 import StatusBadge from '../components/StatusBadge'
 import POForm from '../components/POForm'
@@ -104,14 +104,14 @@ export default function OrderDetail() {
     <div>
       <Breadcrumbs items={[
         { label: 'Orders', to: '/orders' },
-        { label: `${po.po_number} - ${po.suppliers?.name || 'Unknown'}` },
+        { label: `${po.po_number} - ${po.suppliers?.name ? maskSupplierName(po.suppliers.name, currentPerson?.name) : 'Unknown'}` },
       ]} />
 
       <div className="po-detail-header card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--gray-500)' }}>{po.po_number}</div>
-            <h2 style={{ marginTop: '0.25rem' }}>{po.suppliers?.name || 'Unknown Supplier'}</h2>
+            <h2 style={{ marginTop: '0.25rem' }}>{po.suppliers?.name ? maskSupplierName(po.suppliers.name, currentPerson?.name) : 'Unknown Supplier'}</h2>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <select

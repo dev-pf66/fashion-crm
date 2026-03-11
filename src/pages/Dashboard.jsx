@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSeason } from '../contexts/SeasonContext'
+import { useApp } from '../App'
 import { getDashboardStats, getStyles, getUpcomingDeadlines, getOverdueItems, getTaskMetrics } from '../lib/supabase'
 import { STYLE_STATUSES, SAMPLE_ROUNDS } from '../lib/constants'
 import ActivityFeed from '../components/ActivityFeed'
@@ -13,6 +14,7 @@ import {
 
 export default function Dashboard() {
   const { currentSeason } = useSeason()
+  const { currentPerson } = useApp()
   const navigate = useNavigate()
   const [stats, setStats] = useState(null)
   const [recentStyles, setRecentStyles] = useState([])
@@ -32,7 +34,7 @@ export default function Dashboard() {
       const [statsData, stylesData, deadlinesData, overdueData, taskData] = await Promise.all([
         getDashboardStats(currentSeason.id),
         getStyles(currentSeason.id),
-        getUpcomingDeadlines(currentSeason.id),
+        getUpcomingDeadlines(currentSeason.id, currentPerson?.name),
         getOverdueItems(currentSeason.id),
         getTaskMetrics(),
       ])

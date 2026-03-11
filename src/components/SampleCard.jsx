@@ -1,7 +1,10 @@
-import { SAMPLE_ROUNDS } from '../lib/constants'
+import { SAMPLE_ROUNDS, maskSupplierName } from '../lib/constants'
+import { useApp } from '../App'
 import { ImageOff, Clock } from 'lucide-react'
 
 export default function SampleCard({ sample, onClick }) {
+  const { currentPerson } = useApp()
+  const mn = currentPerson?.name
   const round = SAMPLE_ROUNDS.find(r => r.value === sample.round)
   const isOverdue = sample.expected_date
     && new Date(sample.expected_date) < new Date()
@@ -35,7 +38,7 @@ export default function SampleCard({ sample, onClick }) {
       </div>
 
       {sample.suppliers?.name && (
-        <div className="sample-card-supplier text-sm text-muted">{sample.suppliers.name}</div>
+        <div className="sample-card-supplier text-sm text-muted">{maskSupplierName(sample.suppliers.name, mn)}</div>
       )}
 
       <div className="sample-card-footer">

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getSupplier, updateSupplier } from '../lib/supabase'
-import { SUPPLIER_STATUSES } from '../lib/constants'
+import { SUPPLIER_STATUSES, maskSupplierName } from '../lib/constants'
+import { useApp } from '../App'
 import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../contexts/ToastContext'
 import CommentThread from '../components/CommentThread'
@@ -10,6 +11,8 @@ import { ArrowLeft, Edit, MapPin, Phone, Mail, Globe } from 'lucide-react'
 export default function SupplierDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { currentPerson } = useApp()
+  const mn = currentPerson?.name
   const [supplier, setSupplier] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('profile')
@@ -49,11 +52,11 @@ export default function SupplierDetail() {
       </button>
 
       <div className="supplier-header">
-        <div className="supplier-header-logo">{supplier.name.charAt(0)}</div>
+        <div className="supplier-header-logo">{maskSupplierName(supplier.name, mn).charAt(0)}</div>
         <div className="supplier-header-info">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <h1 style={{ marginBottom: '0.25rem' }}>{supplier.name}</h1>
+              <h1 style={{ marginBottom: '0.25rem' }}>{maskSupplierName(supplier.name, mn)}</h1>
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', color: 'var(--gray-500)', fontSize: '0.8125rem' }}>
                 {supplier.code && <span className="text-mono">{supplier.code}</span>}
                 {supplier.country && <span><MapPin size={12} style={{ display: 'inline', verticalAlign: '-2px' }} /> {[supplier.city, supplier.country].filter(Boolean).join(', ')}</span>}

@@ -9,7 +9,7 @@ import {
   createRangeStyleFile,
 } from '../lib/supabase'
 import { uploadRangeStyleFile } from '../lib/storage'
-import { STYLE_CATEGORIES as DEFAULT_CATEGORIES } from '../lib/constants'
+import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
 import Modal from '../components/Modal'
 import Breadcrumbs from '../components/Breadcrumbs'
 import RangeStylePanel from '../components/RangeStylePanel'
@@ -162,7 +162,7 @@ export default function RangeDetail() {
     filtered.forEach(s => {
       const key = groupBy === 'status' ? s.status :
                   groupBy === 'delivery_drop' ? (s.delivery_drop || 'Unassigned') :
-                  groupBy === 'supplier' ? (s.suppliers?.name || 'No Supplier') :
+                  groupBy === 'supplier' ? (s.suppliers?.name ? maskSupplierName(s.suppliers.name, currentPerson?.name) : 'No Supplier') :
                   s.category || 'Unassigned'
       if (!grouped[key]) grouped[key] = []
       grouped[key].push(s)
@@ -665,7 +665,7 @@ export default function RangeDetail() {
                                           <div className="rp-card-body">
                                             <div className="rp-card-name">{style.name}</div>
                                             {cardSize !== 'sm' && style.suppliers?.name && groupBy !== 'supplier' && (
-                                              <div className="rp-card-supplier"><Factory size={11} /> {style.suppliers.name}</div>
+                                              <div className="rp-card-supplier"><Factory size={11} /> {maskSupplierName(style.suppliers.name, currentPerson?.name)}</div>
                                             )}
                                             <div className="rp-card-tags">
                                               {groupBy !== 'category' && <span className="tag">{style.category}</span>}
@@ -857,7 +857,7 @@ function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, o
       <div className="rp-card-body">
         <div className="rp-card-name">{style.name}</div>
         {cardSize !== 'sm' && style.suppliers?.name && groupBy !== 'supplier' && (
-          <div className="rp-card-supplier"><Factory size={11} /> {style.suppliers.name}</div>
+          <div className="rp-card-supplier"><Factory size={11} /> {maskSupplierName(style.suppliers.name, currentPerson?.name)}</div>
         )}
         <div className="rp-card-tags">
           {groupBy !== 'category' && <span className="tag">{style.category}</span>}
@@ -1058,7 +1058,7 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
                 )}
               </td>
               <td style={{ fontSize: '0.8125rem', color: 'var(--gray-600)' }}>
-                {style.suppliers?.name || '—'}
+                {style.suppliers?.name ? maskSupplierName(style.suppliers.name, currentPerson?.name) : '—'}
               </td>
               <td>
                 <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />

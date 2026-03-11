@@ -1,7 +1,10 @@
+import { useApp } from '../App'
+import { maskSupplierName } from '../lib/constants'
 import StatusBadge from './StatusBadge'
 import { Package, Calendar, DollarSign } from 'lucide-react'
 
 export default function POCard({ po, onClick }) {
+  const { currentPerson } = useApp()
   const formatDate = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null
   const isOverdue = po.delivery_date && new Date(po.delivery_date) < new Date() && !['received', 'cancelled'].includes(po.status)
 
@@ -10,7 +13,7 @@ export default function POCard({ po, onClick }) {
       <div className="po-card-header">
         <div>
           <div className="po-card-number">{po.po_number}</div>
-          <div className="po-card-supplier">{po.suppliers?.name || 'No supplier'}</div>
+          <div className="po-card-supplier">{po.suppliers?.name ? maskSupplierName(po.suppliers.name, currentPerson?.name) : 'No supplier'}</div>
         </div>
         <StatusBadge status={po.status} />
       </div>

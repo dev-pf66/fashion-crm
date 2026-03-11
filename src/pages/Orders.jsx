@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useSeason } from '../contexts/SeasonContext'
 import { useApp } from '../App'
 import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, getSuppliers } from '../lib/supabase'
-import { PO_STATUSES } from '../lib/constants'
+import { PO_STATUSES, maskSupplierName } from '../lib/constants'
 import { exportToCSV } from '../lib/csvExporter'
 import POCard from '../components/POCard'
 import POForm from '../components/POForm'
@@ -14,7 +14,8 @@ import { Plus, Grid3X3, List, ClipboardList, Search, Download, ArrowUpDown, Eye 
 
 export default function Orders() {
   const { currentSeason } = useSeason()
-  const { people } = useApp()
+  const { people, currentPerson } = useApp()
+  const mn = currentPerson?.name
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -97,7 +98,7 @@ export default function Orders() {
     exportToCSV(filtered, 'purchase-orders', [
       { key: 'po_number', header: 'PO Number' },
       { key: 'status', header: 'Status' },
-      { header: 'Supplier', format: r => r.suppliers?.name || '' },
+      { header: 'Supplier', format: r => r.suppliers?.name ? maskSupplierName(r.suppliers.name, mn) : '' },
       { key: 'issue_date', header: 'Issue Date' },
       { key: 'delivery_date', header: 'Delivery Date' },
       { key: 'total_qty', header: 'Total Qty' },
@@ -141,7 +142,7 @@ export default function Orders() {
         </select>
         <select value={filters.supplier_id} onChange={e => setFilters(p => ({ ...p, supplier_id: e.target.value }))}>
           <option value="">All Suppliers</option>
-          {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, mn)}</option>)}
         </select>
       </div>
 
@@ -182,7 +183,7 @@ export default function Orders() {
               {sortedItems(filtered).map(po => (
                 <tr key={po.id} className="clickable" onClick={() => navigate(`/orders/${po.id}`)}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', fontWeight: 600 }}>{po.po_number}</td>
-                  <td>{po.suppliers?.name || '-'}</td>
+                  <td>{po.suppliers?.name ? maskSupplierName(po.suppliers.name, mn) : '-'}</td>
                   <td onClick={e => e.stopPropagation()}>
                     <InlineStatusSelect status={po.status} statuses={PO_STATUSES} onChange={v => handleInlineStatusChange(po.id, v)} />
                   </td>

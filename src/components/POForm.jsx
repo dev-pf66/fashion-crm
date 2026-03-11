@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useApp } from '../App'
 import { useSeason } from '../contexts/SeasonContext'
 import { getSuppliers } from '../lib/supabase'
-import { PO_STATUSES, CURRENCIES } from '../lib/constants'
+import { PO_STATUSES, CURRENCIES, maskSupplierName } from '../lib/constants'
 import Modal from './Modal'
 
 export default function POForm({ po, onClose, onSave }) {
@@ -65,7 +65,7 @@ export default function POForm({ po, onClose, onSave }) {
             <label>Supplier *</label>
             <select value={form.supplier_id} onChange={e => set('supplier_id', e.target.value)} required>
               <option value="">Select supplier...</option>
-              {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson?.name)}</option>)}
             </select>
           </div>
         </div>

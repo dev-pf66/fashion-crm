@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useApp } from '../App'
 import { useToast } from '../contexts/ToastContext'
 import { getTask, deleteTask, getTaskSubtasks, createTaskSubtask, updateTaskSubtask, deleteTaskSubtask } from '../lib/supabase'
-import { TASK_PRIORITIES, TASK_TAGS } from '../lib/constants'
+import { TASK_PRIORITIES, TASK_TAGS, maskSupplierName } from '../lib/constants'
 import Modal from './Modal'
 import StatusBadge from './StatusBadge'
 import CommentSection from './CommentSection'
@@ -121,7 +121,7 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
 
   const linkedEntities = []
   if (task?.styles) linkedEntities.push({ label: task.styles.style_number, type: 'Style', color: 'var(--info)' })
-  if (task?.suppliers) linkedEntities.push({ label: task.suppliers.name, type: 'Supplier', color: 'var(--warning)' })
+  if (task?.suppliers) linkedEntities.push({ label: maskSupplierName(task.suppliers.name, currentPerson?.name), type: 'Supplier', color: 'var(--warning)' })
   if (task?.purchase_orders) linkedEntities.push({ label: task.purchase_orders.po_number, type: 'PO', color: 'var(--primary)' })
   if (task?.range_id) linkedEntities.push({ label: task.ranges?.name || 'Range', type: 'Range', color: '#818cf8' })
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSeason } from '../contexts/SeasonContext'
 import { useApp } from '../App'
 import { getStyles, getSuppliers, updateStyle } from '../lib/supabase'
-import { STYLE_STATUSES, STYLE_CATEGORIES } from '../lib/constants'
+import { STYLE_STATUSES, STYLE_CATEGORIES, maskSupplierName } from '../lib/constants'
 import StyleCard from '../components/StyleCard'
 import StyleForm from '../components/StyleForm'
 import InlineStatusSelect from '../components/InlineStatusSelect'
@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom'
 
 export default function Styles() {
   const { currentSeason } = useSeason()
-  const { people } = useApp()
+  const { people, currentPerson } = useApp()
   const navigate = useNavigate()
   const [styles, setStyles] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -118,7 +118,7 @@ export default function Styles() {
             { key: 'name', header: 'Name' },
             { key: 'category', header: 'Category' },
             { key: 'status', header: 'Status' },
-            { header: 'Supplier', format: r => r.suppliers?.name || '' },
+            { header: 'Supplier', format: r => r.suppliers?.name ? maskSupplierName(r.suppliers.name, currentPerson?.name) : '' },
             { key: 'target_fob', header: 'Target FOB' },
             { header: 'Assigned To', format: r => r.people?.name || '' },
           ])} disabled={filtered.length === 0}>
@@ -211,7 +211,7 @@ export default function Styles() {
                   </td>
                   <td style={{ fontWeight: 500 }}>{style.name}</td>
                   <td>{style.category || '-'}</td>
-                  <td>{style.suppliers?.name || '-'}</td>
+                  <td>{style.suppliers?.name ? maskSupplierName(style.suppliers.name, currentPerson?.name) : '-'}</td>
                   <td onClick={e => e.stopPropagation()}>
                     <InlineStatusSelect status={style.status} statuses={STYLE_STATUSES} onChange={v => handleInlineStatusChange(style.id, v)} />
                   </td>

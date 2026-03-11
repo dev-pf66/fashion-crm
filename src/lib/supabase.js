@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { maskSupplierName } from './constants'
 
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\s+/g, '')
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').replace(/\s+/g, '')
@@ -466,7 +467,7 @@ export async function getActivityLog(seasonId, filters = {}) {
 // DASHBOARD ENHANCEMENTS
 // ============================================================
 
-export async function getUpcomingDeadlines(seasonId) {
+export async function getUpcomingDeadlines(seasonId, personName) {
   const now = new Date()
   const weekFromNow = new Date(now.getTime() + 7 * 86400000)
   const nowStr = now.toISOString().slice(0, 10)
@@ -507,7 +508,7 @@ export async function getUpcomingDeadlines(seasonId) {
     deadlines.push({
       type: 'po',
       id: p.id,
-      label: `${p.po_number} - ${p.suppliers?.name || ''}`,
+      label: `${p.po_number} - ${p.suppliers?.name ? maskSupplierName(p.suppliers.name, personName) : ''}`,
       date: p.delivery_date,
       status: p.status,
     })
@@ -521,7 +522,7 @@ export async function getUpcomingDeadlines(seasonId) {
 // GLOBAL SEARCH
 // ============================================================
 
-export async function globalSearch(query, seasonId) {
+export async function globalSearch(query, seasonId, personName) {
   const q = query.toLowerCase()
   const results = []
 
@@ -538,13 +539,13 @@ export async function globalSearch(query, seasonId) {
   ])
 
   ;(styles.data || []).forEach(s => {
-    results.push({ type: 'style', id: s.id, label: `${s.style_number} - ${s.name}`, sub: s.suppliers?.name || s.category || '' })
+    results.push({ type: 'style', id: s.id, label: `${s.style_number} - ${s.name}`, sub: s.suppliers?.name ? maskSupplierName(s.suppliers.name, personName) : (s.category || '') })
   })
   ;(suppliers.data || []).forEach(s => {
-    results.push({ type: 'supplier', id: s.id, label: s.name, sub: [s.code, s.country].filter(Boolean).join(' · ') })
+    results.push({ type: 'supplier', id: s.id, label: maskSupplierName(s.name, personName), sub: [s.code, s.country].filter(Boolean).join(' · ') })
   })
   ;(pos.data || []).forEach(p => {
-    results.push({ type: 'purchase_order', id: p.id, label: p.po_number, sub: p.suppliers?.name || '' })
+    results.push({ type: 'purchase_order', id: p.id, label: p.po_number, sub: p.suppliers?.name ? maskSupplierName(p.suppliers.name, personName) : '' })
   })
   ;(people.data || []).forEach(p => {
     results.push({ type: 'person', id: p.id, label: p.name, sub: p.role || p.email || '' })

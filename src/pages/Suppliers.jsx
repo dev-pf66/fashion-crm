@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getSuppliers, createSupplier } from '../lib/supabase'
-import { SUPPLIER_STATUSES, PRODUCT_TYPES, CERTIFICATIONS } from '../lib/constants'
+import { SUPPLIER_STATUSES, PRODUCT_TYPES, CERTIFICATIONS, maskSupplierName } from '../lib/constants'
+import { useApp } from '../App'
 import StatusBadge from '../components/StatusBadge'
 import InlineStatusSelect from '../components/InlineStatusSelect'
 import QuickViewDrawer from '../components/QuickViewDrawer'
@@ -12,6 +13,8 @@ import { Plus, Factory, Search, Grid3X3, List, Download, ArrowUpDown, Eye } from
 
 export default function Suppliers() {
   const navigate = useNavigate()
+  const { currentPerson } = useApp()
+  const mn = currentPerson?.name
   const [suppliers, setSuppliers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -126,9 +129,9 @@ export default function Suppliers() {
           {filtered.map(s => (
             <div key={s.id} className="supplier-card" onClick={() => navigate(`/suppliers/${s.id}`)}>
               <div className="supplier-card-header">
-                <div className="supplier-logo">{s.name.charAt(0)}</div>
+                <div className="supplier-logo">{maskSupplierName(s.name, mn).charAt(0)}</div>
                 <div>
-                  <div className="supplier-card-name">{s.name}</div>
+                  <div className="supplier-card-name">{maskSupplierName(s.name, mn)}</div>
                   <div className="supplier-card-location">{[s.city, s.country].filter(Boolean).join(', ') || 'No location'}</div>
                 </div>
                 <div style={{ marginLeft: 'auto' }}><StatusBadge status={s.status} /></div>
@@ -169,7 +172,7 @@ export default function Suppliers() {
               {sortedItems(filtered).map(s => (
                 <tr key={s.id} className="clickable" onClick={() => navigate(`/suppliers/${s.id}`)}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem' }}>{s.code || '-'}</td>
-                  <td style={{ fontWeight: 500 }}>{s.name}</td>
+                  <td style={{ fontWeight: 500 }}>{maskSupplierName(s.name, mn)}</td>
                   <td>{s.country || '-'}</td>
                   <td onClick={e => e.stopPropagation()}>
                     <InlineStatusSelect status={s.status} statuses={SUPPLIER_STATUSES} onChange={() => {}} />

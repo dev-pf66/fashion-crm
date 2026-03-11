@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { Clock, User, Link2, CheckSquare, Timer } from 'lucide-react'
-import { TASK_PRIORITIES, TASK_TAGS } from '../lib/constants'
+import { TASK_PRIORITIES, TASK_TAGS, maskSupplierName } from '../lib/constants'
+import { useApp } from '../App'
 
 function getInitials(name) {
   if (!name) return '??'
@@ -13,6 +14,8 @@ function daysAge(dateStr) {
 }
 
 const TaskCard = memo(function TaskCard({ task, onClick, subtaskCount }) {
+  const { currentPerson } = useApp()
+  const mn = currentPerson?.name
   const priority = TASK_PRIORITIES.find(p => p.value === task.priority) || TASK_PRIORITIES[1]
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done'
   const tags = (task.tags || []).slice(0, 3)
@@ -22,7 +25,7 @@ const TaskCard = memo(function TaskCard({ task, onClick, subtaskCount }) {
   const linkedEntity = task.styles
     ? `${task.styles.style_number}`
     : task.suppliers
-    ? task.suppliers.name
+    ? maskSupplierName(task.suppliers.name, mn)
     : task.purchase_orders
     ? task.purchase_orders.po_number
     : null

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers } from '../lib/supabase'
 import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
-import { STYLE_CATEGORIES as DEFAULT_CATEGORIES } from '../lib/constants'
+import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
+import { useApp } from '../App'
 import CommentSection from './CommentSection'
 import { X, Upload, Trash2, Star, FileText, Image as ImageIcon, Loader } from 'lucide-react'
 
@@ -14,6 +15,7 @@ const STATUSES = [
 ]
 
 export default function RangeStylePanel({ styleId, rangeId, categories, onClose, onUpdate, onDelete }) {
+  const { currentPerson } = useApp()
   const STYLE_CATEGORIES = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES
   const toast = useToast()
   const fileInputRef = useRef(null)
@@ -216,7 +218,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               <label>Supplier</label>
               <select value={form.supplier_id} onChange={e => updateField('supplier_id', e.target.value)}>
                 <option value="">No supplier</option>
-                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson?.name)}</option>)}
               </select>
             </div>
 

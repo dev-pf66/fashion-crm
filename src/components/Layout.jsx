@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { ADMIN_NAMES } from '../lib/constants'
 import { useSeason } from '../contexts/SeasonContext'
 import { useApp } from '../App'
 import FeedbackButton from './FeedbackButton'
@@ -115,11 +116,19 @@ export default function Layout() {
         )}
 
         <nav>
-          {NAV_SECTIONS.map(section => (
+          {NAV_SECTIONS.map(section => {
+            const isAdmin = ADMIN_NAMES.includes(currentPerson?.name)
+            const items = section.items.filter(item => {
+              if (item.to === '/admin') return isAdmin
+              if (item.to === '/suppliers') return isAdmin
+              return true
+            })
+            if (items.length === 0) return null
+            return (
             <div key={section.label} className="sidebar-section">
               <div className="sidebar-section-label">{section.label}</div>
               <ul className="sidebar-nav">
-                {section.items.map(item => (
+                {items.map(item => (
                   <li key={item.to}>
                     <NavLink
                       to={item.to}
@@ -133,7 +142,7 @@ export default function Layout() {
                 ))}
               </ul>
             </div>
-          ))}
+          )})}
         </nav>
 
         <div className="sidebar-footer">

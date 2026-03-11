@@ -1,3 +1,13 @@
+// Admin access list
+export const ADMIN_NAMES = ['dev', 'trisha.b', 'monica']
+
+// Mask supplier name: show only first 3 characters for non-admins
+export function maskSupplierName(name, currentPersonName) {
+  if (!name) return name
+  if (ADMIN_NAMES.includes(currentPersonName)) return name
+  return name.slice(0, 3) + '***'
+}
+
 // Style statuses
 export const STYLE_STATUSES = [
   { value: 'concept', label: 'Concept', color: '#e0e7ff' },
