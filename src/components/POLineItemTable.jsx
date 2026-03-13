@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react'
 import { getStyles } from '../lib/supabase'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { Plus, Trash2, Save } from 'lucide-react'
 
 export default function POLineItemTable({ lineItems, onAdd, onUpdate, onDelete }) {
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const [styles, setStyles] = useState([])
   const [newRow, setNewRow] = useState(null)
   const [editingId, setEditingId] = useState(null)
 
   useEffect(() => {
-    if (currentSeason) {
-      getStyles(currentSeason.id).then(setStyles).catch(() => {})
+    if (currentDivision) {
+      getStyles(currentDivision.id).then(setStyles).catch(() => {})
     }
-  }, [currentSeason])
+  }, [currentDivision])
 
   function startAdd() {
     setNewRow({ style_id: '', colorway: '', size: '', quantity: '', unit_price: '' })

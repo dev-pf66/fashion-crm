@@ -54,20 +54,20 @@ export async function updatePerson(id, updates) {
 // SEASONS
 // ============================================================
 
-export async function getSeasons() {
-  const { data, error } = await supabase.from('seasons').select('*').order('start_date', { ascending: false })
+export async function getDivisions() {
+  const { data, error } = await supabase.from('divisions').select('*').order('start_date', { ascending: false })
   if (error) throw error
   return data
 }
 
-export async function createSeason(season) {
-  const { data, error } = await supabase.from('seasons').insert([season]).select().single()
+export async function createDivision(division) {
+  const { data, error } = await supabase.from('divisions').insert([division]).select().single()
   if (error) throw error
   return data
 }
 
-export async function updateSeason(id, updates) {
-  const { data, error } = await supabase.from('seasons').update(updates).eq('id', id).select().single()
+export async function updateDivision(id, updates) {
+  const { data, error } = await supabase.from('divisions').update(updates).eq('id', id).select().single()
   if (error) throw error
   return data
 }
@@ -150,11 +150,11 @@ export async function deleteMaterial(id) {
 // STYLES
 // ============================================================
 
-export async function getStyles(seasonId, filters = {}) {
+export async function getStyles(divisionId, filters = {}) {
   let query = supabase
     .from('styles')
     .select('*, suppliers(id, name, country), people:assigned_to(id, name)')
-    .eq('season_id', seasonId)
+    .eq('division_id', divisionId)
     .order('style_number')
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.category) query = query.eq('category', filters.category)
@@ -246,11 +246,11 @@ export async function deleteBomItem(id) {
 // SAMPLES
 // ============================================================
 
-export async function getSamples(seasonId) {
+export async function getSamples(divisionId) {
   const { data, error } = await supabase
     .from('samples')
-    .select('*, styles!inner(id, name, style_number, thumbnail_url, season_id), suppliers(id, name), people:assigned_to(id, name)')
-    .eq('styles.season_id', seasonId)
+    .select('*, styles!inner(id, name, style_number, thumbnail_url, division_id), suppliers(id, name), people:assigned_to(id, name)')
+    .eq('styles.division_id', divisionId)
     .order('created_at', { ascending: false })
   if (error) throw error
   return data
@@ -306,11 +306,11 @@ export async function deleteSample(id) {
 // DASHBOARD STATS
 // ============================================================
 
-export async function getDashboardStats(seasonId) {
+export async function getDashboardStats(divisionId) {
   const [styles, samples, pos] = await Promise.all([
-    supabase.from('styles').select('id, status').eq('season_id', seasonId),
-    supabase.from('samples').select('id, status, round, style_id, styles!inner(season_id)').eq('styles.season_id', seasonId),
-    supabase.from('purchase_orders').select('id, status').eq('season_id', seasonId),
+    supabase.from('styles').select('id, status').eq('division_id', divisionId),
+    supabase.from('samples').select('id, status, round, style_id, styles!inner(division_id)').eq('styles.division_id', divisionId),
+    supabase.from('purchase_orders').select('id, status').eq('division_id', divisionId),
   ])
   if (styles.error) throw styles.error
   if (samples.error) throw samples.error
@@ -342,11 +342,11 @@ export async function getDashboardStats(seasonId) {
 // PURCHASE ORDERS
 // ============================================================
 
-export async function getPurchaseOrders(seasonId, filters = {}) {
+export async function getPurchaseOrders(divisionId, filters = {}) {
   let query = supabase
     .from('purchase_orders')
     .select('*, suppliers(id, name), people:assigned_to(id, name)')
-    .eq('season_id', seasonId)
+    .eq('division_id', divisionId)
     .order('created_at', { ascending: false })
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.supplier_id) query = query.eq('supplier_id', filters.supplier_id)
@@ -449,12 +449,12 @@ export async function updatePOTotals(poId) {
 // ACTIVITY LOG
 // ============================================================
 
-export async function getActivityLog(seasonId, filters = {}) {
+export async function getActivityLog(divisionId, filters = {}) {
   let query = supabase
     .from('activity_log')
     .select('*, people(id, name)')
     .order('created_at', { ascending: false })
-  if (seasonId) query = query.eq('season_id', seasonId)
+  if (divisionId) query = query.eq('division_id', divisionId)
   if (filters.entity_type) query = query.eq('entity_type', filters.entity_type)
   if (filters.person_id) query = query.eq('person_id', filters.person_id)
   if (filters.limit) query = query.limit(filters.limit)
@@ -467,7 +467,7 @@ export async function getActivityLog(seasonId, filters = {}) {
 // DASHBOARD ENHANCEMENTS
 // ============================================================
 
-export async function getUpcomingDeadlines(seasonId, personName) {
+export async function getUpcomingDeadlines(divisionId, personName) {
   const now = new Date()
   const weekFromNow = new Date(now.getTime() + 7 * 86400000)
   const nowStr = now.toISOString().slice(0, 10)
@@ -476,8 +476,8 @@ export async function getUpcomingDeadlines(seasonId, personName) {
   const [samples, pos] = await Promise.all([
     supabase
       .from('samples')
-      .select('id, expected_date, round, round_number, colorway, status, styles!inner(id, name, style_number, season_id)')
-      .eq('styles.season_id', seasonId)
+      .select('id, expected_date, round, round_number, colorway, status, styles!inner(id, name, style_number, division_id)')
+      .eq('styles.division_id', divisionId)
       .gte('expected_date', nowStr)
       .lte('expected_date', futureStr)
       .not('status', 'in', '("approved","rejected")')
@@ -485,7 +485,7 @@ export async function getUpcomingDeadlines(seasonId, personName) {
     supabase
       .from('purchase_orders')
       .select('id, po_number, delivery_date, status, suppliers(id, name)')
-      .eq('season_id', seasonId)
+      .eq('division_id', divisionId)
       .gte('delivery_date', nowStr)
       .lte('delivery_date', futureStr)
       .not('status', 'in', '("received","cancelled")')
@@ -522,17 +522,17 @@ export async function getUpcomingDeadlines(seasonId, personName) {
 // GLOBAL SEARCH
 // ============================================================
 
-export async function globalSearch(query, seasonId, adminAccess) {
+export async function globalSearch(query, divisionId, adminAccess) {
   const q = query.toLowerCase()
   const results = []
 
   const [styles, suppliers, pos, people, tasks] = await Promise.all([
-    seasonId
-      ? supabase.from('styles').select('id, name, style_number, status, category, suppliers(name), people:assigned_to(name)').eq('season_id', seasonId).or(`name.ilike.%${q}%,style_number.ilike.%${q}%`).limit(5)
+    divisionId
+      ? supabase.from('styles').select('id, name, style_number, status, category, suppliers(name), people:assigned_to(name)').eq('division_id', divisionId).or(`name.ilike.%${q}%,style_number.ilike.%${q}%`).limit(5)
       : { data: [] },
     supabase.from('suppliers').select('id, name, code, country, status').or(`name.ilike.%${q}%,code.ilike.%${q}%`).limit(5),
-    seasonId
-      ? supabase.from('purchase_orders').select('id, po_number, status, suppliers(name), people:assigned_to(name)').eq('season_id', seasonId).ilike('po_number', `%${q}%`).limit(5)
+    divisionId
+      ? supabase.from('purchase_orders').select('id, po_number, status, suppliers(name), people:assigned_to(name)').eq('division_id', divisionId).ilike('po_number', `%${q}%`).limit(5)
       : { data: [] },
     supabase.from('people').select('id, name, email, role').ilike('name', `%${q}%`).limit(5),
     supabase.from('tasks').select('id, title, status, priority, people:assigned_to(name)').ilike('title', `%${q}%`).limit(5),
@@ -668,25 +668,25 @@ export async function deleteComment(id) {
 // CALENDAR DATA
 // ============================================================
 
-export async function getCalendarEvents(seasonId, startDate, endDate) {
+export async function getCalendarEvents(divisionId, startDate, endDate) {
   const events = []
 
   const [samples, pos, styles, tasks] = await Promise.all([
     supabase
       .from('samples')
-      .select('id, expected_date, round, round_number, status, colorway, styles!inner(id, name, style_number, season_id)')
-      .eq('styles.season_id', seasonId)
+      .select('id, expected_date, round, round_number, status, colorway, styles!inner(id, name, style_number, division_id)')
+      .eq('styles.division_id', divisionId)
       .gte('expected_date', startDate)
       .lte('expected_date', endDate)
       .not('status', 'in', '("approved","rejected")'),
     supabase
       .from('purchase_orders')
       .select('id, po_number, status, delivery_date, ex_factory_date, suppliers(id, name)')
-      .eq('season_id', seasonId),
+      .eq('division_id', divisionId),
     supabase
       .from('styles')
       .select('id, style_number, name, development_start, target_delivery, status')
-      .eq('season_id', seasonId),
+      .eq('division_id', divisionId),
     supabase
       .from('tasks')
       .select('id, title, due_date, status, priority, people:assigned_to(id, name)')
@@ -775,12 +775,12 @@ export async function getCalendarEvents(seasonId, startDate, endDate) {
 // STYLE REQUESTS
 // ============================================================
 
-export async function getStyleRequests(seasonId) {
+export async function getStyleRequests(divisionId) {
   let query = supabase
     .from('style_requests')
     .select('*, people:submitted_by(id, name, email)')
     .order('created_at', { ascending: false })
-  if (seasonId) query = query.eq('season_id', seasonId)
+  if (divisionId) query = query.eq('division_id', divisionId)
   const { data, error } = await query
   if (error) throw error
   return data
@@ -816,11 +816,13 @@ export async function deleteStyleRequest(id) {
 // RANGE PLANNING
 // ============================================================
 
-export async function getRanges() {
-  const { data, error } = await supabase
+export async function getRanges(divisionId) {
+  let query = supabase
     .from('ranges')
     .select('*, range_styles(id, category, status, production_qty)')
     .order('created_at', { ascending: false })
+  if (divisionId) query = query.eq('division_id', divisionId)
+  const { data, error } = await query
   if (error) throw error
   // Fetch creator names separately
   if (data?.length) {
@@ -1022,6 +1024,7 @@ export async function getTasks(filters = {}) {
     .select(TASK_SELECT)
     .order('sort_order')
     .order('created_at', { ascending: false })
+  if (filters.division_id) query = query.eq('division_id', filters.division_id)
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.assigned_to) query = query.eq('assigned_to', filters.assigned_to)
   if (filters.priority) query = query.eq('priority', filters.priority)
@@ -1288,20 +1291,20 @@ export async function flagStaleTasks(fromPersonId) {
   return created
 }
 
-export async function getOverdueItems(seasonId) {
+export async function getOverdueItems(divisionId) {
   const nowStr = new Date().toISOString().slice(0, 10)
 
   const [samples, pos] = await Promise.all([
     supabase
       .from('samples')
-      .select('id, expected_date, round, status, styles!inner(id, name, style_number, season_id)')
-      .eq('styles.season_id', seasonId)
+      .select('id, expected_date, round, status, styles!inner(id, name, style_number, division_id)')
+      .eq('styles.division_id', divisionId)
       .lt('expected_date', nowStr)
       .not('status', 'in', '("approved","rejected")'),
     supabase
       .from('purchase_orders')
       .select('id, po_number, delivery_date, status')
-      .eq('season_id', seasonId)
+      .eq('division_id', divisionId)
       .lt('delivery_date', nowStr)
       .not('status', 'in', '("received","cancelled")'),
   ])

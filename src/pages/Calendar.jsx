@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { getCalendarEvents } from '../lib/supabase'
 import StatusBadge from '../components/StatusBadge'
 import {
@@ -30,7 +30,7 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 export default function Calendar() {
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const navigate = useNavigate()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [events, setEvents] = useState([])
@@ -41,8 +41,8 @@ export default function Calendar() {
   const month = currentDate.getMonth()
 
   useEffect(() => {
-    if (currentSeason) loadEvents()
-  }, [currentSeason, year, month])
+    if (currentDivision) loadEvents()
+  }, [currentDivision, year, month])
 
   async function loadEvents() {
     setLoading(true)
@@ -50,7 +50,7 @@ export default function Calendar() {
       // Load 2 months around current view
       const start = new Date(year, month - 1, 1).toISOString().slice(0, 10)
       const end = new Date(year, month + 2, 0).toISOString().slice(0, 10)
-      const data = await getCalendarEvents(currentSeason.id, start, end)
+      const data = await getCalendarEvents(currentDivision.id, start, end)
       setEvents(data)
     } catch (err) {
       console.error('Failed to load calendar events:', err)

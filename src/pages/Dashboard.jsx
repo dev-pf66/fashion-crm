@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
 import { getDashboardStats, getStyles, getUpcomingDeadlines, getOverdueItems, getTaskMetrics } from '../lib/supabase'
 import { STYLE_STATUSES, SAMPLE_ROUNDS } from '../lib/constants'
@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 
 export default function Dashboard() {
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const { currentPerson } = useApp()
   const navigate = useNavigate()
   const [stats, setStats] = useState(null)
@@ -25,17 +25,17 @@ export default function Dashboard() {
   const toast = useToast()
 
   useEffect(() => {
-    if (currentSeason) loadData()
-  }, [currentSeason])
+    if (currentDivision) loadData()
+  }, [currentDivision])
 
   async function loadData() {
     setLoading(true)
     try {
       const [statsData, stylesData, deadlinesData, overdueData, taskData] = await Promise.all([
-        getDashboardStats(currentSeason.id),
-        getStyles(currentSeason.id),
-        getUpcomingDeadlines(currentSeason.id, currentPerson?.name),
-        getOverdueItems(currentSeason.id),
+        getDashboardStats(currentDivision.id),
+        getStyles(currentDivision.id),
+        getUpcomingDeadlines(currentDivision.id, currentPerson?.name),
+        getOverdueItems(currentDivision.id),
         getTaskMetrics(),
       ])
       setStats(statsData)
@@ -67,7 +67,7 @@ export default function Dashboard() {
       <div className="page-header">
         <div>
           <h1>Dashboard</h1>
-          <p className="subtitle">{currentSeason?.name || 'No division selected'}</p>
+          <p className="subtitle">{currentDivision?.name || 'No division selected'}</p>
         </div>
       </div>
 
@@ -244,7 +244,7 @@ export default function Dashboard() {
               View All
             </button>
           </div>
-          <ActivityFeed seasonId={currentSeason?.id} limit={8} compact />
+          <ActivityFeed divisionId={currentDivision?.id} limit={8} compact />
         </div>
       </div>
 

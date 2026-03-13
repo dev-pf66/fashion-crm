@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { getSuppliers } from '../lib/supabase'
 import { PO_STATUSES, CURRENCIES, maskSupplierName } from '../lib/constants'
 import Modal from './Modal'
 
 export default function POForm({ po, onClose, onSave }) {
   const { people, currentPerson } = useApp()
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const [suppliers, setSuppliers] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -27,7 +27,7 @@ export default function POForm({ po, onClose, onSave }) {
     incoterms: po?.incoterms || '',
     assigned_to: po?.assigned_to || currentPerson?.id || '',
     notes: po?.notes || '',
-    season_id: po?.season_id || currentSeason?.id,
+    division_id: po?.division_id || currentDivision?.id,
   })
 
   useEffect(() => {

@@ -10,13 +10,13 @@ const ACTION_ICONS = {
   status_changed: RefreshCw,
 }
 
-export default function ActivityFeed({ seasonId, limit = 8, compact = false }) {
+export default function ActivityFeed({ divisionId, limit = 8, compact = false }) {
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadActivity()
-  }, [seasonId])
+  }, [divisionId])
 
   async function loadActivity() {
     try {
@@ -25,7 +25,7 @@ export default function ActivityFeed({ seasonId, limit = 8, compact = false }) {
         .select('*, people(id, name)')
         .order('created_at', { ascending: false })
         .limit(limit)
-      if (seasonId) query = query.eq('season_id', seasonId)
+      if (divisionId) query = query.eq('division_id', divisionId)
       const { data, error } = await query
       if (error) throw error
       setEntries(data || [])

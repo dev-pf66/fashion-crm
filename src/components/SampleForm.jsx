@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { getStyles, getSuppliers, createSample, updateSample } from '../lib/supabase'
 import { SAMPLE_ROUNDS, SAMPLE_STATUSES, maskSupplierName } from '../lib/constants'
 import Modal from './Modal'
 
 export default function SampleForm({ sample, styleId, onClose, onSave }) {
   const { people, currentPerson } = useApp()
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const [styles, setStyles] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [saving, setSaving] = useState(false)
@@ -59,7 +59,7 @@ export default function SampleForm({ sample, styleId, onClose, onSave }) {
   async function loadDropdowns() {
     try {
       const [stylesData, suppliersData] = await Promise.all([
-        currentSeason ? getStyles(currentSeason.id) : Promise.resolve([]),
+        currentDivision ? getStyles(currentDivision.id) : Promise.resolve([]),
         getSuppliers({ status: 'active' }),
       ])
       setStyles(stylesData || [])

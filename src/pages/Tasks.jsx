@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useApp } from '../App'
+import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
 import { getTasks, updateTask, updateTaskOrder, getTaskSubtaskCounts } from '../lib/supabase'
 import { TASK_STATUSES, TASK_PRIORITIES, TASK_TAGS } from '../lib/constants'
@@ -12,6 +13,7 @@ import { Plus, CheckSquare, LayoutGrid, List, X, Clock, User, Timer } from 'luci
 
 export default function Tasks() {
   const { people } = useApp()
+  const { currentDivision } = useDivision()
   const toast = useToast()
   const [tasks, setTasks] = useState([])
   const [subtaskCounts, setSubtaskCounts] = useState({})
@@ -30,13 +32,13 @@ export default function Tasks() {
 
   useEffect(() => {
     loadTasks()
-  }, [])
+  }, [currentDivision])
 
   async function loadTasks() {
     setLoading(true)
     try {
       const [data, counts] = await Promise.all([
-        getTasks(),
+        getTasks({ division_id: currentDivision?.id }),
         getTaskSubtaskCounts(),
       ])
       setTasks(data || [])

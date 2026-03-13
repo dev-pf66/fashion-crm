@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { getSuppliers, createStyle, updateStyle } from '../lib/supabase'
 import { STYLE_CATEGORIES, STYLE_STATUSES, SIZE_PRESETS, maskSupplierName } from '../lib/constants'
 import Modal from './Modal'
@@ -9,7 +9,7 @@ import SizeRunInput from './SizeRunInput'
 
 export default function StyleForm({ style, onClose, onSave }) {
   const { people, currentPerson } = useApp()
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const [suppliers, setSuppliers] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -77,7 +77,7 @@ export default function StyleForm({ style, onClose, onSave }) {
     setError('')
     setSaving(true)
 
-    if (!currentSeason?.id) {
+    if (!currentDivision?.id) {
       setError('No division selected. Please select a division first.')
       setSaving(false)
       return
@@ -86,7 +86,7 @@ export default function StyleForm({ style, onClose, onSave }) {
     try {
       const data = {
         ...form,
-        season_id: currentSeason.id,
+        division_id: currentDivision.id,
         supplier_id: form.supplier_id || null,
         assigned_to: form.assigned_to || null,
         target_fob: form.target_fob || null,

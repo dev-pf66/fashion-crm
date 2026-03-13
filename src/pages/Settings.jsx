@@ -1,18 +1,18 @@
 import { useState } from 'react'
-import { useSeason } from '../contexts/SeasonContext'
-import { createSeason, updateSeason } from '../lib/supabase'
+import { useDivision } from '../contexts/DivisionContext'
+import { createDivision, updateDivision } from '../lib/supabase'
 import Modal from '../components/Modal'
 import { Plus, Calendar, Edit } from 'lucide-react'
 
 export default function Settings() {
-  const { seasons, refreshSeasons } = useSeason()
+  const { divisions, refreshDivisions } = useDivision()
   const [showForm, setShowForm] = useState(false)
-  const [editSeason, setEditSeason] = useState(null)
+  const [editDivision, setEditDivision] = useState(null)
 
   async function handleSave() {
     setShowForm(false)
-    setEditSeason(null)
-    await refreshSeasons()
+    setEditDivision(null)
+    await refreshDivisions()
   }
 
   return (
@@ -27,12 +27,12 @@ export default function Settings() {
       <div className="settings-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--gray-100)' }}>
           <h3 style={{ margin: 0, padding: 0, border: 'none' }}>Divisions</h3>
-          <button className="btn btn-primary btn-sm" onClick={() => { setEditSeason(null); setShowForm(true) }}>
+          <button className="btn btn-primary btn-sm" onClick={() => { setEditDivision(null); setShowForm(true) }}>
             <Plus size={14} /> New Division
           </button>
         </div>
 
-        {seasons.length === 0 ? (
+        {divisions.length === 0 ? (
           <div className="empty-state">
             <Calendar size={48} />
             <h3>No divisions</h3>
@@ -40,21 +40,21 @@ export default function Settings() {
             <button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Create Division</button>
           </div>
         ) : (
-          <div className="seasons-list">
-            {seasons.map(s => (
-              <div key={s.id} className="season-item">
+          <div className="divisions-list">
+            {divisions.map(s => (
+              <div key={s.id} className="division-item">
                 <div>
-                  <div className="season-item-name">{s.name}</div>
-                  <div className="season-item-code">{s.code}</div>
+                  <div className="division-item-name">{s.name}</div>
+                  <div className="division-item-code">{s.code}</div>
                 </div>
-                <div className="season-item-dates">
+                <div className="division-item-dates">
                   {s.start_date && s.end_date
                     ? `${new Date(s.start_date).toLocaleDateString()} - ${new Date(s.end_date).toLocaleDateString()}`
                     : 'No dates set'}
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   {s.is_active && <span className="badge" style={{ background: 'var(--success-light)', color: 'var(--success)' }}>Active</span>}
-                  <button className="btn btn-ghost btn-sm" onClick={() => { setEditSeason(s); setShowForm(true) }}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setEditDivision(s); setShowForm(true) }}>
                     <Edit size={14} />
                   </button>
                 </div>
@@ -65,9 +65,9 @@ export default function Settings() {
       </div>
 
       {showForm && (
-        <SeasonForm
-          season={editSeason}
-          onClose={() => { setShowForm(false); setEditSeason(null) }}
+        <DivisionForm
+          division={editDivision}
+          onClose={() => { setShowForm(false); setEditDivision(null) }}
           onSave={handleSave}
         />
       )}
@@ -75,14 +75,14 @@ export default function Settings() {
   )
 }
 
-function SeasonForm({ season, onClose, onSave }) {
-  const isEdit = !!season
+function DivisionForm({ division, onClose, onSave }) {
+  const isEdit = !!division
   const [form, setForm] = useState({
-    name: season?.name || '',
-    code: season?.code || '',
-    start_date: season?.start_date || '',
-    end_date: season?.end_date || '',
-    is_active: season?.is_active ?? false,
+    name: division?.name || '',
+    code: division?.code || '',
+    start_date: division?.start_date || '',
+    end_date: division?.end_date || '',
+    is_active: division?.is_active ?? false,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -92,9 +92,9 @@ function SeasonForm({ season, onClose, onSave }) {
     setSaving(true)
     try {
       if (isEdit) {
-        await updateSeason(season.id, form)
+        await updateDivision(division.id, form)
       } else {
-        await createSeason(form)
+        await createDivision(form)
       }
       onSave?.()
     } catch (err) {

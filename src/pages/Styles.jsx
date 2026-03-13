@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
 import { getStyles, getSuppliers, updateStyle } from '../lib/supabase'
 import { STYLE_STATUSES, STYLE_CATEGORIES, maskSupplierName } from '../lib/constants'
@@ -13,7 +13,7 @@ import { Plus, Grid3X3, List, Scissors, Search, Download, ArrowUpDown, Eye } fro
 import { useNavigate } from 'react-router-dom'
 
 export default function Styles() {
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const { people, currentPerson } = useApp()
   const navigate = useNavigate()
   const [styles, setStyles] = useState([])
@@ -32,16 +32,16 @@ export default function Styles() {
   })
 
   useEffect(() => {
-    if (currentSeason) {
+    if (currentDivision) {
       loadData()
     }
-  }, [currentSeason])
+  }, [currentDivision])
 
   async function loadData() {
     setLoading(true)
     try {
       const [stylesData, suppData] = await Promise.all([
-        getStyles(currentSeason.id),
+        getStyles(currentDivision.id),
         getSuppliers(),
       ])
       setStyles(stylesData)
@@ -110,7 +110,7 @@ export default function Styles() {
       <div className="page-header">
         <div>
           <h1>Styles</h1>
-          <p className="subtitle">{currentSeason?.code} &middot; {filtered.length} styles</p>
+          <p className="subtitle">{currentDivision?.code} &middot; {filtered.length} styles</p>
         </div>
         <div className="page-header-actions">
           <button className="btn btn-secondary btn-sm" onClick={() => exportToCSV(filtered, 'styles', [

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
 import { createTask, updateTask, createNotification, getStyles, getSuppliers, getPurchaseOrders, getRanges } from '../lib/supabase'
 import { TASK_STATUSES, TASK_PRIORITIES, TASK_TAGS } from '../lib/constants'
@@ -8,7 +8,7 @@ import Modal from './Modal'
 
 export default function TaskForm({ task, onClose, onSave }) {
   const { currentPerson, people } = useApp()
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const toast = useToast()
   const isEdit = !!task
 
@@ -53,7 +53,7 @@ export default function TaskForm({ task, onClose, onSave }) {
 
   useEffect(() => {
     loadEntities()
-  }, [currentSeason])
+  }, [currentDivision])
 
   async function loadEntities() {
     try {
@@ -61,9 +61,9 @@ export default function TaskForm({ task, onClose, onSave }) {
         getSuppliers(),
         getRanges(),
       ]
-      if (currentSeason) {
-        promises.push(getStyles(currentSeason.id))
-        promises.push(getPurchaseOrders(currentSeason.id))
+      if (currentDivision) {
+        promises.push(getStyles(currentDivision.id))
+        promises.push(getPurchaseOrders(currentDivision.id))
       } else {
         promises.push(Promise.resolve([]))
         promises.push(Promise.resolve([]))
@@ -116,6 +116,7 @@ export default function TaskForm({ task, onClose, onSave }) {
         supplier_id: form.supplier_id || null,
         purchase_order_id: form.purchase_order_id || null,
         range_id: form.range_id || null,
+        division_id: currentDivision?.id || null,
       }
 
       if (isEdit) {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
 import { getStyleRequests, createStyleRequest, updateStyleRequest, deleteStyleRequest } from '../lib/supabase'
 import { STYLE_CATEGORIES } from '../lib/constants'
@@ -31,7 +31,7 @@ const URGENCY_LEVELS = [
 
 export default function StyleRequests() {
   const { currentPerson } = useApp()
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const toast = useToast()
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
@@ -40,13 +40,13 @@ export default function StyleRequests() {
   const [filterStatus, setFilterStatus] = useState('')
 
   useEffect(() => {
-    if (currentSeason) loadData()
-  }, [currentSeason])
+    if (currentDivision) loadData()
+  }, [currentDivision])
 
   async function loadData() {
     setLoading(true)
     try {
-      const data = await getStyleRequests(currentSeason?.id)
+      const data = await getStyleRequests(currentDivision?.id)
       setRequests(data || [])
     } catch (err) {
       console.error('Failed to load requests:', err)
@@ -129,7 +129,7 @@ export default function StyleRequests() {
 
       {showForm && (
         <StyleRequestForm
-          seasonId={currentSeason?.id}
+          divisionId={currentDivision?.id}
           personId={currentPerson?.id}
           onClose={() => setShowForm(false)}
           onSave={() => { setShowForm(false); loadData() }}
@@ -324,7 +324,7 @@ function DetailRow({ label, value }) {
   )
 }
 
-function StyleRequestForm({ seasonId, personId, onClose, onSave }) {
+function StyleRequestForm({ divisionId, personId, onClose, onSave }) {
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [section, setSection] = useState('piece')
@@ -362,7 +362,7 @@ function StyleRequestForm({ seasonId, personId, onClose, onSave }) {
     try {
       await createStyleRequest({
         ...form,
-        season_id: seasonId,
+        division_id: divisionId,
         submitted_by: personId,
         target_price: form.target_price || null,
         target_fob: form.target_fob || null,

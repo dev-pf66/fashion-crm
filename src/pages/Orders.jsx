@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
 import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, getSuppliers } from '../lib/supabase'
 import { PO_STATUSES, maskSupplierName } from '../lib/constants'
@@ -13,7 +13,7 @@ import useStickyFilters from '../lib/useStickyFilters'
 import { Plus, Grid3X3, List, ClipboardList, Search, Download, ArrowUpDown, Eye } from 'lucide-react'
 
 export default function Orders() {
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const { people, currentPerson } = useApp()
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
@@ -26,14 +26,14 @@ export default function Orders() {
   const [filters, setFilters] = useStickyFilters('orders', { status: '', supplier_id: '', search: '' })
 
   useEffect(() => {
-    if (currentSeason) loadData()
-  }, [currentSeason])
+    if (currentDivision) loadData()
+  }, [currentDivision])
 
   async function loadData() {
     setLoading(true)
     try {
       const [ordersData, suppData] = await Promise.all([
-        getPurchaseOrders(currentSeason.id),
+        getPurchaseOrders(currentDivision.id),
         getSuppliers({ status: 'active' }),
       ])
       setOrders(ordersData || [])

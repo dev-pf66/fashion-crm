@@ -247,13 +247,13 @@ img { max-width: 100%; height: auto; }
   max-width: 1400px;
 }
 
-/* Season selector in sidebar */
-.season-selector {
+/* Division selector in sidebar */
+.division-selector {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-.season-selector select {
+.division-selector select {
   width: 100%;
   background: rgba(255,255,255,0.1);
   border: 1px solid rgba(255,255,255,0.15);
@@ -264,7 +264,7 @@ img { max-width: 100%; height: auto; }
   cursor: pointer;
 }
 
-.season-selector select option {
+.division-selector select option {
   background: var(--gray-800);
   color: white;
 }
@@ -1388,13 +1388,13 @@ textarea {
   border-bottom: 1px solid var(--gray-100);
 }
 
-.seasons-list {
+.divisions-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.season-item {
+.division-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1404,17 +1404,17 @@ textarea {
   border: 1px solid var(--gray-100);
 }
 
-.season-item-name {
+.division-item-name {
   font-weight: 600;
 }
 
-.season-item-code {
+.division-item-code {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--gray-500);
 }
 
-.season-item-dates {
+.division-item-dates {
   font-size: 0.75rem;
   color: var(--gray-500);
 }

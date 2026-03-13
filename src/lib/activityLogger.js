@@ -1,10 +1,10 @@
 import { supabase } from './supabase'
 
-export function logActivity(personId, action, entityType, entityId, details = {}, seasonId = null) {
+export function logActivity(personId, action, entityType, entityId, details = {}, divisionId = null) {
   // Fire-and-forget — non-blocking
   supabase
     .from('activity_log')
-    .insert([{ person_id: personId, action, entity_type: entityType, entity_id: entityId, details, season_id: seasonId }])
+    .insert([{ person_id: personId, action, entity_type: entityType, entity_id: entityId, details, division_id: divisionId }])
     .then(({ error }) => { if (error) console.warn('Activity log failed:', error.message) })
     .catch(() => {})
 }

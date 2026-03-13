@@ -413,7 +413,7 @@ export default function RangeDetail() {
         <div className="rp-summary-left">
           <h1>{range.name}</h1>
           <div className="rp-summary-meta">
-            {range.season && <span className="tag">{range.season}</span>}
+            {range.division && <span className="tag">{range.division}</span>}
             {range.deadline && (
               <span style={{
                 display: 'inline-flex',
@@ -1210,7 +1210,7 @@ function EditRangeModal({ range, onClose, onSave }) {
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState(range.name)
-  const [season, setSeason] = useState(range.season || '')
+  const [division, setDivision] = useState(range.division || '')
   const [targetStyles, setTargetStyles] = useState(range.target_styles || '')
   const [deadline, setDeadline] = useState(range.deadline || '')
   const [categories, setCategories] = useState(range.categories?.length > 0 ? [...range.categories] : [...DEFAULT_CATEGORIES])
@@ -1246,7 +1246,7 @@ function EditRangeModal({ range, onClose, onSave }) {
     try {
       const updated = await updateRange(range.id, {
         name: name.trim(),
-        season: season.trim() || null,
+        division: division.trim() || null,
         target_styles: targetStyles ? parseInt(targetStyles) : 0,
         deadline: deadline || null,
         categories,
@@ -1270,7 +1270,7 @@ function EditRangeModal({ range, onClose, onSave }) {
         <div className="form-row">
           <div className="form-group">
             <label>Division</label>
-            <input type="text" value={season} onChange={e => setSeason(e.target.value)} placeholder="e.g. Fashion, Home, Accessories" />
+            <input type="text" value={division} onChange={e => setDivision(e.target.value)} placeholder="e.g. Fashion, Home, Accessories" />
           </div>
           <div className="form-group">
             <label>Target No. of Products</label>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../App'
+import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
 import { getRanges, createRange, deleteRange } from '../lib/supabase'
 import { STYLE_CATEGORIES } from '../lib/constants'
@@ -16,17 +17,18 @@ const RANGE_STATUSES = [
 
 export default function RangePlanning() {
   const { currentPerson } = useApp()
+  const { currentDivision } = useDivision()
   const toast = useToast()
   const [ranges, setRanges] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => { loadData() }, [currentDivision])
 
   async function loadData() {
     setLoading(true)
     try {
-      const data = await getRanges()
+      const data = await getRanges(currentDivision?.id)
       setRanges(data || [])
     } catch (err) {
       console.error('Failed to load ranges:', err)
@@ -94,7 +96,7 @@ export default function RangePlanning() {
                 <div className="rp-range-card-header">
                   <div>
                     <h3>{range.name}</h3>
-                    {range.season && <span className="tag">{range.season}</span>}
+                    {range.division && <span className="tag">{range.division}</span>}
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <StatusBadge status={range.status} />
@@ -169,6 +171,7 @@ export default function RangePlanning() {
       {showForm && (
         <NewRangeForm
           personId={currentPerson?.id}
+          divisionId={currentDivision?.id}
           onClose={() => setShowForm(false)}
           onSave={() => { setShowForm(false); loadData() }}
         />
@@ -177,11 +180,11 @@ export default function RangePlanning() {
   )
 }
 
-function NewRangeForm({ personId, onClose, onSave }) {
+function NewRangeForm({ personId, divisionId, onClose, onSave }) {
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState('')
-  const [season, setSeason] = useState('')
+  const [division, setDivision] = useState('')
   const [targetStyles, setTargetStyles] = useState('')
   const [deadline, setDeadline] = useState('')
   const [categories, setCategories] = useState([...STYLE_CATEGORIES])
@@ -217,10 +220,11 @@ function NewRangeForm({ personId, onClose, onSave }) {
     try {
       const rangeData = {
         name: name.trim(),
-        season: season.trim() || null,
+        division: division.trim() || null,
         target_styles: targetStyles ? parseInt(targetStyles) : 0,
         deadline: deadline || null,
         categories,
+        division_id: divisionId || null,
       }
       if (personId) rangeData.created_by = personId
       await createRange(rangeData)
@@ -244,7 +248,7 @@ function NewRangeForm({ personId, onClose, onSave }) {
           </div>
           <div className="form-group">
             <label>Division</label>
-            <input type="text" value={season} onChange={e => setSeason(e.target.value)} placeholder="e.g. Fashion, Home, Accessories" />
+            <input type="text" value={division} onChange={e => setDivision(e.target.value)} placeholder="e.g. Fashion, Home, Accessories" />
           </div>
           <div className="form-group">
             <label>Target No. of Products</label>

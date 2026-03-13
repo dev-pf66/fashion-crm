@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
 import { supabase } from '../lib/supabase'
 import { formatActivityMessage, getRelativeTime } from '../lib/activityLogger'
@@ -9,7 +9,7 @@ import { Clock, Filter } from 'lucide-react'
 const ENTITY_TYPES = ['style', 'supplier', 'sample', 'material', 'purchase_order']
 
 export default function Activity() {
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const { people } = useApp()
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -19,8 +19,8 @@ export default function Activity() {
   const PAGE_SIZE = 30
 
   useEffect(() => {
-    if (currentSeason) loadActivity()
-  }, [currentSeason, filters, page])
+    if (currentDivision) loadActivity()
+  }, [currentDivision, filters, page])
 
   async function loadActivity() {
     setLoading(true)
@@ -28,7 +28,7 @@ export default function Activity() {
       let query = supabase
         .from('activity_log')
         .select('*, people(id, name)')
-        .eq('season_id', currentSeason.id)
+        .eq('division_id', currentDivision.id)
         .order('created_at', { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 

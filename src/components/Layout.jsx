@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isAdmin as checkAdmin } from '../lib/constants'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
 import FeedbackButton from './FeedbackButton'
 import NotificationBell from './NotificationBell'
@@ -49,7 +49,7 @@ const NAV_SECTIONS = [
 export default function Layout() {
   const { currentPerson } = useApp()
   const { user, signOut } = useAuth()
-  const { seasons, currentSeason, changeSeason, loading: seasonsLoading } = useSeason()
+  const { divisions, currentDivision, changeDivision, loading: divisionsLoading } = useDivision()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
@@ -99,16 +99,16 @@ export default function Layout() {
           <kbd>&#8984;K</kbd>
         </button>
 
-        {!seasonsLoading && seasons.length > 0 && (
-          <div className="season-selector">
+        {!divisionsLoading && divisions.length > 0 && (
+          <div className="division-selector">
             <select
-              value={currentSeason?.id || ''}
+              value={currentDivision?.id || ''}
               onChange={e => {
-                const season = seasons.find(s => s.id.toString() === e.target.value)
-                if (season) changeSeason(season)
+                const div = divisions.find(s => s.id.toString() === e.target.value)
+                if (div) changeDivision(div)
               }}
             >
-              {seasons.map(s => (
+              {divisions.map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>

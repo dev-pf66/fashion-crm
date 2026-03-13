@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
 import { globalSearch, getRanges, getSuppliers, createTask, createRangeStyle } from '../lib/supabase'
 import { STYLE_CATEGORIES, maskSupplierName } from '../lib/constants'
@@ -40,7 +40,7 @@ const QUICK_LINKS = [
 
 export default function CommandPalette({ isOpen, onClose }) {
   const navigate = useNavigate()
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const { currentPerson, people } = useApp()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
@@ -73,7 +73,7 @@ export default function CommandPalette({ isOpen, onClose }) {
     debounceRef.current = setTimeout(async () => {
       setLoading(true)
       try {
-        const data = await globalSearch(query.trim(), currentSeason?.id, currentPerson?.role === 'admin')
+        const data = await globalSearch(query.trim(), currentDivision?.id, currentPerson?.role === 'admin')
         setResults(data)
         setSelectedIndex(0)
       } catch (err) {
@@ -85,7 +85,7 @@ export default function CommandPalette({ isOpen, onClose }) {
     }, 250)
 
     return () => clearTimeout(debounceRef.current)
-  }, [query, currentSeason?.id, activeForm])
+  }, [query, currentDivision?.id, activeForm])
 
   // Filter quick actions + links by query
   const filteredActions = query.trim()

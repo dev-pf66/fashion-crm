@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
-import { useSeason } from '../contexts/SeasonContext'
+import { useDivision } from '../contexts/DivisionContext'
 import { getSamples, getSuppliers, updateSample } from '../lib/supabase'
 import { SAMPLE_STATUSES, SAMPLE_ROUNDS, maskSupplierName } from '../lib/constants'
 import { exportToCSV } from '../lib/csvExporter'
@@ -14,7 +14,7 @@ import { Plus, FlaskConical, Download } from 'lucide-react'
 
 export default function Samples() {
   const { people, currentPerson } = useApp()
-  const { currentSeason } = useSeason()
+  const { currentDivision } = useDivision()
   const [samples, setSamples] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -32,14 +32,14 @@ export default function Samples() {
   })
 
   useEffect(() => {
-    if (currentSeason) loadData()
-  }, [currentSeason])
+    if (currentDivision) loadData()
+  }, [currentDivision])
 
   async function loadData() {
     setLoading(true)
     try {
       const [samplesData, suppliersData] = await Promise.all([
-        getSamples(currentSeason.id),
+        getSamples(currentDivision.id),
         getSuppliers({ status: 'active' }),
       ])
       setSamples(samplesData || [])

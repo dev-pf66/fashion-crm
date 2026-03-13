@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext, useContext, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { SeasonProvider } from './contexts/SeasonContext'
+import { DivisionProvider } from './contexts/DivisionContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { getPeople, getPersonByEmail, getPersonByUserId, createPerson, updatePerson } from './lib/supabase'
 import Layout from './components/Layout'
@@ -117,7 +117,7 @@ function AppRoutes() {
   return (
     <AppContext.Provider value={{ currentPerson, people, setPeople, refreshPeople }}>
       <ToastProvider>
-      <SeasonProvider>
+      <DivisionProvider>
         <Suspense fallback={<div className="loading-container"><div className="loading-spinner" /></div>}>
         <Routes>
           <Route path="/" element={<Layout />}>
@@ -145,7 +145,7 @@ function AppRoutes() {
           <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
         </Suspense>
-      </SeasonProvider>
+      </DivisionProvider>
       </ToastProvider>
     </AppContext.Provider>
   )
