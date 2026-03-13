@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useApp } from '../App'
+import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
 import {
   getRange, updateRange,
@@ -68,6 +69,7 @@ export default function RangeDetail() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { currentPerson } = useApp()
+  const { divisions } = useDivision()
   const toast = useToast()
 
   const [range, setRange] = useState(null)
@@ -847,6 +849,7 @@ export default function RangeDetail() {
       {editingRange && (
         <EditRangeModal
           range={range}
+          divisions={divisions}
           onClose={() => setEditingRange(false)}
           onSave={(updated) => { setRange(updated); setEditingRange(false) }}
         />
@@ -1206,11 +1209,11 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
   )
 }
 
-function EditRangeModal({ range, onClose, onSave }) {
+function EditRangeModal({ range, divisions, onClose, onSave }) {
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState(range.name)
-  const [division, setDivision] = useState(range.division || '')
+  const [divisionId, setDivisionId] = useState(range.division_id || '')
   const [targetStyles, setTargetStyles] = useState(range.target_styles || '')
   const [deadline, setDeadline] = useState(range.deadline || '')
   const [categories, setCategories] = useState(range.categories?.length > 0 ? [...range.categories] : [...DEFAULT_CATEGORIES])
@@ -1246,7 +1249,7 @@ function EditRangeModal({ range, onClose, onSave }) {
     try {
       const updated = await updateRange(range.id, {
         name: name.trim(),
-        division: division.trim() || null,
+        division_id: divisionId || null,
         target_styles: targetStyles ? parseInt(targetStyles) : 0,
         deadline: deadline || null,
         categories,
@@ -1270,7 +1273,12 @@ function EditRangeModal({ range, onClose, onSave }) {
         <div className="form-row">
           <div className="form-group">
             <label>Division</label>
-            <input type="text" value={division} onChange={e => setDivision(e.target.value)} placeholder="e.g. Fashion, Home, Accessories" />
+            <select value={divisionId} onChange={e => setDivisionId(e.target.value ? parseInt(e.target.value) : '')}>
+              <option value="">Select Division</option>
+              {divisions.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label>Target No. of Products</label>

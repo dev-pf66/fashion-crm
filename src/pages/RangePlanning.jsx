@@ -17,7 +17,7 @@ const RANGE_STATUSES = [
 
 export default function RangePlanning() {
   const { currentPerson } = useApp()
-  const { currentDivision } = useDivision()
+  const { divisions, currentDivision } = useDivision()
   const toast = useToast()
   const [ranges, setRanges] = useState([])
   const [loading, setLoading] = useState(true)
@@ -172,6 +172,7 @@ export default function RangePlanning() {
         <NewRangeForm
           personId={currentPerson?.id}
           divisionId={currentDivision?.id}
+          divisions={divisions}
           onClose={() => setShowForm(false)}
           onSave={() => { setShowForm(false); loadData() }}
         />
@@ -180,11 +181,11 @@ export default function RangePlanning() {
   )
 }
 
-function NewRangeForm({ personId, divisionId, onClose, onSave }) {
+function NewRangeForm({ personId, divisionId, divisions, onClose, onSave }) {
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState('')
-  const [division, setDivision] = useState('')
+  const [selectedDivisionId, setSelectedDivisionId] = useState(divisionId || '')
   const [targetStyles, setTargetStyles] = useState('')
   const [deadline, setDeadline] = useState('')
   const [categories, setCategories] = useState([...STYLE_CATEGORIES])
@@ -220,11 +221,10 @@ function NewRangeForm({ personId, divisionId, onClose, onSave }) {
     try {
       const rangeData = {
         name: name.trim(),
-        division: division.trim() || null,
         target_styles: targetStyles ? parseInt(targetStyles) : 0,
         deadline: deadline || null,
         categories,
-        division_id: divisionId || null,
+        division_id: selectedDivisionId || null,
       }
       if (personId) rangeData.created_by = personId
       await createRange(rangeData)
@@ -248,7 +248,12 @@ function NewRangeForm({ personId, divisionId, onClose, onSave }) {
           </div>
           <div className="form-group">
             <label>Division</label>
-            <input type="text" value={division} onChange={e => setDivision(e.target.value)} placeholder="e.g. Fashion, Home, Accessories" />
+            <select value={selectedDivisionId} onChange={e => setSelectedDivisionId(e.target.value ? parseInt(e.target.value) : '')}>
+              <option value="">Select Division</option>
+              {divisions.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label>Target No. of Products</label>

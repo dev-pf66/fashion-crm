@@ -821,7 +821,7 @@ export async function getRanges(divisionId) {
     .from('ranges')
     .select('*, range_styles(id, category, status, production_qty)')
     .order('created_at', { ascending: false })
-  if (divisionId) query = query.or(`division_id.eq.${divisionId},division_id.is.null`)
+  if (divisionId) query = query.eq('division_id', divisionId)
   const { data, error } = await query
   if (error) throw error
   // Fetch creator names separately
@@ -1024,7 +1024,7 @@ export async function getTasks(filters = {}) {
     .select(TASK_SELECT)
     .order('sort_order')
     .order('created_at', { ascending: false })
-  if (filters.division_id) query = query.or(`division_id.eq.${filters.division_id},division_id.is.null`)
+  if (filters.division_id) query = query.eq('division_id', filters.division_id)
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.assigned_to) query = query.eq('assigned_to', filters.assigned_to)
   if (filters.priority) query = query.eq('priority', filters.priority)

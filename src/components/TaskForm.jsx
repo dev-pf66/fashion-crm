@@ -8,7 +8,7 @@ import Modal from './Modal'
 
 export default function TaskForm({ task, onClose, onSave }) {
   const { currentPerson, people } = useApp()
-  const { currentDivision } = useDivision()
+  const { divisions, currentDivision } = useDivision()
   const toast = useToast()
   const isEdit = !!task
 
@@ -25,6 +25,7 @@ export default function TaskForm({ task, onClose, onSave }) {
     supplier_id: '',
     purchase_order_id: '',
     range_id: '',
+    division_id: currentDivision?.id || '',
   })
   const [saving, setSaving] = useState(false)
   const [styles, setStyles] = useState([])
@@ -47,6 +48,7 @@ export default function TaskForm({ task, onClose, onSave }) {
         supplier_id: task.supplier_id || '',
         purchase_order_id: task.purchase_order_id || '',
         range_id: task.range_id || '',
+        division_id: task.division_id || '',
       })
     }
   }, [task])
@@ -116,7 +118,7 @@ export default function TaskForm({ task, onClose, onSave }) {
         supplier_id: form.supplier_id || null,
         purchase_order_id: form.purchase_order_id || null,
         range_id: form.range_id || null,
-        division_id: currentDivision?.id || null,
+        division_id: form.division_id || currentDivision?.id || null,
       }
 
       if (isEdit) {
@@ -206,6 +208,19 @@ export default function TaskForm({ task, onClose, onSave }) {
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="form-group">
+          <label>Division</label>
+          <select
+            value={form.division_id}
+            onChange={e => setForm(prev => ({ ...prev, division_id: e.target.value ? parseInt(e.target.value) : '' }))}
+          >
+            <option value="">Select Division</option>
+            {divisions.map(d => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
         </div>
 
         <div className="form-row">
