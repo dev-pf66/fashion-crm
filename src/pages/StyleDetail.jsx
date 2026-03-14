@@ -10,6 +10,7 @@ import SampleTimeline from '../components/SampleTimeline'
 import Breadcrumbs from '../components/Breadcrumbs'
 import CostingSheet from '../components/CostingSheet'
 import ComplianceTracker from '../components/ComplianceTracker'
+import MeasurementTable from '../components/MeasurementTable'
 import CommentThread from '../components/CommentThread'
 import { Edit, ImageOff, Copy } from 'lucide-react'
 
@@ -116,6 +117,7 @@ export default function StyleDetail() {
         <button className={`tab ${activeTab === 'bom' ? 'active' : ''}`} onClick={() => setActiveTab('bom')}>BOM</button>
         <button className={`tab ${activeTab === 'samples' ? 'active' : ''}`} onClick={() => setActiveTab('samples')}>Samples</button>
         <button className={`tab ${activeTab === 'costing' ? 'active' : ''}`} onClick={() => setActiveTab('costing')}>Costing</button>
+        <button className={`tab ${activeTab === 'measurements' ? 'active' : ''}`} onClick={() => setActiveTab('measurements')}>Measurements</button>
         <button className={`tab ${activeTab === 'compliance' ? 'active' : ''}`} onClick={() => setActiveTab('compliance')}>Compliance</button>
       </div>
 
@@ -182,6 +184,21 @@ export default function StyleDetail() {
           targetFob={style.target_fob}
           targetRetail={style.target_retail}
           targetMargin={style.target_margin}
+        />
+      )}
+
+      {activeTab === 'measurements' && (
+        <MeasurementTable
+          measurements={style.measurements || []}
+          onChange={async (measurements) => {
+            try {
+              await updateStyle(style.id, { measurements })
+              setStyle(prev => ({ ...prev, measurements }))
+            } catch (err) {
+              console.error('Failed to save measurements:', err)
+              toast.error('Failed to save measurements')
+            }
+          }}
         />
       )}
 

@@ -9,6 +9,7 @@ import TaskForm from '../components/TaskForm'
 import TaskDetail from '../components/TaskDetail'
 import StatusBadge from '../components/StatusBadge'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import usePagination, { PaginationBar } from '../lib/usePagination'
 import { Plus, CheckSquare, LayoutGrid, List, X, Clock, User, Timer } from 'lucide-react'
 
 export default function Tasks() {
@@ -72,6 +73,7 @@ export default function Tasks() {
   }
 
   const filtered = useMemo(() => filterTasks(tasks), [tasks, filters])
+  const pagination = usePagination(filtered)
 
   const columns = useMemo(() => TASK_STATUSES.map(status => ({
     ...status,
@@ -289,7 +291,7 @@ export default function Tasks() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(task => {
+              {pagination.paged.map(task => {
                 const priority = TASK_PRIORITIES.find(p => p.value === task.priority)
                 const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done'
                 const sc = subtaskCounts[task.id]
@@ -385,6 +387,7 @@ export default function Tasks() {
               })}
             </tbody>
           </table>
+          <PaginationBar {...pagination} />
         </div>
       )}
 

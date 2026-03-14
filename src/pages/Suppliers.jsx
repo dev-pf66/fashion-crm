@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getSuppliers, createSupplier } from '../lib/supabase'
+import { getSuppliers, createSupplier, updateSupplier } from '../lib/supabase'
 import { SUPPLIER_STATUSES, PRODUCT_TYPES, CERTIFICATIONS, maskSupplierName } from '../lib/constants'
 import { useApp } from '../App'
 import StatusBadge from '../components/StatusBadge'
@@ -9,6 +9,7 @@ import QuickViewDrawer from '../components/QuickViewDrawer'
 import Modal from '../components/Modal'
 import { exportToCSV } from '../lib/csvExporter'
 import useStickyFilters from '../lib/useStickyFilters'
+import usePagination, { PaginationBar } from '../lib/usePagination'
 import { Plus, Factory, Search, Grid3X3, List, Download, ArrowUpDown, Eye } from 'lucide-react'
 
 export default function Suppliers() {
@@ -46,6 +47,8 @@ export default function Suppliers() {
   })
 
   const countries = [...new Set(suppliers.map(s => s.country).filter(Boolean))].sort()
+  const sorted = view === 'table' ? sortedItems(filtered) : filtered
+  const pagination = usePagination(sorted)
 
   function toggleSort(key) {
     setSort(prev => prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' })
@@ -66,6 +69,15 @@ export default function Suppliers() {
       const cmp = aVal.localeCompare(bVal)
       return sort.dir === 'asc' ? cmp : -cmp
     })
+  }
+
+  async function handleInlineStatusChange(supplierId, newStatus) {
+    try {
+      const updated = await updateSupplier(supplierId, { status: newStatus })
+      setSuppliers(prev => prev.map(s => s.id === supplierId ? updated : s))
+    } catch (err) {
+      console.error('Failed to update supplier status:', err)
+    }
   }
 
   if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
@@ -124,37 +136,40 @@ export default function Suppliers() {
           {suppliers.length === 0 && <button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Add Supplier</button>}
         </div></div>
       ) : view === 'grid' ? (
-        <div className="suppliers-grid">
-          {filtered.map(s => (
-            <div key={s.id} className="supplier-card" onClick={() => navigate(`/suppliers/${s.id}`)}>
-              <div className="supplier-card-header">
-                <div className="supplier-logo">{maskSupplierName(s.name, currentPerson).charAt(0)}</div>
-                <div>
-                  <div className="supplier-card-name">{maskSupplierName(s.name, currentPerson)}</div>
-                  <div className="supplier-card-location">{[s.city, s.country].filter(Boolean).join(', ') || 'No location'}</div>
+        <>
+          <div className="suppliers-grid">
+            {pagination.paged.map(s => (
+              <div key={s.id} className="supplier-card" onClick={() => navigate(`/suppliers/${s.id}`)}>
+                <div className="supplier-card-header">
+                  <div className="supplier-logo">{maskSupplierName(s.name, currentPerson).charAt(0)}</div>
+                  <div>
+                    <div className="supplier-card-name">{maskSupplierName(s.name, currentPerson)}</div>
+                    <div className="supplier-card-location">{[s.city, s.country].filter(Boolean).join(', ') || 'No location'}</div>
+                  </div>
+                  <div style={{ marginLeft: 'auto' }}><StatusBadge status={s.status} /></div>
                 </div>
-                <div style={{ marginLeft: 'auto' }}><StatusBadge status={s.status} /></div>
+                {s.product_types?.length > 0 && (
+                  <div className="supplier-card-types">
+                    {s.product_types.slice(0, 4).map(t => <span key={t} className="tag">{t}</span>)}
+                    {s.product_types.length > 4 && <span className="tag">+{s.product_types.length - 4}</span>}
+                  </div>
+                )}
+                {s.certifications?.length > 0 && (
+                  <div className="cert-badges" style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                    {s.certifications.slice(0, 3).map(c => <span key={c} className="cert-badge">{c}</span>)}
+                  </div>
+                )}
+                {s.overall_score && (
+                  <div className="supplier-card-scores">
+                    <div className="score-bar"><div className="score-bar-fill" style={{ width: `${(s.overall_score / 5) * 100}%` }} /></div>
+                    <span className="score-value">{parseFloat(s.overall_score).toFixed(1)}</span>
+                  </div>
+                )}
               </div>
-              {s.product_types?.length > 0 && (
-                <div className="supplier-card-types">
-                  {s.product_types.slice(0, 4).map(t => <span key={t} className="tag">{t}</span>)}
-                  {s.product_types.length > 4 && <span className="tag">+{s.product_types.length - 4}</span>}
-                </div>
-              )}
-              {s.certifications?.length > 0 && (
-                <div className="cert-badges" style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                  {s.certifications.slice(0, 3).map(c => <span key={c} className="cert-badge">{c}</span>)}
-                </div>
-              )}
-              {s.overall_score && (
-                <div className="supplier-card-scores">
-                  <div className="score-bar"><div className="score-bar-fill" style={{ width: `${(s.overall_score / 5) * 100}%` }} /></div>
-                  <span className="score-value">{parseFloat(s.overall_score).toFixed(1)}</span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          <PaginationBar {...pagination} />
+        </>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <table className="data-table">
@@ -168,13 +183,13 @@ export default function Suppliers() {
               <th style={{ width: 40 }}></th>
             </tr></thead>
             <tbody>
-              {sortedItems(filtered).map(s => (
+              {pagination.paged.map(s => (
                 <tr key={s.id} className="clickable" onClick={() => navigate(`/suppliers/${s.id}`)}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem' }}>{s.code || '-'}</td>
                   <td style={{ fontWeight: 500 }}>{maskSupplierName(s.name, currentPerson)}</td>
                   <td>{s.country || '-'}</td>
                   <td onClick={e => e.stopPropagation()}>
-                    <InlineStatusSelect status={s.status} statuses={SUPPLIER_STATUSES} onChange={() => {}} />
+                    <InlineStatusSelect status={s.status} statuses={SUPPLIER_STATUSES} onChange={v => handleInlineStatusChange(s.id, v)} />
                   </td>
                   <td>{(s.product_types || []).join(', ') || '-'}</td>
                   <td>{s.overall_score ? parseFloat(s.overall_score).toFixed(1) : '-'}</td>
@@ -185,6 +200,7 @@ export default function Suppliers() {
               ))}
             </tbody>
           </table>
+          <PaginationBar {...pagination} />
         </div>
       )}
 

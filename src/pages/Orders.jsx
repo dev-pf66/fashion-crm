@@ -10,6 +10,7 @@ import POForm from '../components/POForm'
 import InlineStatusSelect from '../components/InlineStatusSelect'
 import QuickViewDrawer from '../components/QuickViewDrawer'
 import useStickyFilters from '../lib/useStickyFilters'
+import usePagination, { PaginationBar } from '../lib/usePagination'
 import { Plus, Grid3X3, List, ClipboardList, Search, Download, ArrowUpDown, Eye } from 'lucide-react'
 
 export default function Orders() {
@@ -54,6 +55,9 @@ export default function Orders() {
     }
     return true
   })
+
+  const sorted = view === 'table' ? sortedItems(filtered) : filtered
+  const pagination = usePagination(sorted)
 
   function toggleSort(key) {
     setSort(prev => prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' })
@@ -157,11 +161,14 @@ export default function Orders() {
           </div>
         </div>
       ) : view === 'grid' ? (
-        <div className="po-grid">
-          {filtered.map(po => (
-            <POCard key={po.id} po={po} onClick={() => navigate(`/orders/${po.id}`)} />
-          ))}
-        </div>
+        <>
+          <div className="po-grid">
+            {pagination.paged.map(po => (
+              <POCard key={po.id} po={po} onClick={() => navigate(`/orders/${po.id}`)} />
+            ))}
+          </div>
+          <PaginationBar {...pagination} />
+        </>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <table className="data-table">
@@ -179,7 +186,7 @@ export default function Orders() {
               </tr>
             </thead>
             <tbody>
-              {sortedItems(filtered).map(po => (
+              {pagination.paged.map(po => (
                 <tr key={po.id} className="clickable" onClick={() => navigate(`/orders/${po.id}`)}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', fontWeight: 600 }}>{po.po_number}</td>
                   <td>{po.suppliers?.name ? maskSupplierName(po.suppliers.name, currentPerson) : '-'}</td>
@@ -198,6 +205,7 @@ export default function Orders() {
               ))}
             </tbody>
           </table>
+          <PaginationBar {...pagination} />
         </div>
       )}
 

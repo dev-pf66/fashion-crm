@@ -9,6 +9,7 @@ import InlineStatusSelect from '../components/InlineStatusSelect'
 import QuickViewDrawer from '../components/QuickViewDrawer'
 import { exportToCSV } from '../lib/csvExporter'
 import useStickyFilters from '../lib/useStickyFilters'
+import usePagination, { PaginationBar } from '../lib/usePagination'
 import { Plus, Grid3X3, List, Scissors, Search, Download, ArrowUpDown, Eye } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -65,8 +66,12 @@ export default function Styles() {
     return true
   })
 
+  const sorted = view === 'table' ? sortedItems(filtered) : filtered
+  const pagination = usePagination(sorted)
+
   function handleFilterChange(field, value) {
     setFilters(prev => ({ ...prev, [field]: value }))
+    pagination.resetPage()
   }
 
   function toggleSort(key) {
@@ -183,11 +188,14 @@ export default function Styles() {
           </div>
         </div>
       ) : view === 'grid' ? (
-        <div className="styles-grid">
-          {filtered.map(style => (
-            <StyleCard key={style.id} style={style} />
-          ))}
-        </div>
+        <>
+          <div className="styles-grid">
+            {pagination.paged.map(style => (
+              <StyleCard key={style.id} style={style} />
+            ))}
+          </div>
+          <PaginationBar {...pagination} />
+        </>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <table className="data-table">
@@ -204,7 +212,7 @@ export default function Styles() {
               </tr>
             </thead>
             <tbody>
-              {sortedItems(filtered).map(style => (
+              {pagination.paged.map(style => (
                 <tr key={style.id} className="clickable" onClick={() => navigate(`/styles/${style.id}`)}>
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', fontWeight: 600 }}>
                     {style.style_number}
@@ -224,6 +232,7 @@ export default function Styles() {
               ))}
             </tbody>
           </table>
+          <PaginationBar {...pagination} />
         </div>
       )}
 
