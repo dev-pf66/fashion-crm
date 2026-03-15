@@ -10,6 +10,7 @@ import SampleForm from '../components/SampleForm'
 import SampleDetail from '../components/SampleDetail'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useToast } from '../contexts/ToastContext'
+import { KanbanSkeleton } from '../components/PageSkeleton'
 import { Plus, FlaskConical, Download } from 'lucide-react'
 
 export default function Samples() {
@@ -111,7 +112,7 @@ export default function Samples() {
     ])
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <KanbanSkeleton columns={5} />
 
   return (
     <div>

@@ -7,6 +7,7 @@ import { STYLE_STATUSES, SAMPLE_ROUNDS } from '../lib/constants'
 import ActivityFeed from '../components/ActivityFeed'
 import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../contexts/ToastContext'
+import { DashboardSkeleton } from '../components/PageSkeleton'
 import {
   LayoutDashboard, Scissors, FlaskConical, ClipboardList,
   AlertTriangle, Calendar, Clock, CheckSquare
@@ -51,13 +52,7 @@ export default function Dashboard() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner" />
-      </div>
-    )
-  }
+  if (loading) return <DashboardSkeleton />
 
   const maxStyleCount = Math.max(1, ...Object.values(stats?.stylesByStatus || {}))
   const maxRoundCount = Math.max(1, ...Object.values(stats?.samplesByRound || {}))

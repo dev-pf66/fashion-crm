@@ -10,6 +10,7 @@ import TaskDetail from '../components/TaskDetail'
 import StatusBadge from '../components/StatusBadge'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import usePagination, { PaginationBar } from '../lib/usePagination'
+import { KanbanSkeleton } from '../components/PageSkeleton'
 import { Plus, CheckSquare, LayoutGrid, List, X, Clock, User, Timer } from 'lucide-react'
 
 export default function Tasks() {
@@ -132,7 +133,7 @@ export default function Tasks() {
     return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <KanbanSkeleton />
 
   return (
     <div>

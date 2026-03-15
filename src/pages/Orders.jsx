@@ -11,6 +11,7 @@ import InlineStatusSelect from '../components/InlineStatusSelect'
 import QuickViewDrawer from '../components/QuickViewDrawer'
 import useStickyFilters from '../lib/useStickyFilters'
 import usePagination, { PaginationBar } from '../lib/usePagination'
+import { GridSkeleton } from '../components/PageSkeleton'
 import { Plus, Grid3X3, List, ClipboardList, Search, Download, ArrowUpDown, Eye } from 'lucide-react'
 
 export default function Orders() {
@@ -111,7 +112,7 @@ export default function Orders() {
     ])
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <GridSkeleton />
 
   return (
     <div>

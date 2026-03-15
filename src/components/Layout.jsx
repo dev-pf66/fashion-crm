@@ -10,7 +10,8 @@ import CommandPalette from './CommandPalette'
 import {
   LayoutDashboard, Scissors, Factory, Palette,
   FlaskConical, Users, Settings, LogOut,
-  ClipboardList, Clock, HelpCircle, Menu, X, Search, CalendarDays, FileText, Layers, CheckSquare, Shield
+  ClipboardList, Clock, HelpCircle, Menu, X, Search, CalendarDays, FileText, Layers, CheckSquare, Shield,
+  Moon, Sun
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -53,6 +54,28 @@ export default function Layout() {
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system')
+
+  useEffect(() => {
+    if (theme === 'system') {
+      document.documentElement.removeAttribute('data-theme')
+    } else {
+      document.documentElement.setAttribute('data-theme', theme)
+    }
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  function toggleTheme() {
+    setTheme(prev => {
+      if (prev === 'system') {
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        return isDark ? 'light' : 'dark'
+      }
+      return prev === 'dark' ? 'light' : 'dark'
+    })
+  }
+
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   useEffect(() => {
     function handleKeyDown(e) {
@@ -153,6 +176,9 @@ export default function Layout() {
               <div className="sidebar-user-email">{user?.email}</div>
             </div>
             <NotificationBell />
+            <button className="theme-toggle" onClick={toggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+              {isDark ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
             <button className="sidebar-logout" onClick={handleSignOut} title="Sign out">
               <LogOut size={16} />
             </button>

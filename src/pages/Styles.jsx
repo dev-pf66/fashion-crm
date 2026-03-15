@@ -10,6 +10,7 @@ import QuickViewDrawer from '../components/QuickViewDrawer'
 import { exportToCSV } from '../lib/csvExporter'
 import useStickyFilters from '../lib/useStickyFilters'
 import usePagination, { PaginationBar } from '../lib/usePagination'
+import { GridSkeleton } from '../components/PageSkeleton'
 import { Plus, Grid3X3, List, Scissors, Search, Download, ArrowUpDown, Eye } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -106,9 +107,7 @@ export default function Styles() {
     }
   }
 
-  if (loading) {
-    return <div className="loading-container"><div className="loading-spinner" /></div>
-  }
+  if (loading) return <GridSkeleton />
 
   return (
     <div>
