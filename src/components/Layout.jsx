@@ -6,6 +6,7 @@ import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
 import FeedbackButton from './FeedbackButton'
 import NotificationBell from './NotificationBell'
+import SidebarNotifications from './SidebarNotifications'
 import CommandPalette from './CommandPalette'
 import {
   LayoutDashboard, Scissors, Factory, Palette,
@@ -167,6 +168,8 @@ export default function Layout() {
             </div>
           )})}
         </nav>
+
+        <SidebarNotifications />
 
         <div className="sidebar-footer">
           <div className="sidebar-user">
