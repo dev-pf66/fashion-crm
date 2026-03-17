@@ -26,6 +26,7 @@ const StyleRequests = lazy(() => import('./pages/StyleRequests'))
 const RangePlanning = lazy(() => import('./pages/RangePlanning'))
 const RangeDetail = lazy(() => import('./pages/RangeDetail'))
 const Tasks = lazy(() => import('./pages/Tasks'))
+const Notifications = lazy(() => import('./pages/Notifications'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 
@@ -134,6 +135,7 @@ function AppRoutes() {
             <Route path="calendar" element={<Calendar />} />
             <Route path="requests" element={<StyleRequests />} />
             <Route path="tasks" element={<Tasks />} />
+            <Route path="notifications" element={<Notifications />} />
             <Route path="range-planning" element={<RangePlanning />} />
             <Route path="range-planning/:id" element={<RangeDetail />} />
             <Route path="admin" element={isAdmin(currentPerson) ? <AdminDashboard /> : <Navigate to="/" replace />} />

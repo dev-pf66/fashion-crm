@@ -6,13 +6,12 @@ import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
 import FeedbackButton from './FeedbackButton'
 import NotificationBell from './NotificationBell'
-import SidebarNotifications from './SidebarNotifications'
 import CommandPalette from './CommandPalette'
 import {
   LayoutDashboard, Scissors, Factory, Palette,
   FlaskConical, Users, Settings, LogOut,
   ClipboardList, Clock, HelpCircle, Menu, X, Search, CalendarDays, FileText, Layers, CheckSquare, Shield,
-  Moon, Sun
+  Moon, Sun, Bell
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -24,6 +23,7 @@ const NAV_SECTIONS = [
       { to: '/suppliers', icon: Factory, label: 'Suppliers' },
       { to: '/orders', icon: ClipboardList, label: 'Orders' },
       { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
+      { to: '/notifications', icon: Bell, label: 'Notifications' },
     ]
   },
   {
@@ -168,8 +168,6 @@ export default function Layout() {
             </div>
           )})}
         </nav>
-
-        <SidebarNotifications />
 
         <div className="sidebar-footer">
           <div className="sidebar-user">
