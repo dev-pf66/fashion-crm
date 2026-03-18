@@ -3919,6 +3919,76 @@ tr:hover .quick-view-btn {
 
 /* ===== Range Planning ===== */
 
+/* Folders */
+.rp-folders-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.rp-folder {
+  background: var(--card-bg);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.rp-folder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--gray-100);
+  cursor: pointer;
+  color: inherit;
+  font-size: 0.875rem;
+  transition: background 0.15s;
+}
+
+.rp-folder-header:hover {
+  background: var(--gray-50);
+}
+
+.rp-folder-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--gray-600);
+}
+
+.rp-folder-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--gray-800);
+}
+
+.rp-folder-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rp-folder-count,
+.rp-folder-styles {
+  font-size: 0.8125rem;
+  color: var(--gray-500);
+}
+
+.rp-folder .rp-range-list {
+  padding: 1rem;
+}
+
+.rp-ungrouped-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* Range List */
 .rp-range-list {
   display: grid;
