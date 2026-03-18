@@ -66,6 +66,16 @@ export default function RangePlanning() {
     setCollapsedFolders(prev => ({ ...prev, [folderName]: !prev[folderName] }))
   }
 
+  async function handleMoveToFolder(rangeId, folderName) {
+    try {
+      await updateRange(rangeId, { folder: folderName || null })
+      toast.success(folderName ? `Moved to "${folderName}"` : 'Removed from folder')
+      loadData()
+    } catch (err) {
+      toast.error('Failed to move range')
+    }
+  }
+
   async function handleDelete(e, id, name, styleCount) {
     e.preventDefault()
     e.stopPropagation()
@@ -138,7 +148,7 @@ export default function RangePlanning() {
                 {!isCollapsed && (
                   <div className="rp-range-list">
                     {folder.ranges.map(range => (
-                      <RangeCard key={range.id} range={range} onDelete={handleDelete} />
+                      <RangeCard key={range.id} range={range} onDelete={handleDelete} folderNames={folderNames} onMoveToFolder={handleMoveToFolder} />
                     ))}
                   </div>
                 )}
@@ -154,7 +164,7 @@ export default function RangePlanning() {
               )}
               <div className="rp-range-list">
                 {ungrouped.map(range => (
-                  <RangeCard key={range.id} range={range} onDelete={handleDelete} />
+                  <RangeCard key={range.id} range={range} onDelete={handleDelete} folderNames={folderNames} onMoveToFolder={handleMoveToFolder} />
                 ))}
               </div>
             </>
@@ -176,7 +186,9 @@ export default function RangePlanning() {
   )
 }
 
-function RangeCard({ range, onDelete }) {
+function RangeCard({ range, onDelete, folderNames, onMoveToFolder }) {
+  const toast = useToast()
+  const [showFolderMenu, setShowFolderMenu] = useState(false)
   const styleCount = range.range_styles?.length || 0
   const byCategory = {}
   const byStatus = {}
@@ -187,15 +199,56 @@ function RangeCard({ range, onDelete }) {
     totalQty += s.production_qty || 0
   })
 
+  async function handleMoveToFolder(e, folderName) {
+    e.preventDefault()
+    e.stopPropagation()
+    setShowFolderMenu(false)
+    try {
+      await onMoveToFolder(range.id, folderName)
+    } catch (err) {
+      toast.error('Failed to move range')
+    }
+  }
+
   return (
     <Link to={`/range-planning/${range.id}`} className="rp-range-card card">
       <div className="rp-range-card-header">
         <div>
           <h3>{range.name}</h3>
-          {range.division && <span className="tag">{range.division}</span>}
+          <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {range.division && <span className="tag">{range.division}</span>}
+            {range.folder && <span className="tag" style={{ background: 'var(--gray-100)', color: 'var(--gray-600)' }}><Folder size={10} /> {range.folder}</span>}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <StatusBadge status={range.status} />
+          <div style={{ position: 'relative' }}>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowFolderMenu(!showFolderMenu) }}
+              title="Move to folder"
+            >
+              <FolderOpen size={14} />
+            </button>
+            {showFolderMenu && (
+              <div className="rp-folder-menu" onClick={e => { e.preventDefault(); e.stopPropagation() }}>
+                <div className="rp-folder-menu-title">Move to folder</div>
+                <button className="rp-folder-menu-item" onClick={(e) => handleMoveToFolder(e, null)}>
+                  <X size={12} /> No folder
+                </button>
+                {folderNames.map(f => (
+                  <button
+                    key={f}
+                    className={`rp-folder-menu-item ${range.folder === f ? 'active' : ''}`}
+                    onClick={(e) => handleMoveToFolder(e, f)}
+                  >
+                    <Folder size={12} /> {f}
+                  </button>
+                ))}
+                <NewFolderInput onSubmit={(e, name) => handleMoveToFolder(e, name)} />
+              </div>
+            )}
+          </div>
           <button
             className="btn btn-ghost btn-sm"
             onClick={(e) => onDelete(e, range.id, range.name, styleCount)}
@@ -436,5 +489,41 @@ function NewRangeForm({ personId, divisionId, divisions, folderNames, onClose, o
         </div>
       </form>
     </Modal>
+  )
+}
+
+function NewFolderInput({ onSubmit }) {
+  const [value, setValue] = useState('')
+  const [showInput, setShowInput] = useState(false)
+
+  if (!showInput) {
+    return (
+      <button className="rp-folder-menu-item" onClick={() => setShowInput(true)}>
+        <Plus size={12} /> New folder...
+      </button>
+    )
+  }
+
+  return (
+    <div className="rp-folder-menu-new">
+      <input
+        type="text"
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        placeholder="Folder name"
+        autoFocus
+        onKeyDown={e => {
+          if (e.key === 'Enter' && value.trim()) onSubmit(e, value.trim())
+          if (e.key === 'Escape') setShowInput(false)
+        }}
+      />
+      <button
+        className="btn btn-primary btn-sm"
+        onClick={e => { if (value.trim()) onSubmit(e, value.trim()) }}
+        disabled={!value.trim()}
+      >
+        <Check size={12} />
+      </button>
+    </div>
   )
 }
