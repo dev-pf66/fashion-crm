@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useApp } from '../App'
 import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
@@ -21,7 +22,11 @@ export default function Tasks() {
   const [subtaskCounts, setSubtaskCounts] = useState({})
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [selectedTaskId, setSelectedTaskId] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [selectedTaskId, setSelectedTaskId] = useState(() => {
+    const taskParam = searchParams.get('task')
+    return taskParam ? parseInt(taskParam) : null
+  })
   const [view, setView] = useState('board')
 
   const [filters, setFilters] = useState({
@@ -83,7 +88,8 @@ export default function Tasks() {
 
   const handleTaskClick = useCallback((taskId) => {
     setSelectedTaskId(taskId)
-  }, [])
+    setSearchParams(taskId ? { task: taskId } : {}, { replace: true })
+  }, [setSearchParams])
 
   async function handleDragEnd(result) {
     const { destination, source, draggableId } = result
@@ -402,7 +408,7 @@ export default function Tasks() {
       {selectedTaskId && (
         <TaskDetail
           taskId={selectedTaskId}
-          onClose={() => setSelectedTaskId(null)}
+          onClose={() => { setSelectedTaskId(null); setSearchParams({}, { replace: true }) }}
           onUpdate={loadTasks}
         />
       )}

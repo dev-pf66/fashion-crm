@@ -130,14 +130,15 @@ export default function TaskForm({ task, onClose, onSave }) {
             type: 'assignment',
             title: `${currentPerson?.name || 'Someone'} assigned you a task`,
             message: form.title,
-            link: '/tasks',
+            link: `/tasks?task=${task.id}`,
             from_person_id: currentPerson?.id,
           })
         }
         toast.success('Task updated')
       } else {
         payload.created_by = currentPerson?.id || null
-        await createTask(payload)
+        const newTask = await createTask(payload)
+        const taskLink = `/tasks?task=${newTask.id}`
         // Notify assignee
         if (form.assigned_to && form.assigned_to !== currentPerson?.id) {
           await createNotification({
@@ -145,9 +146,22 @@ export default function TaskForm({ task, onClose, onSave }) {
             type: 'assignment',
             title: `${currentPerson?.name || 'Someone'} assigned you a task`,
             message: form.title,
-            link: '/tasks',
+            link: taskLink,
             from_person_id: currentPerson?.id,
           })
+        }
+        // Notify collaborators
+        for (const collabId of form.collaborators) {
+          if (collabId !== currentPerson?.id && collabId !== parseInt(form.assigned_to)) {
+            await createNotification({
+              person_id: collabId,
+              type: 'assignment',
+              title: `${currentPerson?.name || 'Someone'} added you to a task`,
+              message: form.title,
+              link: taskLink,
+              from_person_id: currentPerson?.id,
+            })
+          }
         }
         toast.success('Task created')
       }
