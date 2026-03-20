@@ -11,7 +11,7 @@ import {
   LayoutDashboard, Scissors, Factory, Palette,
   FlaskConical, Users, Settings, LogOut,
   ClipboardList, Clock, HelpCircle, Menu, X, Search, CalendarDays, FileText, Layers, CheckSquare, Shield,
-  Moon, Sun, Bell
+  Moon, Sun, Bell, Gem
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -34,6 +34,7 @@ const NAV_SECTIONS = [
       { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
       { to: '/requests', icon: FileText, label: 'Requests' },
       { to: '/range-planning', icon: Layers, label: 'Range Plan' },
+      { to: '/by-embroidery', icon: Gem, label: 'By Embroidery' },
     ]
   },
   {

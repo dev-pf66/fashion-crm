@@ -58,6 +58,8 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         status: data.status || 'concept',
         production_qty: data.production_qty || '',
         due_date: data.due_date || '',
+        embroidery: data.embroidery || '',
+        silhouette: data.silhouette || '',
         notes: data.notes || '',
       })
       setFiles(data.range_style_files || [])
@@ -91,6 +93,8 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         status: form.status,
         production_qty: form.production_qty ? parseInt(form.production_qty) : 0,
         due_date: form.due_date || null,
+        embroidery: form.embroidery.trim() || null,
+        silhouette: form.silhouette.trim() || null,
         notes: form.notes.trim() || null,
       })
       toast.success('Style updated')
@@ -237,6 +241,17 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
             <div className="form-group">
               <label>Colorways <span className="text-muted text-sm">(comma-separated)</span></label>
               <input type="text" value={form.colorways} onChange={e => updateField('colorways', e.target.value)} placeholder="e.g. White, Navy, Sage" />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Embroidery</label>
+                <input type="text" value={form.embroidery} onChange={e => updateField('embroidery', e.target.value)} placeholder="e.g. Zardozi, Chikankari, Aari" />
+              </div>
+              <div className="form-group">
+                <label>Silhouette</label>
+                <input type="text" value={form.silhouette} onChange={e => updateField('silhouette', e.target.value)} placeholder="e.g. A-Line, Straight, Fitted" />
+              </div>
             </div>
 
             <div className="form-group">

@@ -37,6 +37,8 @@ const GROUPINGS = [
   { value: 'category', label: 'Category' },
   { value: 'delivery_drop', label: 'Delivery Drop' },
   { value: 'supplier', label: 'Supplier' },
+  { value: 'embroidery', label: 'Embroidery' },
+  { value: 'silhouette', label: 'Silhouette' },
   { value: 'status', label: 'Status' },
 ]
 
@@ -181,6 +183,8 @@ export default function RangeDetail() {
       const key = groupBy === 'status' ? s.status :
                   groupBy === 'delivery_drop' ? (s.delivery_drop || 'Unassigned') :
                   groupBy === 'supplier' ? (s.suppliers?.name ? maskSupplierName(s.suppliers.name, currentPerson) : 'No Supplier') :
+                  groupBy === 'embroidery' ? (s.embroidery || 'Unassigned') :
+                  groupBy === 'silhouette' ? (s.silhouette || 'Unassigned') :
                   s.category || 'Unassigned'
       if (!grouped[key]) grouped[key] = []
       grouped[key].push(s)
@@ -281,6 +285,8 @@ export default function RangeDetail() {
       else if (groupBy === 'delivery_drop') fieldUpdates.delivery_drop = dstGroupKey === 'Unassigned' ? null : dstGroupKey
       else if (groupBy === 'supplier') { /* supplier drag between groups not supported */ return }
       else if (groupBy === 'status') fieldUpdates.status = dstGroupKey
+      else if (groupBy === 'embroidery') fieldUpdates.embroidery = dstGroupKey === 'Unassigned' ? null : dstGroupKey
+      else if (groupBy === 'silhouette') fieldUpdates.silhouette = dstGroupKey === 'Unassigned' ? null : dstGroupKey
 
       // Optimistic update
       setStyles(prev => prev.map(s => s.id === draggedStyle.id ? { ...s, ...fieldUpdates } : s))
