@@ -23,14 +23,19 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
-  const [selectedTaskId, setSelectedTaskId] = useState(null)
+  const [selectedTaskId, setSelectedTaskId] = useState(() => {
+    const p = searchParams.get('task')
+    return p ? parseInt(p) : null
+  })
   const [view, setView] = useState('board')
 
-  // Open task detail when ?task=<id> is in URL
+  // Open task detail when ?task=<id> changes in URL
   useEffect(() => {
     const taskParam = searchParams.get('task')
     if (taskParam) {
       setSelectedTaskId(parseInt(taskParam))
+    } else {
+      setSelectedTaskId(null)
     }
   }, [searchParams])
 
