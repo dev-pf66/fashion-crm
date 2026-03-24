@@ -133,7 +133,7 @@ function AppRoutes() {
             <Route path="samples" element={<Samples />} />
             <Route path="orders" element={<Orders />} />
             <Route path="orders/:id" element={<OrderDetail />} />
-            <Route path="team" element={<Team />} />
+            <Route path="team" element={isAdmin(currentPerson) ? <Team /> : <Navigate to="/" replace />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="requests" element={<StyleRequests />} />
             <Route path="tasks" element={<Tasks />} />
@@ -143,9 +143,9 @@ function AppRoutes() {
             <Route path="by-embroidery" element={<ByEmbroidery />} />
             <Route path="production" element={<ProductionBoard />} />
             <Route path="admin" element={isAdmin(currentPerson) ? <AdminDashboard /> : <Navigate to="/" replace />} />
-            <Route path="activity" element={<Activity />} />
+            <Route path="activity" element={isAdmin(currentPerson) ? <Activity /> : <Navigate to="/" replace />} />
             <Route path="help" element={<Help />} />
-            <Route path="settings" element={<Settings />} />
+            <Route path="settings" element={isAdmin(currentPerson) ? <Settings /> : <Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
           <Route path="/reset-password" element={<ResetPassword />} />

@@ -20,7 +20,7 @@ const NAV_SECTIONS = [
     items: [
       { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
       { to: '/styles', icon: Scissors, label: 'Styles' },
-      { to: '/suppliers', icon: Factory, label: 'Suppliers' },
+      { to: '/suppliers', icon: Factory, label: 'Suppliers', adminOnly: true },
       { to: '/orders', icon: ClipboardList, label: 'Orders' },
       { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
       { to: '/notifications', icon: Bell, label: 'Notifications' },
@@ -41,11 +41,11 @@ const NAV_SECTIONS = [
   {
     label: 'Admin',
     items: [
-      { to: '/admin', icon: Shield, label: 'Command Center' },
-      { to: '/team', icon: Users, label: 'Team' },
-      { to: '/activity', icon: Clock, label: 'Activity' },
+      { to: '/admin', icon: Shield, label: 'Command Center', adminOnly: true },
+      { to: '/team', icon: Users, label: 'Team', adminOnly: true },
+      { to: '/activity', icon: Clock, label: 'Activity', adminOnly: true },
       { to: '/help', icon: HelpCircle, label: 'Help' },
-      { to: '/settings', icon: Settings, label: 'Settings' },
+      { to: '/settings', icon: Settings, label: 'Settings', adminOnly: true },
     ]
   },
 ]
@@ -145,8 +145,7 @@ export default function Layout() {
           {NAV_SECTIONS.map(section => {
             const isAdmin = checkAdmin(currentPerson)
             const items = section.items.filter(item => {
-              if (item.to === '/admin') return isAdmin
-              if (item.to === '/suppliers') return isAdmin
+              if (item.adminOnly) return isAdmin
               return true
             })
             if (items.length === 0) return null
