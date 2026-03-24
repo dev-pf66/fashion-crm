@@ -31,6 +31,7 @@ const RANGE_STYLE_STATUSES = [
   { value: 'review', label: 'Review', bg: '#fef3c7', color: '#b45309' },
   { value: 'approved', label: 'Approved', bg: '#dcfce7', color: '#15803d' },
   { value: 'rejected', label: 'Rejected', bg: '#fee2e2', color: '#b91c1c' },
+  { value: 'production', label: 'Production', bg: '#d1fae5', color: '#065f46' },
 ]
 
 const GROUPINGS = [

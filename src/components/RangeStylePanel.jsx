@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
-import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers } from '../lib/supabase'
+import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification } from '../lib/supabase'
 import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
 import { useApp } from '../App'
 import CommentSection from './CommentSection'
-import { X, Upload, Trash2, Star, FileText, Image as ImageIcon, Loader } from 'lucide-react'
+import Modal from './Modal'
+import { X, Upload, Trash2, Star, FileText, Image as ImageIcon, Loader, PackageCheck } from 'lucide-react'
 
 const STATUSES = [
   { value: 'concept', label: 'Concept' },
@@ -14,10 +15,11 @@ const STATUSES = [
   { value: 'swatching', label: 'Swatching' },
   { value: 'review', label: 'Review' },
   { value: 'approved', label: 'Approved' },
+  { value: 'production', label: 'Production' },
 ]
 
 export default function RangeStylePanel({ styleId, rangeId, categories, onClose, onUpdate, onDelete }) {
-  const { currentPerson } = useApp()
+  const { currentPerson, people } = useApp()
   const STYLE_CATEGORIES = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES
   const toast = useToast()
   const fileInputRef = useRef(null)
@@ -28,6 +30,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
   const [uploading, setUploading] = useState(false)
   const [form, setForm] = useState({})
   const [suppliers, setSuppliers] = useState([])
+  const [showProductionModal, setShowProductionModal] = useState(false)
 
   useEffect(() => {
     getSuppliers().then(setSuppliers).catch(() => {})
@@ -268,6 +271,18 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
+              {form.status !== 'production' && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setShowProductionModal(true)}
+                  style={{ background: 'var(--primary)', color: '#fff', borderColor: 'var(--primary)' }}
+                >
+                  <PackageCheck size={16} /> Push to Production
+                </button>
+              )}
+              {form.status === 'production' && (
+                <span className="tag" style={{ background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>In Production</span>
+              )}
             </div>
 
             {/* Files section */}
@@ -352,6 +367,173 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
           </div>
         )}
       </div>
+
+      {showProductionModal && (
+        <PushToProductionModal
+          styleName={style?.name}
+          currentQty={form.production_qty}
+          people={people}
+          currentPerson={currentPerson}
+          onClose={() => setShowProductionModal(false)}
+          onSubmit={async (prodData) => {
+            try {
+              await updateRangeStyle(styleId, {
+                status: 'production',
+                production_qty: prodData.quantity ? parseInt(prodData.quantity) : 0,
+                production_status: 'pending',
+                production_client: prodData.client || null,
+                production_lead: prodData.lead || null,
+                production_collaborators: prodData.collaborators,
+                production_notes: prodData.notes || null,
+                pushed_to_production_at: new Date().toISOString(),
+              })
+              // Notify lead
+              if (prodData.lead && prodData.lead !== currentPerson?.id) {
+                await createNotification({
+                  person_id: prodData.lead,
+                  type: 'assignment',
+                  title: `${currentPerson?.name || 'Someone'} pushed "${style?.name}" to production`,
+                  message: `Qty: ${prodData.quantity || 0}${prodData.client ? ` | Client: ${prodData.client}` : ''}`,
+                  link: '/production',
+                  from_person_id: currentPerson?.id,
+                })
+              }
+              // Notify collaborators
+              for (const collabId of prodData.collaborators) {
+                if (collabId !== currentPerson?.id && collabId !== prodData.lead) {
+                  await createNotification({
+                    person_id: collabId,
+                    type: 'assignment',
+                    title: `${currentPerson?.name || 'Someone'} added you to production for "${style?.name}"`,
+                    message: `Qty: ${prodData.quantity || 0}`,
+                    link: '/production',
+                    from_person_id: currentPerson?.id,
+                  })
+                }
+              }
+              setForm(prev => ({ ...prev, status: 'production' }))
+              setShowProductionModal(false)
+              toast.success('Pushed to production!')
+              onUpdate()
+            } catch (err) {
+              toast.error('Failed to push to production')
+              console.error(err)
+            }
+          }}
+        />
+      )}
     </>
+  )
+}
+
+function PushToProductionModal({ styleName, currentQty, people, currentPerson, onClose, onSubmit }) {
+  const [quantity, setQuantity] = useState(currentQty || '')
+  const [client, setClient] = useState('')
+  const [lead, setLead] = useState('')
+  const [collaborators, setCollaborators] = useState([])
+  const [notes, setNotes] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  function toggleCollaborator(personId) {
+    const id = parseInt(personId)
+    setCollaborators(prev =>
+      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+    )
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSubmitting(true)
+    await onSubmit({
+      quantity,
+      client,
+      lead: lead ? parseInt(lead) : null,
+      collaborators,
+      notes,
+    })
+    setSubmitting(false)
+  }
+
+  return (
+    <Modal title={`Push to Production: ${styleName}`} onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Production Quantity *</label>
+            <input
+              type="number"
+              min="1"
+              value={quantity}
+              onChange={e => setQuantity(e.target.value)}
+              placeholder="How many units?"
+              required
+              autoFocus
+            />
+          </div>
+          <div className="form-group">
+            <label>Client / Destination</label>
+            <input
+              type="text"
+              value={client}
+              onChange={e => setClient(e.target.value)}
+              placeholder="Who is this going to?"
+            />
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Lead (who is in charge)</label>
+          <select value={lead} onChange={e => setLead(e.target.value)}>
+            <option value="">Select lead...</option>
+            {people.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Collaborators</label>
+          <div className="tag-picker">
+            {people.filter(p => p.id !== parseInt(lead)).map(p => (
+              <button
+                key={p.id}
+                type="button"
+                className={`tag-picker-item ${collaborators.includes(p.id) ? 'selected' : ''}`}
+                style={{
+                  '--tag-color': '#6366f1',
+                  background: collaborators.includes(p.id) ? '#6366f1' : 'transparent',
+                  color: collaborators.includes(p.id) ? '#fff' : '#6366f1',
+                  borderColor: '#6366f1',
+                }}
+                onClick={() => toggleCollaborator(p.id)}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Production Notes</label>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            rows={3}
+            placeholder="Any special instructions, fabric details, deadlines..."
+          />
+        </div>
+
+        <div className="form-actions">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={submitting || !quantity}
+          >
+            {submitting ? 'Pushing...' : 'Push to Production'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   )
 }
