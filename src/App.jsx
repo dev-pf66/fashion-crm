@@ -29,6 +29,7 @@ const Tasks = lazy(() => import('./pages/Tasks'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 const ByEmbroidery = lazy(() => import('./pages/ByEmbroidery'))
 const ProductionBoard = lazy(() => import('./pages/ProductionBoard'))
+const ContentCalendar = lazy(() => import('./pages/ContentCalendar'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 
@@ -142,6 +143,7 @@ function AppRoutes() {
             <Route path="range-planning/:id" element={<RangeDetail />} />
             <Route path="by-embroidery" element={<ByEmbroidery />} />
             <Route path="production" element={<ProductionBoard />} />
+            <Route path="content" element={<ContentCalendar />} />
             <Route path="admin" element={isAdmin(currentPerson) ? <AdminDashboard /> : <Navigate to="/" replace />} />
             <Route path="activity" element={isAdmin(currentPerson) ? <Activity /> : <Navigate to="/" replace />} />
             <Route path="help" element={<Help />} />
