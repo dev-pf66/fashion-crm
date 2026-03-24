@@ -63,6 +63,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         due_date: data.due_date || '',
         embroidery: data.embroidery || '',
         silhouette: data.silhouette || '',
+        content_status: data.content_status || '',
         notes: data.notes || '',
       })
       setFiles(data.range_style_files || [])
@@ -98,6 +99,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         due_date: form.due_date || null,
         embroidery: form.embroidery.trim() || null,
         silhouette: form.silhouette.trim() || null,
+        content_status: form.content_status || null,
         notes: form.notes.trim() || null,
       })
       toast.success('Style updated')
@@ -255,6 +257,20 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                 <label>Silhouette</label>
                 <input type="text" value={form.silhouette} onChange={e => updateField('silhouette', e.target.value)} placeholder="e.g. A-Line, Straight, Fitted" />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label>Content Status</label>
+              <select value={form.content_status} onChange={e => updateField('content_status', e.target.value)}>
+                <option value="">Not set</option>
+                <option value="needs_shoot">Needs Shoot</option>
+                <option value="shoot_scheduled">Shoot Scheduled</option>
+                <option value="shot">Shot</option>
+                <option value="editing">Editing</option>
+                <option value="ready">Content Ready</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="posted">Posted</option>
+              </select>
             </div>
 
             <div className="form-group">

@@ -34,6 +34,16 @@ const RANGE_STYLE_STATUSES = [
   { value: 'production', label: 'Production', bg: '#d1fae5', color: '#065f46' },
 ]
 
+const CONTENT_STATUS_LABELS = {
+  needs_shoot: 'Needs Shoot',
+  shoot_scheduled: 'Shoot Scheduled',
+  shot: 'Shot',
+  editing: 'Editing',
+  ready: 'Content Ready',
+  scheduled: 'Scheduled',
+  posted: 'Posted',
+}
+
 const GROUPINGS = [
   { value: 'category', label: 'Category' },
   { value: 'delivery_drop', label: 'Delivery Drop' },
@@ -41,6 +51,7 @@ const GROUPINGS = [
   { value: 'embroidery', label: 'Embroidery' },
   { value: 'silhouette', label: 'Silhouette' },
   { value: 'status', label: 'Status' },
+  { value: 'content_status', label: 'Content Status' },
 ]
 
 const CARD_SIZES = [
@@ -1103,6 +1114,9 @@ function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, o
           {groupBy !== 'category' && <span className="tag">{style.category}</span>}
           <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />
         </div>
+        {cardSize !== 'sm' && style.content_status && (
+          <span className={`tag tag-content tag-content-${style.content_status}`}>{CONTENT_STATUS_LABELS[style.content_status]}</span>
+        )}
         {cardSize !== 'sm' && style.production_qty > 0 && (
           <div className="text-sm text-muted" style={{ marginTop: '0.125rem' }}>Qty: {style.production_qty.toLocaleString()}</div>
         )}
