@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
-import { getDashboardStats, getStyles, getUpcomingDeadlines, getOverdueItems, getTaskMetrics } from '../lib/supabase'
+import { getDashboardStats, getStyles, getUpcomingDeadlines, getOverdueItems, getTaskMetrics, getTasks } from '../lib/supabase'
 import { STYLE_STATUSES, SAMPLE_ROUNDS } from '../lib/constants'
 import ActivityFeed from '../components/ActivityFeed'
 import StatusBadge from '../components/StatusBadge'
@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [deadlines, setDeadlines] = useState([])
   const [overdue, setOverdue] = useState(null)
   const [taskMetrics, setTaskMetrics] = useState(null)
+  const [myTasks, setMyTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const toast = useToast()
 
@@ -32,18 +33,22 @@ export default function Dashboard() {
   async function loadData() {
     setLoading(true)
     try {
-      const [statsData, stylesData, deadlinesData, overdueData, taskData] = await Promise.all([
+      const [statsData, stylesData, deadlinesData, overdueData, taskData, allTasks] = await Promise.all([
         getDashboardStats(currentDivision.id),
         getStyles(currentDivision.id),
         getUpcomingDeadlines(currentDivision.id, currentPerson?.name),
         getOverdueItems(currentDivision.id),
         getTaskMetrics(),
+        getTasks().catch(() => []),
       ])
       setStats(statsData)
       setRecentStyles(stylesData.slice(0, 5))
       setDeadlines(deadlinesData || [])
       setOverdue(overdueData)
       setTaskMetrics(taskData)
+      setMyTasks((allTasks || []).filter(t =>
+        t.assignee_id === currentPerson?.id && t.status !== 'done'
+      ).slice(0, 5))
     } catch (err) {
       console.error('Failed to load dashboard:', err)
       toast.error('Failed to load dashboard')
@@ -76,6 +81,41 @@ export default function Dashboard() {
             {overdue.overdueSamples.length > 0 && overdue.overduePOs.length > 0 && ', '}
             {overdue.overduePOs.length > 0 && `${overdue.overduePOs.length} PO${overdue.overduePOs.length > 1 ? 's' : ''}`}
           </span>
+        </div>
+      )}
+
+      {/* My Tasks */}
+      {myTasks.length > 0 && (
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <div className="card-header">
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              <CheckSquare size={16} /> My Tasks
+            </h3>
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/tasks')}>
+              View All
+            </button>
+          </div>
+          <div className="my-tasks-list">
+            {myTasks.map(task => (
+              <div
+                key={task.id}
+                className="my-task-item"
+                onClick={() => navigate(`/tasks?task=${task.id}`)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="my-task-info">
+                  <span className={`my-task-priority ${task.priority || 'medium'}`} />
+                  <span className="my-task-title">{task.title}</span>
+                  {task.due_date && (
+                    <span className={`my-task-due ${new Date(task.due_date) < new Date() ? 'overdue' : ''}`}>
+                      {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                  )}
+                </div>
+                <StatusBadge status={task.status} />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

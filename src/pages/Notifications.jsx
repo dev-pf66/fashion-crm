@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Check, CheckCheck } from 'lucide-react'
+import { Bell, Check, CheckCheck, Search } from 'lucide-react'
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/supabase'
 import { useApp } from '../App'
 import { useToast } from '../contexts/ToastContext'
@@ -29,6 +29,7 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all') // 'all' | 'unread' | 'read'
+  const [search, setSearch] = useState('')
 
   const unreadCount = notifications.filter(n => !n.read).length
 
@@ -93,6 +94,12 @@ export default function Notifications() {
   const filtered = notifications.filter(n => {
     if (filter === 'unread') return !n.read
     if (filter === 'read') return n.read
+    if (search) {
+      const q = search.toLowerCase()
+      if (!n.title?.toLowerCase().includes(q) &&
+          !n.message?.toLowerCase().includes(q) &&
+          !n.from_person?.name?.toLowerCase().includes(q)) return false
+    }
     return true
   })
 
@@ -128,6 +135,16 @@ export default function Notifications() {
             )}
           </button>
         ))}
+      </div>
+
+      <div className="notif-page-search">
+        <Search size={14} />
+        <input
+          type="text"
+          placeholder="Search notifications..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
       </div>
 
       {loading ? (

@@ -1000,6 +1000,74 @@ textarea {
   margin-top: 0.375rem;
 }
 
+/* My Tasks on Dashboard */
+.my-tasks-list {
+  padding: 0;
+}
+
+.my-task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid var(--gray-100);
+  transition: background 0.15s;
+}
+
+.my-task-item:last-child {
+  border-bottom: none;
+}
+
+.my-task-item:hover {
+  background: var(--gray-50);
+}
+
+.my-task-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.my-task-priority {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.my-task-priority.high, .my-task-priority.urgent {
+  background: var(--danger);
+}
+
+.my-task-priority.medium {
+  background: var(--warning);
+}
+
+.my-task-priority.low {
+  background: var(--success);
+}
+
+.my-task-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.my-task-due {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  flex-shrink: 0;
+}
+
+.my-task-due.overdue {
+  color: var(--danger);
+  font-weight: 600;
+}
+
 /* ============================================================
    TABS
    ============================================================ */
@@ -5359,7 +5427,28 @@ div:hover > .rp-table-thumb-change {
 .notif-page-filters {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.notif-page-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  color: var(--gray-500);
+}
+
+.notif-page-search input {
+  border: none;
+  background: none;
+  outline: none;
+  flex: 1;
+  font-size: 0.875rem;
+  color: inherit;
 }
 
 .notif-page-filter-btn {
@@ -7230,6 +7319,96 @@ html, body {
   border-top: 1px solid var(--gray-100);
 }
 
+.prod-card.dragging {
+  opacity: 0.9;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transform: rotate(2deg);
+}
+
+/* ===== Bulk Actions ===== */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--primary);
+  color: white;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.bulk-bar-count {
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.bulk-bar .btn {
+  font-size: 0.75rem;
+}
+
+.bulk-bar .btn-danger {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: none;
+}
+
+.bulk-bar .btn-danger:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.bulk-bar .btn-ghost {
+  color: rgba(255,255,255,0.8);
+}
+
+.bulk-bar select {
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.bulk-select-all {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.bulk-select-all input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.rp-card {
+  position: relative;
+}
+
+.style-card-checkbox {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.rp-card:hover .style-card-checkbox,
+.style-card-checkbox:checked {
+  opacity: 1;
+}
+
+.rp-card-selected {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
 @media (max-width: 900px) {
   .prod-board {
     grid-template-columns: 1fr;
@@ -7355,6 +7534,16 @@ html, body {
   color: #9ca3af;
 }
 
+[data-theme="dark"] .notif-page-search {
+  background: #1e1e2e;
+  border-color: #2a2a40;
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .notif-page-search input {
+  color: #e5e7eb;
+}
+
 /* ===== Dark mode: Range Planning Folders ===== */
 
 [data-theme="dark"] .rp-folder {
@@ -7397,4 +7586,17 @@ html, body {
   --success-text: #86efac;
   --warning-bg: #451a03;
   --warning-text: #fcd34d;
+}
+
+/* Dark mode: My Tasks */
+[data-theme="dark"] .my-task-item {
+  border-bottom-color: #2a2a40;
+}
+
+[data-theme="dark"] .my-task-item:hover {
+  background: #1e1e2e;
+}
+
+[data-theme="dark"] .my-task-title {
+  color: #e5e7eb;
 }

@@ -6,7 +6,7 @@ import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
 import {
   getRange, updateRange,
-  getRangeStyles, createRangeStyle, updateRangeStyle, updateRangeStyleOrder,
+  getRangeStyles, createRangeStyle, updateRangeStyle, updateRangeStyleOrder, deleteRangeStyle,
   createRangeStyleFile,
   getTasksForRange, getTaskSubtaskCounts,
 } from '../lib/supabase'
@@ -20,7 +20,7 @@ import {
   LayoutGrid, List, Plus, Search, Edit3, Filter,
   Image as ImageIcon, Lock, Play, GripVertical,
   Maximize2, Minimize2, Square, X, ChevronLeft, ChevronRight, Factory,
-  CheckSquare, Clock, Calendar,
+  CheckSquare, Clock, Calendar, Download, Trash2,
 } from 'lucide-react'
 
 const RANGE_STYLE_STATUSES = [
@@ -94,6 +94,7 @@ export default function RangeDetail() {
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches)
   const thumbInputRef = useRef(null)
   const [thumbUploadId, setThumbUploadId] = useState(null)
+  const [selectedIds, setSelectedIds] = useState(new Set())
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)')
@@ -401,6 +402,68 @@ export default function RangeDetail() {
     }
   }
 
+  function exportRange() {
+    const headers = ['Name', 'Category', 'Sub-Category', 'Status', 'Delivery Drop', 'Colorways', 'Embroidery', 'Silhouette', 'Production Qty', 'Notes', 'Due Date']
+    const rows = styles.map(s => [
+      s.name || '', s.category || '', s.sub_category || '', s.status || '',
+      s.delivery_drop || '', (s.colorways || []).join('; '), s.embroidery || '',
+      s.silhouette || '', s.production_qty || '', (s.notes || '').replace(/[\n\r,]/g, ' '), s.due_date || '',
+    ])
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${range?.name || 'range'}-export.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    toast.success('Range exported as CSV')
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filtered.map(s => s.id)))
+    }
+  }
+
+  function toggleSelect(id, e) {
+    e.stopPropagation()
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function handleBulkStatusChange(status) {
+    try {
+      await Promise.all([...selectedIds].map(id => updateRangeStyle(id, { status })))
+      setStyles(prev => prev.map(s => selectedIds.has(s.id) ? { ...s, status } : s))
+      toast.success(`${selectedIds.size} styles updated`)
+      setSelectedIds(new Set())
+    } catch (err) {
+      toast.error('Failed to update styles')
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (!confirm(`Delete ${selectedIds.size} selected styles?`)) return
+    try {
+      await Promise.all([...selectedIds].map(id => deleteRangeStyle(id)))
+      setStyles(prev => prev.filter(s => !selectedIds.has(s.id)))
+      toast.success(`${selectedIds.size} styles deleted`)
+      setSelectedIds(new Set())
+    } catch (err) {
+      toast.error('Failed to delete styles')
+    }
+  }
+
   if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
   if (!range) return <div className="card"><div className="empty-state"><h3>Range not found</h3></div></div>
 
@@ -583,9 +646,40 @@ export default function RangeDetail() {
 
       {/* Styles Tab */}
       {tab === 'styles' && <>
+
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="bulk-bar">
+          <span className="bulk-bar-count">{selectedIds.size} selected</span>
+          <select
+            className="btn btn-sm"
+            defaultValue=""
+            onChange={e => { if (e.target.value) handleBulkStatusChange(e.target.value); e.target.value = '' }}
+          >
+            <option value="" disabled>Change status...</option>
+            {RANGE_STYLE_STATUSES.map(s => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+          <button className="btn btn-danger btn-sm" onClick={handleBulkDelete}>
+            <Trash2 size={14} /> Delete
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setSelectedIds(new Set())}>
+            <X size={14} /> Clear
+          </button>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="rp-toolbar">
         <div className="rp-toolbar-left">
+          <label className="bulk-select-all" title="Select all">
+            <input
+              type="checkbox"
+              checked={selectedIds.size === filtered.length && filtered.length > 0}
+              onChange={toggleSelectAll}
+            />
+          </label>
           <div className="rp-view-toggle">
             <button className={`rp-view-btn ${view === 'board' ? 'active' : ''}`} onClick={() => setView('board')}>
               <LayoutGrid size={16} /> Board
@@ -624,6 +718,9 @@ export default function RangeDetail() {
           )}
         </div>
         <div className="rp-toolbar-right">
+          <button className="btn btn-secondary btn-sm" onClick={exportRange}>
+            <Download size={14} /> <span className="hide-mobile-text">Export</span>
+          </button>
           <button className="btn btn-primary btn-sm" onClick={() => { setQuickAddGroup('_top'); setQuickAddName('') }}>
             <Plus size={14} /> <span className="hide-mobile-text">Add Style</span>
           </button>
@@ -720,6 +817,7 @@ export default function RangeDetail() {
                       <StyleCard key={style.id} style={style} cardSize={cardSize} groupBy={groupBy}
                         onStatusChange={handleStatusChange} onOpenLightbox={openLightbox}
                         onThumbUpload={triggerThumbUpload}
+                        selected={selectedIds.has(style.id)} onToggleSelect={toggleSelect}
                         onClick={() => setPanelStyleId(style.id)} />
                     ))}
                   </div>
@@ -757,8 +855,15 @@ export default function RangeDetail() {
                                     <Draggable key={style.id} draggableId={style.id} index={index}>
                                       {(provided, snapshot) => (
                                         <div ref={provided.innerRef} {...provided.draggableProps}
-                                          className={`rp-card rp-card-${cardSize} ${snapshot.isDragging ? 'dragging' : ''}`}
+                                          className={`rp-card rp-card-${cardSize} ${snapshot.isDragging ? 'dragging' : ''} ${selectedIds.has(style.id) ? 'rp-card-selected' : ''}`}
                                           onClick={() => setPanelStyleId(style.id)}>
+                                          <input
+                                            type="checkbox"
+                                            className="style-card-checkbox"
+                                            checked={selectedIds.has(style.id)}
+                                            onChange={(e) => toggleSelect(style.id, e)}
+                                            onClick={e => e.stopPropagation()}
+                                          />
                                           <div className="rp-card-thumb" {...provided.dragHandleProps}>
                                             {style.thumbnail_url ? (
                                               <>
@@ -959,9 +1064,18 @@ function RangeStatusDropdown({ status, onChange }) {
   )
 }
 
-function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, onThumbUpload, onClick }) {
+function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, onThumbUpload, onClick, selected, onToggleSelect }) {
   return (
-    <div className={`rp-card rp-card-${cardSize}`} onClick={onClick}>
+    <div className={`rp-card rp-card-${cardSize} ${selected ? 'rp-card-selected' : ''}`} onClick={onClick}>
+      {onToggleSelect && (
+        <input
+          type="checkbox"
+          className="style-card-checkbox"
+          checked={selected || false}
+          onChange={(e) => onToggleSelect(style.id, e)}
+          onClick={e => e.stopPropagation()}
+        />
+      )}
       <div className="rp-card-thumb">
         {style.thumbnail_url ? (
           <>

@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useApp } from '../App'
 import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
-import { PackageCheck, Search, User, Clock, Filter } from 'lucide-react'
+import { PackageCheck, Search, User, Clock, Filter, GripVertical } from 'lucide-react'
 
 const PROD_STATUSES = [
   { value: 'pending', label: 'Pending', bg: '#fef3c7', color: '#b45309' },
@@ -72,6 +73,14 @@ export default function ProductionBoard() {
     } catch (err) {
       toast.error('Failed to update status')
     }
+  }
+
+  function handleDragEnd(result) {
+    if (!result.destination) return
+    const { draggableId, source, destination } = result
+    if (source.droppableId === destination.droppableId) return
+    const itemId = parseInt(draggableId)
+    updateProdStatus(itemId, destination.droppableId)
   }
 
   const peopleMap = useMemo(() => {
@@ -143,65 +152,90 @@ export default function ProductionBoard() {
           </div>
         </div>
       ) : (
-        <div className="prod-board">
-          {PROD_STATUSES.map(status => (
-            <div key={status.value} className="prod-column">
-              <div className="prod-column-header" style={{ background: status.bg, color: status.color }}>
-                <span>{status.label}</span>
-                <span className="prod-column-count">{grouped[status.value].length}</span>
-              </div>
-              <div className="prod-column-body">
-                {grouped[status.value].map(item => (
-                  <div key={item.id} className="prod-card card">
-                    <div className="prod-card-header">
-                      <h4>{item.name}</h4>
-                      <select
-                        className="prod-status-select"
-                        value={item.production_status || 'pending'}
-                        onChange={e => updateProdStatus(item.id, e.target.value)}
-                        onClick={e => e.stopPropagation()}
-                      >
-                        {PROD_STATUSES.map(s => (
-                          <option key={s.value} value={s.value}>{s.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="prod-card-range">{item.ranges?.name}</div>
-                    <div className="prod-card-stats">
-                      <span className="prod-card-qty">{(item.production_qty || 0).toLocaleString()} units</span>
-                      {item.production_client && (
-                        <span className="prod-card-client">{item.production_client}</span>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="prod-board">
+            {PROD_STATUSES.map(status => (
+              <div key={status.value} className="prod-column">
+                <div className="prod-column-header" style={{ background: status.bg, color: status.color }}>
+                  <span>{status.label}</span>
+                  <span className="prod-column-count">{grouped[status.value].length}</span>
+                </div>
+                <Droppable droppableId={status.value}>
+                  {(provided, snapshot) => (
+                    <div
+                      className="prod-column-body"
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      style={snapshot.isDraggingOver ? { background: 'rgba(99, 102, 241, 0.05)' } : undefined}
+                    >
+                      {grouped[status.value].map((item, index) => (
+                        <Draggable key={item.id} draggableId={String(item.id)} index={index}>
+                          {(dragProvided, dragSnapshot) => (
+                            <div
+                              ref={dragProvided.innerRef}
+                              {...dragProvided.draggableProps}
+                              className={`prod-card card ${dragSnapshot.isDragging ? 'dragging' : ''}`}
+                            >
+                              <div className="prod-card-header">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                                  <span {...dragProvided.dragHandleProps} style={{ cursor: 'grab', color: 'var(--gray-400)', display: 'flex' }}>
+                                    <GripVertical size={14} />
+                                  </span>
+                                  <h4>{item.name}</h4>
+                                </div>
+                                <select
+                                  className="prod-status-select"
+                                  value={item.production_status || 'pending'}
+                                  onChange={e => updateProdStatus(item.id, e.target.value)}
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  {PROD_STATUSES.map(s => (
+                                    <option key={s.value} value={s.value}>{s.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="prod-card-range">{item.ranges?.name}</div>
+                              <div className="prod-card-stats">
+                                <span className="prod-card-qty">{(item.production_qty || 0).toLocaleString()} units</span>
+                                {item.production_client && (
+                                  <span className="prod-card-client">{item.production_client}</span>
+                                )}
+                              </div>
+                              {item.production_lead && (
+                                <div className="prod-card-lead">
+                                  <User size={12} />
+                                  <span>{peopleMap[item.production_lead] || 'Unknown'}</span>
+                                </div>
+                              )}
+                              {item.production_collaborators?.length > 0 && (
+                                <div className="prod-card-collabs">
+                                  {item.production_collaborators.map(id => (
+                                    <span key={id} className="prod-card-collab-chip">{peopleMap[id] || '?'}</span>
+                                  ))}
+                                </div>
+                              )}
+                              {item.production_notes && (
+                                <div className="prod-card-notes">{item.production_notes}</div>
+                              )}
+                              <div className="prod-card-footer">
+                                <Clock size={11} />
+                                <span>{timeAgo(item.pushed_to_production_at)}</span>
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                      {grouped[status.value].length === 0 && (
+                        <div className="prod-column-empty">No items</div>
                       )}
                     </div>
-                    {item.production_lead && (
-                      <div className="prod-card-lead">
-                        <User size={12} />
-                        <span>{peopleMap[item.production_lead] || 'Unknown'}</span>
-                      </div>
-                    )}
-                    {item.production_collaborators?.length > 0 && (
-                      <div className="prod-card-collabs">
-                        {item.production_collaborators.map(id => (
-                          <span key={id} className="prod-card-collab-chip">{peopleMap[id] || '?'}</span>
-                        ))}
-                      </div>
-                    )}
-                    {item.production_notes && (
-                      <div className="prod-card-notes">{item.production_notes}</div>
-                    )}
-                    <div className="prod-card-footer">
-                      <Clock size={11} />
-                      <span>{timeAgo(item.pushed_to_production_at)}</span>
-                    </div>
-                  </div>
-                ))}
-                {grouped[status.value].length === 0 && (
-                  <div className="prod-column-empty">No items</div>
-                )}
+                  )}
+                </Droppable>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </DragDropContext>
       )}
     </div>
   )

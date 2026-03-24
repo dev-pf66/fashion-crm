@@ -30,8 +30,30 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false)
   const toast = useToast()
   const dropdownRef = useRef(null)
+  const prevUnreadRef = useRef(0)
 
   const unreadCount = notifications.filter(n => !n.read).length
+
+  // Request browser notification permission
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+  }, [])
+
+  // Browser notification when new notifications arrive while tab is hidden
+  useEffect(() => {
+    if (unreadCount > prevUnreadRef.current && document.hidden) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const diff = unreadCount - prevUnreadRef.current
+        new Notification('Sourcing CRM', {
+          body: `You have ${diff} new notification${diff > 1 ? 's' : ''}`,
+          icon: '/favicon.ico',
+        })
+      }
+    }
+    prevUnreadRef.current = unreadCount
+  }, [unreadCount])
 
   const fetchNotifications = useCallback(async () => {
     if (!currentPerson?.id) return
