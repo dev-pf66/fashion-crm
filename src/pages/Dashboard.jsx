@@ -81,22 +81,22 @@ export default function Dashboard() {
 
       {/* Stat Cards */}
       <div className="stats-grid">
-        <div className="stat-card" onClick={() => navigate('/styles')} style={{ cursor: 'pointer' }}>
+        <div className="stat-card" onClick={() => navigate('/styles')} style={{ cursor: 'pointer' }} role="button" tabIndex="0">
           <div className="stat-label">Total Styles</div>
           <div className="stat-value">{stats?.totalStyles || 0}</div>
           <div className="stat-sub">This division</div>
         </div>
-        <div className="stat-card" onClick={() => navigate('/styles')} style={{ cursor: 'pointer' }}>
+        <div className="stat-card" onClick={() => navigate('/styles')} style={{ cursor: 'pointer' }} role="button" tabIndex="0">
           <div className="stat-label">In Development</div>
           <div className="stat-value">{stats?.inDevelopment || 0}</div>
           <div className="stat-sub">Concept through costing</div>
         </div>
-        <div className={`stat-card ${stats?.samplesForReview > 0 ? 'alert' : ''}`} onClick={() => navigate('/samples')} style={{ cursor: 'pointer' }}>
+        <div className={`stat-card ${stats?.samplesForReview > 0 ? 'alert' : ''}`} onClick={() => navigate('/samples')} style={{ cursor: 'pointer' }} role="button" tabIndex="0">
           <div className="stat-label">Samples for Review</div>
           <div className="stat-value">{stats?.samplesForReview || 0}</div>
           <div className="stat-sub">Awaiting review</div>
         </div>
-        <div className="stat-card" onClick={() => navigate('/orders')} style={{ cursor: 'pointer' }}>
+        <div className="stat-card" onClick={() => navigate('/orders')} style={{ cursor: 'pointer' }} role="button" tabIndex="0">
           <div className="stat-label">Open POs</div>
           <div className="stat-value">{stats?.openPos || 0}</div>
           <div className="stat-sub">Issued or in production</div>
@@ -115,19 +115,19 @@ export default function Dashboard() {
             </button>
           </div>
           <div className="stats-grid" style={{ padding: '0.75rem 1rem' }}>
-            <div className={`stat-card ${taskMetrics.overdue > 0 ? 'alert' : ''}`} onClick={() => navigate('/tasks')} style={{ cursor: 'pointer' }}>
+            <div className={`stat-card ${taskMetrics.overdue > 0 ? 'alert' : ''}`} onClick={() => navigate('/tasks')} style={{ cursor: 'pointer' }} role="button" tabIndex="0">
               <div className="stat-label">Overdue</div>
               <div className="stat-value">{taskMetrics.overdue}</div>
             </div>
-            <div className="stat-card" onClick={() => navigate('/tasks')} style={{ cursor: 'pointer' }}>
+            <div className="stat-card" onClick={() => navigate('/tasks')} style={{ cursor: 'pointer' }} role="button" tabIndex="0">
               <div className="stat-label">Due Today</div>
               <div className="stat-value">{taskMetrics.dueToday}</div>
             </div>
-            <div className="stat-card" onClick={() => navigate('/tasks')} style={{ cursor: 'pointer' }}>
+            <div className="stat-card" onClick={() => navigate('/tasks')} style={{ cursor: 'pointer' }} role="button" tabIndex="0">
               <div className="stat-label">In Progress</div>
               <div className="stat-value">{taskMetrics.inProgress}</div>
             </div>
-            <div className="stat-card" onClick={() => navigate('/tasks')} style={{ cursor: 'pointer' }}>
+            <div className="stat-card" onClick={() => navigate('/tasks')} style={{ cursor: 'pointer' }} role="button" tabIndex="0">
               <div className="stat-label">Completed</div>
               <div className="stat-value">{taskMetrics.done}</div>
             </div>

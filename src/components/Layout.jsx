@@ -119,7 +119,7 @@ export default function Layout() {
           <h1>Sourcing CRM</h1>
         </div>
 
-        <button className="sidebar-search-btn" onClick={() => setCommandPaletteOpen(true)}>
+        <button className="sidebar-search-btn" onClick={() => setCommandPaletteOpen(true)} aria-label="Search (Cmd+K)">
           <Search size={14} />
           <span>Search...</span>
           <kbd>&#8984;K</kbd>

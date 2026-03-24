@@ -273,15 +273,14 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               </button>
               {form.status !== 'production' && (
                 <button
-                  className="btn btn-secondary"
+                  className="btn btn-primary"
                   onClick={() => setShowProductionModal(true)}
-                  style={{ background: 'var(--primary)', color: '#fff', borderColor: 'var(--primary)' }}
                 >
                   <PackageCheck size={16} /> Push to Production
                 </button>
               )}
               {form.status === 'production' && (
-                <span className="tag" style={{ background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>In Production</span>
+                <span className="tag" style={{ background: 'var(--success-bg, #dcfce7)', color: 'var(--success-text, #15803d)', fontWeight: 600 }}>In Production</span>
               )}
             </div>
 

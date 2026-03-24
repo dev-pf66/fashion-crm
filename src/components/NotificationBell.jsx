@@ -105,7 +105,7 @@ export default function NotificationBell() {
 
   return (
     <div className="notif-bell" ref={dropdownRef}>
-      <button className="notif-bell-btn" onClick={toggle} title="Notifications">
+      <button className="notif-bell-btn" onClick={toggle} title="Notifications" aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}>
         <Bell size={18} />
         {unreadCount > 0 && (
           <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>

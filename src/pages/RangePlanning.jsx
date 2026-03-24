@@ -132,6 +132,8 @@ export default function RangePlanning() {
                 <button
                   className="rp-folder-header"
                   onClick={() => toggleFolder(folder.name)}
+                  aria-expanded={!isCollapsed}
+                  aria-label={`${folder.name} folder, ${folder.ranges.length} ranges`}
                 >
                   <div className="rp-folder-header-left">
                     {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}

@@ -7235,3 +7235,166 @@ html, body {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 1200px) and (min-width: 901px) {
+  .prod-board {
+    gap: 0.75rem;
+  }
+  .prod-card {
+    padding: 0.625rem;
+  }
+}
+
+/* ===== Dark mode: Production Board ===== */
+
+[data-theme="dark"] .prod-column {
+  background: #1e1e2e;
+}
+
+[data-theme="dark"] .prod-column-header {
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .prod-column-count {
+  background: rgba(255, 255, 255, 0.1);
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .prod-card {
+  background: #252538;
+  border-color: #2a2a40;
+}
+
+[data-theme="dark"] .prod-card-header h4 {
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .prod-card-range {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .prod-card-client {
+  background: #2a2a40;
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .prod-card-collab-chip {
+  background: #2a2a40;
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .prod-card-lead {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .prod-card-notes {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .prod-card-footer {
+  color: #6b7280;
+  border-top-color: #2a2a40;
+}
+
+[data-theme="dark"] .prod-column-empty {
+  color: #6b7280;
+}
+
+[data-theme="dark"] .prod-search {
+  background: #1e1e2e;
+  border-color: #2a2a40;
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .prod-search input {
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .prod-filters select {
+  background: #1e1e2e;
+  border-color: #2a2a40;
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .prod-status-select {
+  background: #1e1e2e;
+  border-color: #2a2a40;
+  color: #d1d5db;
+}
+
+/* ===== Dark mode: Notification Page ===== */
+
+[data-theme="dark"] .notif-page-tabs button {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .notif-page-tabs button.active {
+  color: #818cf8;
+  border-color: #818cf8;
+}
+
+[data-theme="dark"] .notif-page-item {
+  background: #1e1e2e;
+  border-color: #2a2a40;
+}
+
+[data-theme="dark"] .notif-page-item:hover {
+  background: #252538;
+}
+
+[data-theme="dark"] .notif-page-item.unread {
+  background: #1e1e35;
+}
+
+[data-theme="dark"] .notif-page-title {
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .notif-page-from,
+[data-theme="dark"] .notif-page-time {
+  color: #9ca3af;
+}
+
+/* ===== Dark mode: Range Planning Folders ===== */
+
+[data-theme="dark"] .rp-folder {
+  background: #1e1e2e;
+  border-color: #2a2a40;
+}
+
+[data-theme="dark"] .rp-folder-header {
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .rp-folder-header:hover {
+  background: #252538;
+}
+
+/* ===== Dark mode: Range Style Panel ===== */
+
+[data-theme="dark"] .rp-panel {
+  background: #161625;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .rp-panel-header {
+  border-bottom-color: #2a2a40;
+}
+
+[data-theme="dark"] .rp-panel-section {
+  border-color: #2a2a40;
+}
+
+[data-theme="dark"] .rp-panel-danger {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* ===== Dark mode: Success/Warning color variables ===== */
+
+[data-theme="dark"] {
+  --success-bg: #052e16;
+  --success-text: #86efac;
+  --warning-bg: #451a03;
+  --warning-text: #fcd34d;
+}
