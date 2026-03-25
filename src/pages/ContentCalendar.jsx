@@ -33,30 +33,22 @@ export default function ContentCalendar() {
   const [collapsedCols, setCollapsedCols] = useState(new Set())
 
   useEffect(() => {
-    if (currentDivision) loadData()
-  }, [currentDivision])
+    loadData()
+  }, [])
 
   async function loadData() {
     setLoading(true)
     try {
+      // Content Hub pulls pieces from ALL divisions so social team sees everything
       const { data: rangeData } = await supabase
         .from('ranges')
-        .select('id, name')
-        .eq('division_id', currentDivision.id)
+        .select('id, name, divisions(name)')
         .order('name')
       setRanges(rangeData || [])
 
-      const rangeIds = (rangeData || []).map(r => r.id)
-      if (rangeIds.length === 0) {
-        setStyles([])
-        setLoading(false)
-        return
-      }
-
       const { data: styleData } = await supabase
         .from('range_styles')
-        .select('*, ranges!inner(id, name)')
-        .in('range_id', rangeIds)
+        .select('*, ranges!inner(id, name, divisions(name))')
         .order('name')
       setStyles(styleData || [])
     } catch (err) {
@@ -179,7 +171,7 @@ export default function ContentCalendar() {
         <select value={filterRange} onChange={e => setFilterRange(e.target.value)}>
           <option value="">All Ranges</option>
           {ranges.map(r => (
-            <option key={r.id} value={r.id}>{r.name}</option>
+            <option key={r.id} value={r.id}>{r.name}{r.divisions?.name ? ` (${r.divisions.name})` : ''}</option>
           ))}
         </select>
       </div>
@@ -232,6 +224,7 @@ export default function ContentCalendar() {
               <tr>
                 <th>Piece</th>
                 <th>Range</th>
+                <th>Division</th>
                 <th>Category</th>
                 <th>Design Status</th>
                 <th>Content Status</th>
@@ -247,6 +240,7 @@ export default function ContentCalendar() {
                     </div>
                   </td>
                   <td>{item.ranges?.name}</td>
+                  <td>{item.ranges?.divisions?.name || '-'}</td>
                   <td>{item.category || '-'}</td>
                   <td>
                     <span className="tag">{item.status || 'concept'}</span>
@@ -266,7 +260,7 @@ export default function ContentCalendar() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={5} className="text-center text-muted" style={{ padding: '2rem' }}>No pieces found</td></tr>
+                <tr><td colSpan={6} className="text-center text-muted" style={{ padding: '2rem' }}>No pieces found</td></tr>
               )}
             </tbody>
           </table>
@@ -289,7 +283,7 @@ function ContentCard({ item, onStatusChange }) {
       )}
       <div className="content-card-body">
         <div className="content-card-name">{item.name}</div>
-        <div className="content-card-range">{item.ranges?.name}</div>
+        <div className="content-card-range">{item.ranges?.name} {item.ranges?.divisions?.name ? `· ${item.ranges.divisions.name}` : ''}</div>
         {item.category && <span className="tag" style={{ fontSize: '0.625rem' }}>{item.category}</span>}
       </div>
       <div className="content-card-status" style={{ position: 'relative' }}>
