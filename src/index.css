@@ -6331,6 +6331,75 @@ div:hover > .rp-table-thumb-change {
   .feedback-button {
     bottom: 80px;
   }
+
+  /* Dashboard mobile */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: 0.75rem;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  /* Onboarding mobile */
+  .onboarding-welcome {
+    padding: 1rem;
+  }
+
+  .onboarding-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .onboarding-header h2 {
+    font-size: 1.125rem;
+  }
+
+  /* Task page mobile */
+  .task-board {
+    flex-direction: column;
+  }
+
+  .task-column {
+    min-width: unset;
+  }
+
+  /* Production board mobile */
+  .prod-board {
+    flex-direction: column;
+  }
+
+  .prod-column {
+    min-width: unset;
+    max-width: unset;
+  }
+
+  .prod-column-body {
+    max-height: none;
+  }
+
+  /* Notification page mobile */
+  .notif-page-filters {
+    flex-wrap: wrap;
+  }
+
+  .notif-page-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* My tasks mobile */
+  .my-task-item {
+    padding: 0.625rem 0.75rem;
+  }
 }
 
 /* ============================================================
@@ -6490,6 +6559,124 @@ div:hover > .rp-table-thumb-change {
 
 .tag-picker-item.selected {
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* ============================================================
+   ONBOARDING WELCOME
+   ============================================================ */
+
+.onboarding-welcome {
+  position: relative;
+  background: linear-gradient(135deg, var(--primary-light) 0%, #f0f4ff 50%, #faf5ff 100%);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.onboarding-dismiss {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.06);
+  color: var(--gray-500);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.onboarding-dismiss:hover {
+  background: rgba(0,0,0,0.1);
+}
+
+.onboarding-header {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.onboarding-emoji {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.onboarding-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 0.25rem;
+}
+
+.onboarding-header p {
+  font-size: 0.8125rem;
+  color: var(--gray-500);
+}
+
+.onboarding-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.onboarding-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--card-bg);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  width: 100%;
+}
+
+.onboarding-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.onboarding-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.onboarding-card-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.onboarding-card-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.onboarding-card-desc {
+  font-size: 0.6875rem;
+  color: var(--gray-500);
+  margin-top: 0.125rem;
+}
+
+.onboarding-card-arrow {
+  color: var(--gray-400);
+  flex-shrink: 0;
+}
+
+.onboarding-footer {
+  text-align: center;
+  margin-top: 1rem;
 }
 
 /* ============================================================
@@ -7678,6 +7865,26 @@ html, body {
 }
 
 /* Dark mode */
+/* Dark mode: Onboarding */
+[data-theme="dark"] .onboarding-welcome {
+  background: linear-gradient(135deg, #1e1e3a 0%, #1a1a2e 50%, #1e1e3a 100%);
+  border-color: var(--gray-700);
+}
+
+[data-theme="dark"] .onboarding-card {
+  background: #1a1a2e;
+  border-color: var(--gray-700);
+}
+
+[data-theme="dark"] .onboarding-card:hover {
+  background: #222240;
+}
+
+[data-theme="dark"] .onboarding-dismiss {
+  background: rgba(255,255,255,0.1);
+  color: var(--gray-400);
+}
+
 [data-theme="dark"] .content-col { background: #1e2330; }
 [data-theme="dark"] .content-card { background: var(--card-bg); border-color: var(--gray-700); }
 [data-theme="dark"] .content-col-header { border-color: var(--gray-700); }

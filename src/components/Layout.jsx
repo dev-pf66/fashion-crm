@@ -219,13 +219,22 @@ export default function Layout() {
 
       {/* Mobile Bottom Tab Bar */}
       <nav className="mobile-tab-bar">
-        {[
-          { to: '/', icon: LayoutDashboard, label: 'Home' },
-          { to: '/styles', icon: Scissors, label: 'Styles' },
-          { to: '/range-planning', icon: Layers, label: 'Ranges' },
-          { to: '/samples', icon: FlaskConical, label: 'Samples' },
-          { to: '/orders', icon: ClipboardList, label: 'Orders' },
-        ].map(tab => (
+        {(currentDivision?.code === 'SOCIAL'
+          ? [
+              { to: '/', icon: LayoutDashboard, label: 'Home' },
+              { to: '/content', icon: Sparkles, label: 'Content' },
+              { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
+              { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
+              { to: '/notifications', icon: Bell, label: 'Alerts' },
+            ]
+          : [
+              { to: '/', icon: LayoutDashboard, label: 'Home' },
+              { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
+              { to: '/range-planning', icon: Layers, label: 'Ranges' },
+              { to: '/notifications', icon: Bell, label: 'Alerts' },
+              { to: '/orders', icon: ClipboardList, label: 'Orders' },
+            ]
+        ).map(tab => (
           <NavLink
             key={tab.to}
             to={tab.to}
