@@ -17,6 +17,7 @@ import {
 const NAV_SECTIONS = [
   {
     label: 'Sourcing',
+    hideForSocial: true,
     items: [
       { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
       { to: '/styles', icon: Scissors, label: 'Styles' },
@@ -28,6 +29,7 @@ const NAV_SECTIONS = [
   },
   {
     label: 'Development',
+    hideForSocial: true,
     items: [
       { to: '/materials', icon: Palette, label: 'Materials' },
       { to: '/samples', icon: FlaskConical, label: 'Samples' },
@@ -39,7 +41,19 @@ const NAV_SECTIONS = [
     ]
   },
   {
+    label: 'Social',
+    socialOnly: true,
+    items: [
+      { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+      { to: '/content', icon: Sparkles, label: 'Content Hub' },
+      { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
+      { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
+      { to: '/notifications', icon: Bell, label: 'Notifications' },
+    ]
+  },
+  {
     label: 'Content',
+    hideForSocial: true,
     items: [
       { to: '/content', icon: Sparkles, label: 'Content Hub' },
     ]
@@ -149,6 +163,9 @@ export default function Layout() {
 
         <nav>
           {NAV_SECTIONS.map(section => {
+            const isSocial = currentDivision?.code === 'SOCIAL'
+            if (isSocial && section.hideForSocial) return null
+            if (!isSocial && section.socialOnly) return null
             const isAdmin = checkAdmin(currentPerson)
             const items = section.items.filter(item => {
               if (item.adminOnly) return isAdmin
