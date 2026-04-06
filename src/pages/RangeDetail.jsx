@@ -51,6 +51,7 @@ const GROUPINGS = [
   { value: 'embroidery', label: 'Embroidery' },
   { value: 'silhouette', label: 'Silhouette' },
   { value: 'status', label: 'Status' },
+  { value: 'price_category', label: 'Price Category' },
   { value: 'content_status', label: 'Content Status' },
 ]
 

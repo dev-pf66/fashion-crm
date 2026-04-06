@@ -64,6 +64,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         embroidery: data.embroidery || '',
         silhouette: data.silhouette || '',
         content_status: data.content_status || '',
+        price_category: data.price_category || '',
         notes: data.notes || '',
       })
       setFiles(data.range_style_files || [])
@@ -100,6 +101,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         embroidery: form.embroidery.trim() || null,
         silhouette: form.silhouette.trim() || null,
         content_status: form.content_status || null,
+        price_category: form.price_category || null,
         notes: form.notes.trim() || null,
       })
       toast.success('Style updated')
@@ -257,6 +259,17 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                 <label>Silhouette</label>
                 <input type="text" value={form.silhouette} onChange={e => updateField('silhouette', e.target.value)} placeholder="e.g. A-Line, Straight, Fitted" />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label>Price Category</label>
+              <select value={form.price_category} onChange={e => updateField('price_category', e.target.value)}>
+                <option value="">Not set</option>
+                <option value="budget">Budget</option>
+                <option value="mid_range">Mid Range</option>
+                <option value="premium">Premium</option>
+                <option value="luxury">Luxury</option>
+              </select>
             </div>
 
             <div className="form-group">
