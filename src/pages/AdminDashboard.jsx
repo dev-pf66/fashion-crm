@@ -7,9 +7,9 @@ import StatusBadge from '../components/StatusBadge'
 import {
   Shield, Layers, CheckSquare, AlertTriangle, Clock,
   Users, BarChart3, Target, Truck, ArrowRight, Timer, Bell,
-  UserPlus, KeyRound, Eye, EyeOff
+  UserPlus, KeyRound, Eye, EyeOff, Settings, Plus, Pencil, Trash2
 } from 'lucide-react'
-import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles } from '../lib/supabase'
+import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket } from '../lib/supabase'
 import Modal from '../components/Modal'
 
 const STATUS_COLORS = {
@@ -140,6 +140,13 @@ export default function AdminDashboard() {
           <Users size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
           Users
         </button>
+        <button
+          className={`tab ${activeTab === 'config' ? 'active' : ''}`}
+          onClick={() => setActiveTab('config')}
+        >
+          <Settings size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
+          Config
+        </button>
       </div>
 
       {activeTab === 'ranges' ? (
@@ -163,8 +170,10 @@ export default function AdminDashboard() {
           currentPerson={currentPerson}
           toast={toast}
         />
-      ) : (
+      ) : activeTab === 'users' ? (
         <UsersTab people={people} toast={toast} refreshPeople={refreshPeople} />
+      ) : (
+        <ConfigTab toast={toast} />
       )}
     </div>
   )
@@ -739,6 +748,352 @@ function CreateUserModal({ onClose, onCreated, toast }) {
         </div>
       </form>
     </Modal>
+  )
+}
+
+// ── Config Tab ──────────────────────────────────────────────
+
+function ConfigTab({ toast }) {
+  const [subTab, setSubTab] = useState('silhouettes')
+
+  return (
+    <>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+        <button
+          className={`btn btn-sm ${subTab === 'silhouettes' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setSubTab('silhouettes')}
+        >
+          Silhouettes
+        </button>
+        <button
+          className={`btn btn-sm ${subTab === 'price_brackets' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setSubTab('price_brackets')}
+        >
+          Price Brackets
+        </button>
+      </div>
+      {subTab === 'silhouettes' ? <SilhouettesManager toast={toast} /> : <PriceBracketsManager toast={toast} />}
+    </>
+  )
+}
+
+function SilhouettesManager({ toast }) {
+  const [silhouettes, setSilhouettes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filterCategory, setFilterCategory] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ name: '', category: '', sort_order: 0 })
+  const [adding, setAdding] = useState(false)
+  const [addForm, setAddForm] = useState({ name: '', category: '', sort_order: 0 })
+
+  useEffect(() => { loadSilhouettes() }, [])
+
+  async function loadSilhouettes() {
+    setLoading(true)
+    try {
+      const data = await getSilhouettes()
+      setSilhouettes(data)
+    } catch (err) {
+      toast.error('Failed to load silhouettes')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const categories = [...new Set(silhouettes.map(s => s.category))].sort()
+  const filtered = filterCategory ? silhouettes.filter(s => s.category === filterCategory) : silhouettes
+
+  async function handleAdd(e) {
+    e.preventDefault()
+    if (!addForm.name.trim() || !addForm.category.trim()) return
+    try {
+      await createSilhouette({
+        name: addForm.name.trim(),
+        category: addForm.category.trim(),
+        sort_order: addForm.sort_order || 0,
+      })
+      toast.success('Silhouette added')
+      setAdding(false)
+      setAddForm({ name: '', category: '', sort_order: 0 })
+      loadSilhouettes()
+    } catch (err) {
+      toast.error(err.message?.includes('duplicate') ? 'This silhouette already exists for that category' : 'Failed to add')
+    }
+  }
+
+  async function handleUpdate(id) {
+    try {
+      await updateSilhouette(id, {
+        name: editForm.name.trim(),
+        category: editForm.category.trim(),
+        sort_order: editForm.sort_order || 0,
+      })
+      toast.success('Silhouette updated')
+      setEditingId(null)
+      loadSilhouettes()
+    } catch (err) {
+      toast.error('Failed to update')
+    }
+  }
+
+  async function handleDelete(id, name) {
+    if (!confirm(`Delete silhouette "${name}"?`)) return
+    try {
+      await deleteSilhouette(id)
+      toast.success('Silhouette deleted')
+      loadSilhouettes()
+    } catch (err) {
+      toast.error('Failed to delete')
+    }
+  }
+
+  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+
+  return (
+    <div className="card">
+      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3>Silhouettes</h3>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <select
+            value={filterCategory}
+            onChange={e => setFilterCategory(e.target.value)}
+            style={{ width: 'auto', fontSize: '0.8125rem' }}
+          >
+            <option value="">All Categories</option>
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <button className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setAddForm({ name: '', category: filterCategory || '', sort_order: 0 }) }}>
+            <Plus size={14} /> Add
+          </button>
+        </div>
+      </div>
+
+      {adding && (
+        <form onSubmit={handleAdd} style={{ padding: '0.75rem 1rem', background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)', display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div className="form-group" style={{ flex: 1, minWidth: 120, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Name</label>
+            <input type="text" value={addForm.name} onChange={e => setAddForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Lehenga" required autoFocus />
+          </div>
+          <div className="form-group" style={{ flex: 1, minWidth: 120, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Category</label>
+            <input type="text" value={addForm.category} onChange={e => setAddForm(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Bridal" required list="cat-list" />
+            <datalist id="cat-list">{categories.map(c => <option key={c} value={c} />)}</datalist>
+          </div>
+          <div className="form-group" style={{ width: 70, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Order</label>
+            <input type="number" value={addForm.sort_order} onChange={e => setAddForm(p => ({ ...p, sort_order: parseInt(e.target.value) || 0 }))} />
+          </div>
+          <button type="submit" className="btn btn-primary btn-sm">Save</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+        </form>
+      )}
+
+      <table className="data-table" style={{ fontSize: '0.8125rem' }}>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Order</th>
+            <th style={{ width: 80 }}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map(s => (
+            <tr key={s.id}>
+              {editingId === s.id ? (
+                <>
+                  <td><input type="text" value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} style={{ fontSize: '0.8125rem' }} /></td>
+                  <td><input type="text" value={editForm.category} onChange={e => setEditForm(p => ({ ...p, category: e.target.value }))} style={{ fontSize: '0.8125rem' }} list="cat-list" /></td>
+                  <td><input type="number" value={editForm.sort_order} onChange={e => setEditForm(p => ({ ...p, sort_order: parseInt(e.target.value) || 0 }))} style={{ fontSize: '0.8125rem', width: 60 }} /></td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button className="btn btn-primary btn-sm" onClick={() => handleUpdate(s.id)} style={{ padding: '0.25rem 0.5rem' }}>Save</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setEditingId(null)} style={{ padding: '0.25rem 0.5rem' }}>Cancel</button>
+                    </div>
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td style={{ fontWeight: 500 }}>{s.name}</td>
+                  <td><span className="tag">{s.category}</span></td>
+                  <td className="text-muted">{s.sort_order}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => { setEditingId(s.id); setEditForm({ name: s.name, category: s.category, sort_order: s.sort_order }) }} style={{ padding: '0.25rem' }}>
+                        <Pencil size={13} />
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(s.id, s.name)} style={{ padding: '0.25rem', color: 'var(--danger)' }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+          {filtered.length === 0 && (
+            <tr><td colSpan={4} className="text-muted" style={{ textAlign: 'center', padding: '1rem' }}>No silhouettes found</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function PriceBracketsManager({ toast }) {
+  const [brackets, setBrackets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ label: '', min_price: '', max_price: '', sort_order: 0 })
+  const [adding, setAdding] = useState(false)
+  const [addForm, setAddForm] = useState({ label: '', min_price: '', max_price: '', sort_order: 0 })
+
+  useEffect(() => { loadBrackets() }, [])
+
+  async function loadBrackets() {
+    setLoading(true)
+    try {
+      const data = await getPriceBrackets()
+      setBrackets(data)
+    } catch (err) {
+      toast.error('Failed to load price brackets')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleAdd(e) {
+    e.preventDefault()
+    if (!addForm.label.trim()) return
+    try {
+      await createPriceBracket({
+        label: addForm.label.trim(),
+        min_price: addForm.min_price ? parseFloat(addForm.min_price) : null,
+        max_price: addForm.max_price ? parseFloat(addForm.max_price) : null,
+        sort_order: addForm.sort_order || 0,
+      })
+      toast.success('Price bracket added')
+      setAdding(false)
+      setAddForm({ label: '', min_price: '', max_price: '', sort_order: 0 })
+      loadBrackets()
+    } catch (err) {
+      toast.error(err.message?.includes('duplicate') ? 'This label already exists' : 'Failed to add')
+    }
+  }
+
+  async function handleUpdate(id) {
+    try {
+      await updatePriceBracket(id, {
+        label: editForm.label.trim(),
+        min_price: editForm.min_price ? parseFloat(editForm.min_price) : null,
+        max_price: editForm.max_price ? parseFloat(editForm.max_price) : null,
+        sort_order: editForm.sort_order || 0,
+      })
+      toast.success('Price bracket updated')
+      setEditingId(null)
+      loadBrackets()
+    } catch (err) {
+      toast.error('Failed to update')
+    }
+  }
+
+  async function handleDelete(id, label) {
+    if (!confirm(`Delete price bracket "${label}"?`)) return
+    try {
+      await deletePriceBracket(id)
+      toast.success('Price bracket deleted')
+      loadBrackets()
+    } catch (err) {
+      toast.error('Failed to delete')
+    }
+  }
+
+  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+
+  return (
+    <div className="card">
+      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3>Price Brackets</h3>
+        <button className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setAddForm({ label: '', min_price: '', max_price: '', sort_order: brackets.length + 1 }) }}>
+          <Plus size={14} /> Add
+        </button>
+      </div>
+
+      {adding && (
+        <form onSubmit={handleAdd} style={{ padding: '0.75rem 1rem', background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)', display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div className="form-group" style={{ flex: 1, minWidth: 120, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Label</label>
+            <input type="text" value={addForm.label} onChange={e => setAddForm(p => ({ ...p, label: e.target.value }))} placeholder="e.g. 15L - 18L" required autoFocus />
+          </div>
+          <div className="form-group" style={{ flex: 1, minWidth: 100, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Min Price</label>
+            <input type="number" value={addForm.min_price} onChange={e => setAddForm(p => ({ ...p, min_price: e.target.value }))} placeholder="e.g. 1500000" />
+          </div>
+          <div className="form-group" style={{ flex: 1, minWidth: 100, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Max Price</label>
+            <input type="number" value={addForm.max_price} onChange={e => setAddForm(p => ({ ...p, max_price: e.target.value }))} placeholder="e.g. 1800000" />
+          </div>
+          <div className="form-group" style={{ width: 70, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Order</label>
+            <input type="number" value={addForm.sort_order} onChange={e => setAddForm(p => ({ ...p, sort_order: parseInt(e.target.value) || 0 }))} />
+          </div>
+          <button type="submit" className="btn btn-primary btn-sm">Save</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+        </form>
+      )}
+
+      <table className="data-table" style={{ fontSize: '0.8125rem' }}>
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>Min Price</th>
+            <th>Max Price</th>
+            <th>Order</th>
+            <th style={{ width: 80 }}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {brackets.map(b => (
+            <tr key={b.id}>
+              {editingId === b.id ? (
+                <>
+                  <td><input type="text" value={editForm.label} onChange={e => setEditForm(p => ({ ...p, label: e.target.value }))} style={{ fontSize: '0.8125rem' }} /></td>
+                  <td><input type="number" value={editForm.min_price} onChange={e => setEditForm(p => ({ ...p, min_price: e.target.value }))} style={{ fontSize: '0.8125rem', width: 100 }} /></td>
+                  <td><input type="number" value={editForm.max_price} onChange={e => setEditForm(p => ({ ...p, max_price: e.target.value }))} style={{ fontSize: '0.8125rem', width: 100 }} /></td>
+                  <td><input type="number" value={editForm.sort_order} onChange={e => setEditForm(p => ({ ...p, sort_order: parseInt(e.target.value) || 0 }))} style={{ fontSize: '0.8125rem', width: 60 }} /></td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button className="btn btn-primary btn-sm" onClick={() => handleUpdate(b.id)} style={{ padding: '0.25rem 0.5rem' }}>Save</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setEditingId(null)} style={{ padding: '0.25rem 0.5rem' }}>Cancel</button>
+                    </div>
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td style={{ fontWeight: 500 }}>{b.label}</td>
+                  <td className="text-muted">{b.min_price ? `₹${Number(b.min_price).toLocaleString('en-IN')}` : '—'}</td>
+                  <td className="text-muted">{b.max_price ? `₹${Number(b.max_price).toLocaleString('en-IN')}` : '—'}</td>
+                  <td className="text-muted">{b.sort_order}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => { setEditingId(b.id); setEditForm({ label: b.label, min_price: b.min_price || '', max_price: b.max_price || '', sort_order: b.sort_order }) }} style={{ padding: '0.25rem' }}>
+                        <Pencil size={13} />
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(b.id, b.label)} style={{ padding: '0.25rem', color: 'var(--danger)' }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+          {brackets.length === 0 && (
+            <tr><td colSpan={5} className="text-muted" style={{ textAlign: 'center', padding: '1rem' }}>No price brackets found</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   )
 }
 

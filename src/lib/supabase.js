@@ -66,6 +66,56 @@ export async function getRoles() {
   return data
 }
 
+// Silhouettes
+export async function getSilhouettes(category) {
+  let query = supabase.from('silhouettes').select('*').order('sort_order')
+  if (category) query = query.eq('category', category)
+  const { data, error } = await query
+  if (error) throw error
+  return data
+}
+
+export async function createSilhouette(silhouette) {
+  const { data, error } = await supabase.from('silhouettes').insert([silhouette]).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateSilhouette(id, updates) {
+  const { data, error } = await supabase.from('silhouettes').update(updates).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteSilhouette(id) {
+  const { error } = await supabase.from('silhouettes').delete().eq('id', id)
+  if (error) throw error
+}
+
+// Price Brackets
+export async function getPriceBrackets() {
+  const { data, error } = await supabase.from('price_brackets').select('*').order('sort_order')
+  if (error) throw error
+  return data
+}
+
+export async function createPriceBracket(bracket) {
+  const { data, error } = await supabase.from('price_brackets').insert([bracket]).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updatePriceBracket(id, updates) {
+  const { data, error } = await supabase.from('price_brackets').update(updates).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deletePriceBracket(id) {
+  const { error } = await supabase.from('price_brackets').delete().eq('id', id)
+  if (error) throw error
+}
+
 export async function getPersonByEmail(email) {
   const { data, error } = await supabase.from('people').select('*').eq('email', email).single()
   if (error && error.code !== 'PGRST116') throw error

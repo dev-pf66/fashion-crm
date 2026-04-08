@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
-import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification } from '../lib/supabase'
+import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets } from '../lib/supabase'
 import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
 import { useApp } from '../App'
@@ -30,15 +30,27 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
   const [uploading, setUploading] = useState(false)
   const [form, setForm] = useState({})
   const [suppliers, setSuppliers] = useState([])
+  const [silhouettes, setSilhouettes] = useState([])
+  const [priceBrackets, setPriceBrackets] = useState([])
   const [showProductionModal, setShowProductionModal] = useState(false)
 
   useEffect(() => {
     getSuppliers().then(setSuppliers).catch(() => {})
+    getPriceBrackets().then(setPriceBrackets).catch(() => {})
   }, [])
 
   useEffect(() => {
     if (styleId) loadStyle()
   }, [styleId])
+
+  // Load silhouettes when category changes
+  useEffect(() => {
+    if (form.category) {
+      getSilhouettes(form.category).then(setSilhouettes).catch(() => setSilhouettes([]))
+    } else {
+      setSilhouettes([])
+    }
+  }, [form.category])
 
   useEffect(() => {
     function handleEsc(e) { if (e.key === 'Escape') onClose() }
@@ -256,8 +268,15 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                 <input type="text" value={form.embroidery} onChange={e => updateField('embroidery', e.target.value)} placeholder="e.g. Zardozi, Chikankari, Aari" />
               </div>
               <div className="form-group">
-                <label>Silhouette</label>
-                <input type="text" value={form.silhouette} onChange={e => updateField('silhouette', e.target.value)} placeholder="e.g. A-Line, Straight, Fitted" />
+                <label>Silhouette {form.category && <span className="text-muted text-sm">({form.category})</span>}</label>
+                {silhouettes.length > 0 ? (
+                  <select value={form.silhouette} onChange={e => updateField('silhouette', e.target.value)}>
+                    <option value="">Select silhouette...</option>
+                    {silhouettes.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                  </select>
+                ) : (
+                  <input type="text" value={form.silhouette} onChange={e => updateField('silhouette', e.target.value)} placeholder={form.category ? 'No silhouettes for this category' : 'Select a category first'} />
+                )}
               </div>
             </div>
 
@@ -265,14 +284,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               <label>Price Category</label>
               <select value={form.price_category} onChange={e => updateField('price_category', e.target.value)}>
                 <option value="">Not set</option>
-                <option value="50k_1L">50K - 1L</option>
-                <option value="1L_2L">1L - 2L</option>
-                <option value="2L_3.5L">2L - 3.5L</option>
-                <option value="3.5L_6L">3.5L - 6L</option>
-                <option value="6L_8L">6L - 8L</option>
-                <option value="8L_12L">8L - 12L</option>
-                <option value="12L_15L">12L - 15L</option>
-                <option value="18L+">18L+</option>
+                {priceBrackets.map(b => <option key={b.id} value={b.label}>{b.label}</option>)}
               </select>
             </div>
 

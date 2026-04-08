@@ -9,6 +9,7 @@ import {
   getRangeStyles, createRangeStyle, updateRangeStyle, updateRangeStyleOrder, deleteRangeStyle,
   createRangeStyleFile,
   getTasksForRange, getTaskSubtaskCounts,
+  getPriceBrackets,
 } from '../lib/supabase'
 import { uploadRangeStyleFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
@@ -20,7 +21,7 @@ import {
   LayoutGrid, List, Plus, Search, Edit3, Filter,
   Image as ImageIcon, Lock, Play, GripVertical,
   Maximize2, Minimize2, Square, X, ChevronLeft, ChevronRight, Factory,
-  CheckSquare, Clock, Calendar, Download, Trash2,
+  CheckSquare, Clock, Calendar, Download, Trash2, ChevronDown, ChevronUp,
 } from 'lucide-react'
 
 const RANGE_STYLE_STATUSES = [
@@ -46,6 +47,7 @@ const CONTENT_STATUS_LABELS = {
 
 const GROUPINGS = [
   { value: 'category', label: 'Category' },
+  { value: 'silhouette_price', label: 'Silhouette + Price' },
   { value: 'delivery_drop', label: 'Delivery Drop' },
   { value: 'supplier', label: 'Supplier' },
   { value: 'embroidery', label: 'Embroidery' },
@@ -107,6 +109,12 @@ export default function RangeDetail() {
   const thumbInputRef = useRef(null)
   const [thumbUploadId, setThumbUploadId] = useState(null)
   const [selectedIds, setSelectedIds] = useState(new Set())
+  const [priceBrackets, setPriceBrackets] = useState([])
+  const [collapsedSilhouettes, setCollapsedSilhouettes] = useState(new Set())
+
+  useEffect(() => {
+    getPriceBrackets().then(setPriceBrackets).catch(() => {})
+  }, [])
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)')
@@ -199,6 +207,8 @@ export default function RangeDetail() {
                   groupBy === 'supplier' ? (s.suppliers?.name ? maskSupplierName(s.suppliers.name, currentPerson) : 'No Supplier') :
                   groupBy === 'embroidery' ? (s.embroidery || 'Unassigned') :
                   groupBy === 'silhouette' ? (s.silhouette || 'Unassigned') :
+                  groupBy === 'price_category' ? (s.price_category || 'Not set') :
+                  groupBy === 'content_status' ? (s.content_status || 'Unassigned') :
                   s.category || 'Unassigned'
       if (!grouped[key]) grouped[key] = []
       grouped[key].push(s)
@@ -229,6 +239,64 @@ export default function RangeDetail() {
 
     return result
   }, [filtered, groupBy, groupOrder])
+
+  // Nested groups for Silhouette → Price view
+  const nestedGroups = useMemo(() => {
+    if (groupBy !== 'silhouette_price') return []
+
+    const bySlh = {}
+    filtered.forEach(s => {
+      const slh = s.silhouette || 'Uncategorized'
+      if (!bySlh[slh]) bySlh[slh] = []
+      bySlh[slh].push(s)
+    })
+
+    // Build bracket order from DB
+    const bracketOrder = priceBrackets.map(b => b.label)
+
+    return Object.keys(bySlh).sort((a, b) => {
+      if (a === 'Uncategorized') return 1
+      if (b === 'Uncategorized') return -1
+      return a.localeCompare(b)
+    }).map(slh => {
+      const stylesInSlh = bySlh[slh]
+      // Sub-group by price
+      const byPrice = {}
+      stylesInSlh.forEach(s => {
+        const price = s.price_category || 'Not set'
+        if (!byPrice[price]) byPrice[price] = []
+        byPrice[price].push(s)
+      })
+      const priceGroups = Object.keys(byPrice).sort((a, b) => {
+        const ai = bracketOrder.indexOf(a)
+        const bi = bracketOrder.indexOf(b)
+        if (ai >= 0 && bi >= 0) return ai - bi
+        if (ai >= 0) return -1
+        if (bi >= 0) return 1
+        return a.localeCompare(b)
+      }).map(price => ({
+        key: price,
+        label: price,
+        styles: byPrice[price].sort((a, b) => a.sort_order - b.sort_order),
+      }))
+
+      return {
+        key: slh,
+        label: slh,
+        totalCount: stylesInSlh.length,
+        priceGroups,
+      }
+    })
+  }, [filtered, groupBy, priceBrackets])
+
+  function toggleSilhouetteCollapse(key) {
+    setCollapsedSilhouettes(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
 
   // Stats
   const stats = useMemo(() => {
@@ -301,6 +369,8 @@ export default function RangeDetail() {
       else if (groupBy === 'status') fieldUpdates.status = dstGroupKey
       else if (groupBy === 'embroidery') fieldUpdates.embroidery = dstGroupKey === 'Unassigned' ? null : dstGroupKey
       else if (groupBy === 'silhouette') fieldUpdates.silhouette = dstGroupKey === 'Unassigned' ? null : dstGroupKey
+      else if (groupBy === 'price_category') fieldUpdates.price_category = dstGroupKey === 'Not set' ? null : dstGroupKey
+      else if (groupBy === 'content_status') fieldUpdates.content_status = dstGroupKey === 'Unassigned' ? null : dstGroupKey
 
       // Optimistic update
       setStyles(prev => prev.map(s => s.id === draggedStyle.id ? { ...s, ...fieldUpdates } : s))
@@ -798,8 +868,71 @@ export default function RangeDetail() {
         </div>
       )}
 
+      {/* Nested Silhouette → Price View */}
+      {view === 'board' && groupBy === 'silhouette_price' && (
+        <>
+          {nestedGroups.length === 0 ? (
+            <div className="card" style={{ marginTop: '1rem' }}>
+              <div className="empty-state">
+                <ImageIcon size={48} />
+                <h3>No styles yet</h3>
+                <p>Add styles to start building your range.</p>
+                <button className="btn btn-primary" onClick={() => { setQuickAddGroup('_top'); setQuickAddName('') }}>
+                  <Plus size={16} /> Add First Style
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="rp-board">
+              {nestedGroups.map(slhGroup => (
+                <div key={slhGroup.key} className="rp-nested-group">
+                  <div
+                    className="rp-nested-group-header"
+                    onClick={() => toggleSilhouetteCollapse(slhGroup.key)}
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: 'var(--gray-50)', borderRadius: '8px 8px 0 0', borderBottom: '2px solid var(--primary-light, var(--primary))' }}
+                  >
+                    {collapsedSilhouettes.has(slhGroup.key)
+                      ? <ChevronRight size={18} />
+                      : <ChevronDown size={18} />
+                    }
+                    <h3 style={{ margin: 0, fontSize: '1rem' }}>{slhGroup.label}</h3>
+                    <span className="rp-group-count">{slhGroup.totalCount}</span>
+                    {slhGroup.key === 'Uncategorized' && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--warning)', fontWeight: 500, marginLeft: 'auto' }}>
+                        Needs silhouette assignment
+                      </span>
+                    )}
+                  </div>
+                  {!collapsedSilhouettes.has(slhGroup.key) && (
+                    <div style={{ paddingLeft: '0.5rem' }}>
+                      {slhGroup.priceGroups.map(priceGroup => (
+                        <div key={priceGroup.key} className="rp-group" style={{ marginTop: '0.5rem' }}>
+                          <div className="rp-group-header" style={{ paddingLeft: '1rem' }}>
+                            <h3 style={{ fontSize: '0.875rem', color: 'var(--gray-600)' }}>{priceGroup.label}</h3>
+                            <span className="rp-group-count">{priceGroup.styles.length}</span>
+                          </div>
+                          <div className={`rp-grid rp-grid-${cardSize}`}>
+                            {priceGroup.styles.map(style => (
+                              <StyleCard key={style.id} style={style} cardSize={cardSize} groupBy="silhouette_price"
+                                onStatusChange={handleStatusChange} onOpenLightbox={openLightbox}
+                                onThumbUpload={triggerThumbUpload}
+                                selected={selectedIds.has(style.id)} onToggleSelect={toggleSelect}
+                                onClick={() => setPanelStyleId(style.id)} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
       {/* Board View */}
-      {view === 'board' && (
+      {view === 'board' && groupBy !== 'silhouette_price' && (
         <>
           {groups.length === 0 ? (
             <div className="card" style={{ marginTop: '1rem' }}>
