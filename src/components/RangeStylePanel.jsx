@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
-import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets } from '../lib/supabase'
+import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets, assignStyleTo } from '../lib/supabase'
+import { usePermissions } from '../hooks/usePermissions'
 import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
 import { useApp } from '../App'
@@ -20,6 +21,7 @@ const STATUSES = [
 
 export default function RangeStylePanel({ styleId, rangeId, categories, onClose, onUpdate, onDelete }) {
   const { currentPerson, people } = useApp()
+  const { isAdmin } = usePermissions()
   const STYLE_CATEGORIES = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES
   const toast = useToast()
   const fileInputRef = useRef(null)
@@ -77,6 +79,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         silhouette: data.silhouette || '',
         content_status: data.content_status || '',
         price_category: data.price_category || '',
+        assigned_to: data.assigned_to || '',
         notes: data.notes || '',
       })
       setFiles(data.range_style_files || [])
@@ -256,6 +259,29 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                 <input type="date" value={form.due_date} onChange={e => updateField('due_date', e.target.value)} />
               </div>
             </div>
+
+            {isAdmin && (
+              <div className="form-group">
+                <label>Assigned To</label>
+                <select
+                  value={form.assigned_to}
+                  onChange={async (e) => {
+                    const personId = e.target.value ? parseInt(e.target.value) : null
+                    updateField('assigned_to', personId || '')
+                    try {
+                      await assignStyleTo(styleId, personId)
+                      toast.success(personId ? `Assigned to ${people.find(p => p.id === personId)?.name}` : 'Unassigned')
+                      onUpdate()
+                    } catch (err) {
+                      toast.error('Failed to assign')
+                    }
+                  }}
+                >
+                  <option value="">Unassigned</option>
+                  {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+            )}
 
             <div className="form-group">
               <label>Colorways <span className="text-muted text-sm">(comma-separated)</span></label>

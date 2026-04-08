@@ -9,8 +9,9 @@ import {
   getRangeStyles, createRangeStyle, updateRangeStyle, updateRangeStyleOrder, deleteRangeStyle,
   createRangeStyleFile,
   getTasksForRange, getTaskSubtaskCounts,
-  getPriceBrackets,
+  getPriceBrackets, bulkAssignStyles,
 } from '../lib/supabase'
+import { usePermissions } from '../hooks/usePermissions'
 import { uploadRangeStyleFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
 import Modal from '../components/Modal'
@@ -86,9 +87,10 @@ export default function RangeDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { currentPerson } = useApp()
+  const { currentPerson, people } = useApp()
   const { divisions } = useDivision()
   const toast = useToast()
+  const { can, isAdmin } = usePermissions()
 
   const [range, setRange] = useState(null)
   const [styles, setStyles] = useState([])
@@ -546,6 +548,22 @@ export default function RangeDetail() {
     }
   }
 
+  async function handleBulkAssign(personId) {
+    if (!personId) return
+    try {
+      await bulkAssignStyles([...selectedIds], parseInt(personId))
+      const assignee = people.find(p => p.id === parseInt(personId))
+      setStyles(prev => prev.map(s => selectedIds.has(s.id)
+        ? { ...s, assigned_to: parseInt(personId), assignee: assignee ? { id: assignee.id, name: assignee.name } : null }
+        : s
+      ))
+      toast.success(`${selectedIds.size} styles assigned to ${assignee?.name || 'user'}`)
+      setSelectedIds(new Set())
+    } catch (err) {
+      toast.error('Failed to assign styles')
+    }
+  }
+
   if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
   if (!range) return <div className="card"><div className="empty-state"><h3>Range not found</h3></div></div>
 
@@ -582,17 +600,23 @@ export default function RangeDetail() {
                 {new Date(range.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             )}
-            <RangeStatusDropdown
-              status={range.status}
-              onChange={async (status) => {
-                await updateRange(id, { status })
-                setRange(prev => ({ ...prev, status }))
-                toast.success(`Range marked as ${status}`)
-              }}
-            />
-            <button className="btn btn-ghost btn-sm" onClick={() => setEditingRange(true)}>
-              <Edit3 size={14} /> Edit
-            </button>
+            {can('range_plan.edit') ? (
+              <>
+                <RangeStatusDropdown
+                  status={range.status}
+                  onChange={async (status) => {
+                    await updateRange(id, { status })
+                    setRange(prev => ({ ...prev, status }))
+                    toast.success(`Range marked as ${status}`)
+                  }}
+                />
+                <button className="btn btn-ghost btn-sm" onClick={() => setEditingRange(true)}>
+                  <Edit3 size={14} /> Edit
+                </button>
+              </>
+            ) : (
+              <span className="badge" style={{ background: '#f3f4f6', color: '#4b5563' }}>{range.status}</span>
+            )}
           </div>
         </div>
         <div className="rp-summary-stats">
@@ -733,6 +757,18 @@ export default function RangeDetail() {
       {selectedIds.size > 0 && (
         <div className="bulk-bar">
           <span className="bulk-bar-count">{selectedIds.size} selected</span>
+          {isAdmin && (
+            <select
+              className="btn btn-sm"
+              defaultValue=""
+              onChange={e => { if (e.target.value) handleBulkAssign(e.target.value); e.target.value = '' }}
+            >
+              <option value="" disabled>Assign to...</option>
+              {people.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          )}
           <select
             className="btn btn-sm"
             defaultValue=""
@@ -743,9 +779,11 @@ export default function RangeDetail() {
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
-          <button className="btn btn-danger btn-sm" onClick={handleBulkDelete}>
-            <Trash2 size={14} /> Delete
-          </button>
+          {isAdmin && (
+            <button className="btn btn-danger btn-sm" onClick={handleBulkDelete}>
+              <Trash2 size={14} /> Delete
+            </button>
+          )}
           <button className="btn btn-ghost btn-sm" onClick={() => setSelectedIds(new Set())}>
             <X size={14} /> Clear
           </button>
@@ -803,9 +841,11 @@ export default function RangeDetail() {
           <button className="btn btn-secondary btn-sm" onClick={exportRange}>
             <Download size={14} /> <span className="hide-mobile-text">Export</span>
           </button>
-          <button className="btn btn-primary btn-sm" onClick={() => { setQuickAddGroup('_top'); setQuickAddName('') }}>
-            <Plus size={14} /> <span className="hide-mobile-text">Add Style</span>
-          </button>
+          {can('range_plan.edit') && (
+            <button className="btn btn-primary btn-sm" onClick={() => { setQuickAddGroup('_top'); setQuickAddName('') }}>
+              <Plus size={14} /> <span className="hide-mobile-text">Add Style</span>
+            </button>
+          )}
           <button
             className={`btn btn-sm mobile-filter-toggle ${showFilters ? 'active' : ''}`}
             onClick={() => setShowFilters(!showFilters)}
@@ -1036,6 +1076,12 @@ export default function RangeDetail() {
                                               {groupBy !== 'category' && <span className="tag">{style.category}</span>}
                                               <StatusDropdown status={style.status} onChange={(s) => handleStatusChange(style.id, s)} />
                                             </div>
+                                            {style.assignee?.name && (
+                                              <div className="rp-card-assignee">
+                                                <span className="rp-assignee-avatar">{style.assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</span>
+                                                {cardSize !== 'sm' && <span>{style.assignee.name.split(' ')[0]}</span>}
+                                              </div>
+                                            )}
                                             {cardSize !== 'sm' && style.production_qty > 0 && (
                                               <div className="text-sm text-muted" style={{ marginTop: '0.125rem' }}>Qty: {style.production_qty.toLocaleString()}</div>
                                             )}
@@ -1248,6 +1294,12 @@ function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, o
           {groupBy !== 'category' && <span className="tag">{style.category}</span>}
           <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />
         </div>
+        {style.assignee?.name && (
+          <div className="rp-card-assignee">
+            <span className="rp-assignee-avatar">{style.assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</span>
+            {cardSize !== 'sm' && <span>{style.assignee.name.split(' ')[0]}</span>}
+          </div>
+        )}
         {cardSize !== 'sm' && style.content_status && (
           <span className={`tag tag-content tag-content-${style.content_status}`}>{CONTENT_STATUS_LABELS[style.content_status]}</span>
         )}

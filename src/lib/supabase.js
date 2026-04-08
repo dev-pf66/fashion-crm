@@ -969,11 +969,31 @@ export async function deleteRange(id) {
 export async function getRangeStyles(rangeId) {
   const { data, error } = await supabase
     .from('range_styles')
-    .select('*, suppliers:supplier_id(id, name)')
+    .select('*, suppliers:supplier_id(id, name), assignee:assigned_to(id, name)')
     .eq('range_id', rangeId)
     .order('sort_order')
   if (error) throw error
   return data
+}
+
+export async function getMyAssignedStyles(personId) {
+  const { data, error } = await supabase
+    .from('range_styles')
+    .select('*, ranges!range_id(id, name, division), assignee:assigned_to(id, name)')
+    .eq('assigned_to', personId)
+    .order('range_id')
+  if (error) throw error
+  return data
+}
+
+export async function assignStyleTo(styleId, personId) {
+  const { error } = await supabase.from('range_styles').update({ assigned_to: personId }).eq('id', styleId)
+  if (error) throw error
+}
+
+export async function bulkAssignStyles(styleIds, personId) {
+  const { error } = await supabase.from('range_styles').update({ assigned_to: personId }).in('id', styleIds)
+  if (error) throw error
 }
 
 export async function getRangeStyle(id) {
