@@ -80,7 +80,7 @@ export default function Tasks() {
         const q = filters.search.toLowerCase()
         if (!(t.title || '').toLowerCase().includes(q)) return false
       }
-      if (filters.assigned_to && t.assigned_to !== parseInt(filters.assigned_to)) return false
+      if (filters.assigned_to && t.people?.id !== parseInt(filters.assigned_to)) return false
       if (filters.priority && t.priority !== filters.priority) return false
       if (filters.status && t.status !== filters.status) return false
       if (filters.tag && !(t.tags || []).includes(filters.tag)) return false

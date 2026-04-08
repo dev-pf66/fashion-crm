@@ -48,7 +48,7 @@ export default function Dashboard() {
       setOverdue(overdueData)
       setTaskMetrics(taskData)
       setMyTasks((allTasks || []).filter(t =>
-        t.assignee_id === currentPerson?.id && t.status !== 'done'
+        t.people?.id === currentPerson?.id && t.status !== 'done'
       ).slice(0, 5))
     } catch (err) {
       console.error('Failed to load dashboard:', err)
