@@ -1,13 +1,23 @@
-// Check admin by role (set role to 'admin' on the people table)
+// Check admin - supports both old role column and new roles join
 export function isAdmin(person) {
-  return person?.role === 'admin'
+  if (person?.role === 'admin') return true
+  if (person?.roles?.permissions?.includes('admin.access')) return true
+  return false
+}
+
+// Check if person has a specific permission
+export function hasPermission(person, action) {
+  const permissions = person?.roles?.permissions || []
+  return permissions.includes(action)
 }
 
 // Mask supplier name: show only first 3 characters for non-admins
 // Accepts a person object (checks role) or a boolean
 export function maskSupplierName(name, personOrBool) {
   if (!name) return name
-  const allowed = typeof personOrBool === 'object' ? isAdmin(personOrBool) : !!personOrBool
+  const allowed = typeof personOrBool === 'object'
+    ? (isAdmin(personOrBool) || hasPermission(personOrBool, 'suppliers.view'))
+    : !!personOrBool
   if (allowed) return name
   return name.slice(0, 3) + '***'
 }

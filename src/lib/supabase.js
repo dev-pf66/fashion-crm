@@ -21,7 +21,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // ============================================================
 
 export async function getPeople() {
-  const { data, error } = await supabase.from('people').select('*').order('name')
+  const { data, error } = await supabase.from('people').select('*, roles(id, name, permissions)').order('name')
+  if (error) throw error
+  return data
+}
+
+export async function getRoles() {
+  const { data, error } = await supabase.from('roles').select('*').order('name')
   if (error) throw error
   return data
 }

@@ -6562,6 +6562,62 @@ div:hover > .rp-table-thumb-change {
 }
 
 /* ============================================================
+   NO ACCESS SCREEN
+   ============================================================ */
+
+.no-access-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 60vh;
+  padding: 2rem;
+  color: var(--gray-500);
+}
+
+.no-access-screen svg {
+  color: var(--gray-300);
+  margin-bottom: 1rem;
+}
+
+.no-access-screen h2 {
+  color: var(--gray-700);
+  margin-bottom: 0.5rem;
+}
+
+.no-access-screen p {
+  max-width: 400px;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* Role badges */
+.role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.role-badge.role-admin {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.role-badge.role-viewer {
+  background: var(--info-light);
+  color: var(--info);
+}
+
+.role-badge.role-merchandiser {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+/* ============================================================
    ONBOARDING WELCOME
    ============================================================ */
 

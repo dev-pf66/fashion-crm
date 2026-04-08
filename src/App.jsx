@@ -7,6 +7,7 @@ import { getPeople, getPersonByEmail, getPersonByUserId, createPerson, updatePer
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import { isAdmin } from './lib/constants'
+import ProtectedRoute from './components/ProtectedRoute'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Styles = lazy(() => import('./pages/Styles'))
@@ -128,13 +129,13 @@ function AppRoutes() {
             <Route index element={<Dashboard />} />
             <Route path="styles" element={<Styles />} />
             <Route path="styles/:id" element={<StyleDetail />} />
-            <Route path="suppliers" element={isAdmin(currentPerson) ? <Suppliers /> : <Navigate to="/" replace />} />
-            <Route path="suppliers/:id" element={isAdmin(currentPerson) ? <SupplierDetail /> : <Navigate to="/" replace />} />
+            <Route path="suppliers" element={<ProtectedRoute action="suppliers.view"><Suppliers /></ProtectedRoute>} />
+            <Route path="suppliers/:id" element={<ProtectedRoute action="suppliers.view"><SupplierDetail /></ProtectedRoute>} />
             <Route path="materials" element={<Materials />} />
             <Route path="samples" element={<Samples />} />
             <Route path="orders" element={<Orders />} />
             <Route path="orders/:id" element={<OrderDetail />} />
-            <Route path="team" element={isAdmin(currentPerson) ? <Team /> : <Navigate to="/" replace />} />
+            <Route path="team" element={<ProtectedRoute action="team.view"><Team /></ProtectedRoute>} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="requests" element={<StyleRequests />} />
             <Route path="tasks" element={<Tasks />} />
@@ -144,10 +145,10 @@ function AppRoutes() {
             <Route path="by-embroidery" element={<ByEmbroidery />} />
             <Route path="production" element={<ProductionBoard />} />
             <Route path="content" element={<ContentCalendar />} />
-            <Route path="admin" element={isAdmin(currentPerson) ? <AdminDashboard /> : <Navigate to="/" replace />} />
-            <Route path="activity" element={isAdmin(currentPerson) ? <Activity /> : <Navigate to="/" replace />} />
+            <Route path="admin" element={<ProtectedRoute action="admin.access"><AdminDashboard /></ProtectedRoute>} />
+            <Route path="activity" element={<ProtectedRoute action="activity.view"><Activity /></ProtectedRoute>} />
             <Route path="help" element={<Help />} />
-            <Route path="settings" element={isAdmin(currentPerson) ? <Settings /> : <Navigate to="/" replace />} />
+            <Route path="settings" element={<ProtectedRoute action="settings.view"><Settings /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
           <Route path="/reset-password" element={<ResetPassword />} />

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from '../App'
-import { createPerson, updatePerson } from '../lib/supabase'
+import { createPerson, updatePerson, getRoles } from '../lib/supabase'
 import { ROLES } from '../lib/constants'
 import Modal from '../components/Modal'
 import { Plus, Users } from 'lucide-react'
@@ -43,7 +43,11 @@ export default function Team() {
               </div>
               <div className="team-card-name">{p.name}</div>
               <div className="team-card-role">
-                {ROLES.find(r => r.value === p.role)?.label || p.role || 'No role'}
+                {p.roles?.name ? (
+                  <span className={`role-badge role-${p.roles.name}`}>{p.roles.name}</span>
+                ) : (
+                  ROLES.find(r => r.value === p.role)?.label || p.role || 'No role'
+                )}
               </div>
               <div className="team-card-email">{p.email}</div>
               {!p.is_active && <span className="badge" style={{ background: 'var(--gray-100)', color: 'var(--gray-500)', marginTop: '0.5rem' }}>Inactive</span>}
@@ -65,23 +69,36 @@ export default function Team() {
 
 function PersonForm({ person, onClose, onSave }) {
   const isEdit = !!person
+  const [roles, setRoles] = useState([])
   const [form, setForm] = useState({
     name: person?.name || '',
     email: person?.email || '',
     role: person?.role || '',
+    role_id: person?.role_id || '',
     is_active: person?.is_active ?? true,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  useEffect(() => {
+    getRoles().then(setRoles).catch(() => {})
+  }, [])
+
   async function handleSubmit(e) {
     e.preventDefault()
     setSaving(true)
     try {
+      const payload = {
+        name: form.name,
+        email: form.email,
+        role: form.role,
+        role_id: form.role_id ? parseInt(form.role_id) : null,
+        is_active: form.is_active,
+      }
       if (isEdit) {
-        await updatePerson(person.id, form)
+        await updatePerson(person.id, payload)
       } else {
-        await createPerson(form)
+        await createPerson(payload)
       }
       onSave?.()
     } catch (err) {
@@ -98,7 +115,14 @@ function PersonForm({ person, onClose, onSave }) {
         <div className="form-group"><label>Name *</label><input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required /></div>
         <div className="form-group"><label>Email *</label><input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required disabled={isEdit} /></div>
         <div className="form-group">
-          <label>Role</label>
+          <label>Permission Role *</label>
+          <select value={form.role_id} onChange={e => setForm(p => ({ ...p, role_id: e.target.value }))}>
+            <option value="">Select permission role...</option>
+            {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label>Job Title</label>
           <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
             <option value="">Select...</option>
             {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { isAdmin as checkAdmin } from '../lib/constants'
 import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
+import { usePermissions } from '../hooks/usePermissions'
 import FeedbackButton from './FeedbackButton'
 import NotificationBell from './NotificationBell'
 import CommandPalette from './CommandPalette'
@@ -19,53 +19,53 @@ const NAV_SECTIONS = [
     label: 'Sourcing',
     hideForSocial: true,
     items: [
-      { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-      { to: '/styles', icon: Scissors, label: 'Styles' },
-      { to: '/suppliers', icon: Factory, label: 'Suppliers', adminOnly: true },
-      { to: '/orders', icon: ClipboardList, label: 'Orders' },
-      { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
-      { to: '/notifications', icon: Bell, label: 'Notifications' },
+      { to: '/', icon: LayoutDashboard, label: 'Dashboard', requiredAction: 'dashboard.view' },
+      { to: '/styles', icon: Scissors, label: 'Styles', requiredAction: 'styles.view' },
+      { to: '/suppliers', icon: Factory, label: 'Suppliers', requiredAction: 'suppliers.view' },
+      { to: '/orders', icon: ClipboardList, label: 'Orders', requiredAction: 'orders.view' },
+      { to: '/tasks', icon: CheckSquare, label: 'Tasks', requiredAction: 'tasks.view' },
+      { to: '/notifications', icon: Bell, label: 'Notifications', requiredAction: 'notifications.view' },
     ]
   },
   {
     label: 'Development',
     hideForSocial: true,
     items: [
-      { to: '/materials', icon: Palette, label: 'Materials' },
-      { to: '/samples', icon: FlaskConical, label: 'Samples' },
-      { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
-      { to: '/requests', icon: FileText, label: 'Requests' },
-      { to: '/range-planning', icon: Layers, label: 'Range Plan' },
-      { to: '/by-embroidery', icon: Gem, label: 'By Embroidery' },
-      { to: '/production', icon: PackageCheck, label: 'Production' },
+      { to: '/materials', icon: Palette, label: 'Materials', requiredAction: 'materials.view' },
+      { to: '/samples', icon: FlaskConical, label: 'Samples', requiredAction: 'samples.view' },
+      { to: '/calendar', icon: CalendarDays, label: 'Calendar', requiredAction: 'calendar.view' },
+      { to: '/requests', icon: FileText, label: 'Requests', requiredAction: 'styles.view' },
+      { to: '/range-planning', icon: Layers, label: 'Range Plan', requiredAction: 'range_plan.view' },
+      { to: '/by-embroidery', icon: Gem, label: 'By Embroidery', requiredAction: 'range_plan.view' },
+      { to: '/production', icon: PackageCheck, label: 'Production', requiredAction: 'production.view' },
     ]
   },
   {
     label: 'Social',
     socialOnly: true,
     items: [
-      { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-      { to: '/content', icon: Sparkles, label: 'Content Hub' },
-      { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
-      { to: '/calendar', icon: CalendarDays, label: 'Calendar' },
-      { to: '/notifications', icon: Bell, label: 'Notifications' },
+      { to: '/', icon: LayoutDashboard, label: 'Dashboard', requiredAction: 'dashboard.view' },
+      { to: '/content', icon: Sparkles, label: 'Content Hub', requiredAction: 'content.view' },
+      { to: '/tasks', icon: CheckSquare, label: 'Tasks', requiredAction: 'tasks.view' },
+      { to: '/calendar', icon: CalendarDays, label: 'Calendar', requiredAction: 'calendar.view' },
+      { to: '/notifications', icon: Bell, label: 'Notifications', requiredAction: 'notifications.view' },
     ]
   },
   {
     label: 'Content',
     hideForSocial: true,
     items: [
-      { to: '/content', icon: Sparkles, label: 'Content Hub' },
+      { to: '/content', icon: Sparkles, label: 'Content Hub', requiredAction: 'content.view' },
     ]
   },
   {
     label: 'Admin',
     items: [
-      { to: '/admin', icon: Shield, label: 'Command Center', adminOnly: true },
-      { to: '/team', icon: Users, label: 'Team', adminOnly: true },
-      { to: '/activity', icon: Clock, label: 'Activity', adminOnly: true },
+      { to: '/admin', icon: Shield, label: 'Command Center', requiredAction: 'admin.access' },
+      { to: '/team', icon: Users, label: 'Team', requiredAction: 'team.view' },
+      { to: '/activity', icon: Clock, label: 'Activity', requiredAction: 'activity.view' },
       { to: '/help', icon: HelpCircle, label: 'Help' },
-      { to: '/settings', icon: Settings, label: 'Settings', adminOnly: true },
+      { to: '/settings', icon: Settings, label: 'Settings', requiredAction: 'settings.view' },
     ]
   },
 ]
@@ -73,6 +73,7 @@ const NAV_SECTIONS = [
 export default function Layout() {
   const { currentPerson } = useApp()
   const { user, signOut } = useAuth()
+  const { can, hasRole } = usePermissions()
   const { divisions, currentDivision, changeDivision, loading: divisionsLoading } = useDivision()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -166,9 +167,8 @@ export default function Layout() {
             const isSocial = currentDivision?.code === 'SOCIAL'
             if (isSocial && section.hideForSocial) return null
             if (!isSocial && section.socialOnly) return null
-            const isAdmin = checkAdmin(currentPerson)
             const items = section.items.filter(item => {
-              if (item.adminOnly) return isAdmin
+              if (item.requiredAction) return can(item.requiredAction)
               return true
             })
             if (items.length === 0) return null
