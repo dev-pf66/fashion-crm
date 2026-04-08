@@ -6,8 +6,11 @@ import { useApp } from '../App'
 import StatusBadge from '../components/StatusBadge'
 import {
   Shield, Layers, CheckSquare, AlertTriangle, Clock,
-  Users, BarChart3, Target, Truck, ArrowRight, Timer, Bell
+  Users, BarChart3, Target, Truck, ArrowRight, Timer, Bell,
+  UserPlus, KeyRound, Eye, EyeOff
 } from 'lucide-react'
+import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles } from '../lib/supabase'
+import Modal from '../components/Modal'
 
 const STATUS_COLORS = {
   concept: '#818cf8',
@@ -33,7 +36,7 @@ const TASK_STATUS_COLORS = {
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const toast = useToast()
-  const { currentPerson } = useApp()
+  const { currentPerson, people, refreshPeople } = useApp()
   const [activeTab, setActiveTab] = useState('ranges')
   const [loading, setLoading] = useState(true)
 
@@ -130,6 +133,13 @@ export default function AdminDashboard() {
           <CheckSquare size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
           Tasks
         </button>
+        <button
+          className={`tab ${activeTab === 'users' ? 'active' : ''}`}
+          onClick={() => setActiveTab('users')}
+        >
+          <Users size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
+          Users
+        </button>
       </div>
 
       {activeTab === 'ranges' ? (
@@ -142,7 +152,7 @@ export default function AdminDashboard() {
           lowRanges={lowRanges}
           navigate={navigate}
         />
-      ) : (
+      ) : activeTab === 'tasks' ? (
         <TaskTab
           metrics={taskMetrics}
           activeTasks={activeTasks}
@@ -153,6 +163,8 @@ export default function AdminDashboard() {
           currentPerson={currentPerson}
           toast={toast}
         />
+      ) : (
+        <UsersTab people={people} toast={toast} refreshPeople={refreshPeople} />
       )}
     </div>
   )
@@ -525,5 +537,262 @@ function TaskTab({ metrics, activeTasks, workload, overdueTasks, staleTasks, pip
         </div>
       </div>
     </>
+  )
+}
+
+// ── Users Tab ───────────────────────────────────────────────
+
+function UsersTab({ people, toast, refreshPeople }) {
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [resetModal, setResetModal] = useState(null)
+  const [authUsers, setAuthUsers] = useState([])
+  const [loadingAuth, setLoadingAuth] = useState(true)
+
+  useEffect(() => {
+    loadAuthUsers()
+  }, [])
+
+  async function loadAuthUsers() {
+    setLoadingAuth(true)
+    try {
+      const { users } = await adminListAuthUsers()
+      setAuthUsers(users || [])
+    } catch (err) {
+      console.error('Failed to load auth users:', err)
+    } finally {
+      setLoadingAuth(false)
+    }
+  }
+
+  // Merge people records with auth user data
+  const mergedUsers = people.map(p => {
+    const authUser = authUsers.find(u => u.id === p.user_id || u.email === p.email)
+    return {
+      ...p,
+      lastSignIn: authUser?.last_sign_in_at,
+      authId: authUser?.id,
+      confirmed: !!authUser?.email_confirmed_at,
+    }
+  })
+
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div>
+          <span className="text-muted text-sm">{people.length} team members</span>
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+          <UserPlus size={16} /> Add User
+        </button>
+      </div>
+
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Last Login</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {mergedUsers.map(user => (
+              <tr key={user.id}>
+                <td style={{ fontWeight: 500 }}>{user.name}</td>
+                <td className="text-muted">{user.email}</td>
+                <td>
+                  {user.roles?.name ? (
+                    <span className={`role-badge role-${user.roles.name}`}>{user.roles.name}</span>
+                  ) : (
+                    <span className="text-muted">No role</span>
+                  )}
+                </td>
+                <td className="text-muted text-sm">
+                  {user.lastSignIn
+                    ? new Date(user.lastSignIn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : 'Never'
+                  }
+                </td>
+                <td>
+                  {user.is_active !== false ? (
+                    <span className="badge" style={{ background: 'var(--success-light)', color: 'var(--success)' }}>Active</span>
+                  ) : (
+                    <span className="badge" style={{ background: 'var(--gray-100)', color: 'var(--gray-500)' }}>Inactive</span>
+                  )}
+                </td>
+                <td>
+                  {user.authId && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setResetModal(user)}
+                      title="Reset password"
+                    >
+                      <KeyRound size={14} />
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {showCreateModal && (
+        <CreateUserModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={() => {
+            setShowCreateModal(false)
+            refreshPeople()
+            loadAuthUsers()
+            toast.success('User created successfully')
+          }}
+          toast={toast}
+        />
+      )}
+
+      {resetModal && (
+        <ResetPasswordModal
+          user={resetModal}
+          onClose={() => setResetModal(null)}
+          toast={toast}
+        />
+      )}
+    </>
+  )
+}
+
+function CreateUserModal({ onClose, onCreated, toast }) {
+  const [roles, setRoles] = useState([])
+  const [form, setForm] = useState({ name: '', email: '', password: '', role_id: '' })
+  const [saving, setSaving] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
+  useEffect(() => {
+    getRoles().then(setRoles).catch(() => {})
+  }, [])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.name || !form.email || !form.password) return
+    setSaving(true)
+    try {
+      await adminCreateUser({
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        role_id: form.role_id || null,
+      })
+      onCreated()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal title="Add Team Member" onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label>Name *</label>
+          <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
+        </div>
+        <div className="form-group">
+          <label>Email *</label>
+          <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required />
+        </div>
+        <div className="form-group">
+          <label>Temporary Password *</label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={form.password}
+              onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+              required
+              minLength={6}
+              style={{ paddingRight: '2.5rem' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-400)', padding: '0.25rem' }}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>Permission Role *</label>
+          <select value={form.role_id} onChange={e => setForm(p => ({ ...p, role_id: e.target.value }))} required>
+            <option value="">Select role...</option>
+            {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+        </div>
+        <div className="form-actions">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn btn-primary" disabled={saving}>
+            {saving ? 'Creating...' : 'Create User'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+function ResetPasswordModal({ user, onClose, toast }) {
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!password || password.length < 6) return
+    setSaving(true)
+    try {
+      await adminResetPassword(user.authId, password)
+      toast.success(`Password reset for ${user.name}`)
+      onClose()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal title={`Reset Password: ${user.name}`} onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label>New Password *</label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              minLength={6}
+              placeholder="Min 6 characters"
+              style={{ paddingRight: '2.5rem' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-400)', padding: '0.25rem' }}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </div>
+        <div className="form-actions">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn btn-primary" disabled={saving}>
+            {saving ? 'Resetting...' : 'Reset Password'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   )
 }

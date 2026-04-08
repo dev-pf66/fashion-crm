@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Login() {
-  const { signIn, signUp, resetPassword } = useAuth()
-  const [mode, setMode] = useState('login') // 'login' | 'signup' | 'forgot'
+  const { signIn, resetPassword } = useAuth()
+  const [mode, setMode] = useState('login') // 'login' | 'forgot'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -19,10 +19,6 @@ export default function Login() {
       if (mode === 'forgot') {
         await resetPassword(email)
         setResetSent(true)
-      } else if (mode === 'signup') {
-        await signUp(email, password)
-        setError('')
-        alert('Check your email for a confirmation link!')
       } else {
         await signIn(email, password)
       }
@@ -43,7 +39,7 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <h1>
-          {mode === 'forgot' ? 'Reset Password' : mode === 'signup' ? 'Create Account' : 'Sign In'}
+          {mode === 'forgot' ? 'Reset Password' : 'Sign In'}
         </h1>
         <p className="subtitle">Fashion Sourcing CRM</p>
 
@@ -99,8 +95,7 @@ export default function Login() {
 
             <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={loading}>
               {loading ? 'Loading...' : (
-                mode === 'forgot' ? 'Send Reset Link' :
-                mode === 'signup' ? 'Create Account' : 'Sign In'
+                mode === 'forgot' ? 'Send Reset Link' : 'Sign In'
               )}
             </button>
           </form>
@@ -112,16 +107,10 @@ export default function Login() {
               Remember your password?{' '}
               <button onClick={() => switchMode('login')}>Sign In</button>
             </>
-          ) : mode === 'signup' ? (
-            <>
-              Already have an account?{' '}
-              <button onClick={() => switchMode('login')}>Sign In</button>
-            </>
           ) : mode === 'login' ? (
-            <>
-              Don't have an account?{' '}
-              <button onClick={() => switchMode('signup')}>Sign Up</button>
-            </>
+            <span className="text-muted text-sm">
+              Need an account? Contact your admin.
+            </span>
           ) : null}
         </div>
       </div>

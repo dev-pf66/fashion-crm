@@ -17,6 +17,40 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 })
 
 // ============================================================
+// ADMIN USER MANAGEMENT (via serverless function)
+// ============================================================
+
+async function adminApiCall(body) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) throw new Error('Not authenticated')
+
+  const res = await fetch('/api/admin-user', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(body),
+  })
+
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || 'Request failed')
+  return data
+}
+
+export async function adminCreateUser({ email, password, name, role_id }) {
+  return adminApiCall({ action: 'create_user', email, password, name, role_id })
+}
+
+export async function adminResetPassword(user_id, new_password) {
+  return adminApiCall({ action: 'reset_password', user_id, new_password })
+}
+
+export async function adminListAuthUsers() {
+  return adminApiCall({ action: 'list_users' })
+}
+
+// ============================================================
 // PEOPLE
 // ============================================================
 
