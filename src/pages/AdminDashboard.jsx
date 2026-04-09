@@ -9,7 +9,7 @@ import {
   Users, BarChart3, Target, Truck, ArrowRight, Timer, Bell,
   UserPlus, KeyRound, Eye, EyeOff, Settings, Plus, Pencil, Trash2
 } from 'lucide-react'
-import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket } from '../lib/supabase'
+import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage } from '../lib/supabase'
 import Modal from '../components/Modal'
 
 const STATUS_COLORS = {
@@ -771,8 +771,14 @@ function ConfigTab({ toast }) {
         >
           Price Brackets
         </button>
+        <button
+          className={`btn btn-sm ${subTab === 'stages' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setSubTab('stages')}
+        >
+          Production Stages
+        </button>
       </div>
-      {subTab === 'silhouettes' ? <SilhouettesManager toast={toast} /> : <PriceBracketsManager toast={toast} />}
+      {subTab === 'silhouettes' ? <SilhouettesManager toast={toast} /> : subTab === 'price_brackets' ? <PriceBracketsManager toast={toast} /> : <ProductionStagesManager toast={toast} />}
     </>
   )
 }
@@ -1090,6 +1096,146 @@ function PriceBracketsManager({ toast }) {
           ))}
           {brackets.length === 0 && (
             <tr><td colSpan={5} className="text-muted" style={{ textAlign: 'center', padding: '1rem' }}>No price brackets found</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function ProductionStagesManager({ toast }) {
+  const [stages, setStages] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ name: '', color: '', sort_order: 0 })
+  const [adding, setAdding] = useState(false)
+  const [addForm, setAddForm] = useState({ name: '', color: '#9ca3af', sort_order: 0 })
+
+  useEffect(() => { loadStages() }, [])
+
+  async function loadStages() {
+    setLoading(true)
+    try {
+      const data = await getProductionStages()
+      setStages(data)
+    } catch (err) {
+      toast.error('Failed to load production stages')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleAdd(e) {
+    e.preventDefault()
+    if (!addForm.name.trim()) return
+    try {
+      await createProductionStage({ name: addForm.name.trim(), color: addForm.color || '#9ca3af', sort_order: addForm.sort_order || 0 })
+      toast.success('Stage added')
+      setAdding(false)
+      setAddForm({ name: '', color: '#9ca3af', sort_order: 0 })
+      loadStages()
+    } catch (err) {
+      toast.error(err.message?.includes('duplicate') ? 'Stage name already exists' : 'Failed to add')
+    }
+  }
+
+  async function handleUpdate(id) {
+    try {
+      await updateProductionStage(id, { name: editForm.name.trim(), color: editForm.color, sort_order: editForm.sort_order || 0 })
+      toast.success('Stage updated')
+      setEditingId(null)
+      loadStages()
+    } catch (err) {
+      toast.error('Failed to update')
+    }
+  }
+
+  async function handleDelete(id, name) {
+    if (!confirm(`Delete stage "${name}"? Pieces in this stage will lose their status.`)) return
+    try {
+      await deleteProductionStage(id)
+      toast.success('Stage deleted')
+      loadStages()
+    } catch (err) {
+      toast.error('Cannot delete — pieces may still reference this stage')
+    }
+  }
+
+  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+
+  return (
+    <div className="card">
+      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3>Production Stages</h3>
+        <button className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setAddForm({ name: '', color: '#9ca3af', sort_order: stages.length + 1 }) }}>
+          <Plus size={14} /> Add
+        </button>
+      </div>
+
+      {adding && (
+        <form onSubmit={handleAdd} style={{ padding: '0.75rem 1rem', background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)', display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div className="form-group" style={{ flex: 1, minWidth: 140, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Name</label>
+            <input type="text" value={addForm.name} onChange={e => setAddForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. QC Check" required autoFocus />
+          </div>
+          <div className="form-group" style={{ width: 60, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Color</label>
+            <input type="color" value={addForm.color} onChange={e => setAddForm(p => ({ ...p, color: e.target.value }))} style={{ height: 36, padding: 2 }} />
+          </div>
+          <div className="form-group" style={{ width: 70, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Order</label>
+            <input type="number" value={addForm.sort_order} onChange={e => setAddForm(p => ({ ...p, sort_order: parseInt(e.target.value) || 0 }))} />
+          </div>
+          <button type="submit" className="btn btn-primary btn-sm">Save</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+        </form>
+      )}
+
+      <table className="data-table" style={{ fontSize: '0.8125rem' }}>
+        <thead>
+          <tr>
+            <th style={{ width: 30 }}>Color</th>
+            <th>Name</th>
+            <th>Order</th>
+            <th style={{ width: 80 }}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {stages.map(s => (
+            <tr key={s.id}>
+              {editingId === s.id ? (
+                <>
+                  <td><input type="color" value={editForm.color} onChange={e => setEditForm(p => ({ ...p, color: e.target.value }))} style={{ width: 30, height: 24, padding: 0, border: 'none' }} /></td>
+                  <td><input type="text" value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} style={{ fontSize: '0.8125rem' }} /></td>
+                  <td><input type="number" value={editForm.sort_order} onChange={e => setEditForm(p => ({ ...p, sort_order: parseInt(e.target.value) || 0 }))} style={{ fontSize: '0.8125rem', width: 60 }} /></td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button className="btn btn-primary btn-sm" onClick={() => handleUpdate(s.id)} style={{ padding: '0.25rem 0.5rem' }}>Save</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setEditingId(null)} style={{ padding: '0.25rem 0.5rem' }}>Cancel</button>
+                    </div>
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td><span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: 4, background: s.color }} /></td>
+                  <td style={{ fontWeight: 500 }}>{s.name}</td>
+                  <td className="text-muted">{s.sort_order}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => { setEditingId(s.id); setEditForm({ name: s.name, color: s.color, sort_order: s.sort_order }) }} style={{ padding: '0.25rem' }}>
+                        <Pencil size={13} />
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(s.id, s.name)} style={{ padding: '0.25rem', color: 'var(--danger)' }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+          {stages.length === 0 && (
+            <tr><td colSpan={4} className="text-muted" style={{ textAlign: 'center', padding: '1rem' }}>No production stages found</td></tr>
           )}
         </tbody>
       </table>

@@ -116,6 +116,48 @@ export async function deletePriceBracket(id) {
   if (error) throw error
 }
 
+// Production Stages
+export async function getProductionStages() {
+  const { data, error } = await supabase.from('production_stages').select('*').order('sort_order')
+  if (error) throw error
+  return data
+}
+
+export async function createProductionStage(stage) {
+  const { data, error } = await supabase.from('production_stages').insert([stage]).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateProductionStage(id, updates) {
+  const { data, error } = await supabase.from('production_stages').update(updates).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteProductionStage(id) {
+  const { error } = await supabase.from('production_stages').delete().eq('id', id)
+  if (error) throw error
+}
+
+// Production Status Log
+export async function logProductionStatusChange({ style_id, changed_by, old_stage_id, new_stage_id, old_stage_name, new_stage_name }) {
+  const { error } = await supabase.from('production_status_log').insert([{
+    style_id, changed_by, old_stage_id, new_stage_id, old_stage_name, new_stage_name
+  }])
+  if (error) throw error
+}
+
+export async function getProductionStatusLog(styleId) {
+  const { data, error } = await supabase
+    .from('production_status_log')
+    .select('*, person:changed_by(id, name)')
+    .eq('style_id', styleId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
 export async function getPersonByEmail(email) {
   const { data, error } = await supabase.from('people').select('*').eq('email', email).single()
   if (error && error.code !== 'PGRST116') throw error
@@ -979,9 +1021,19 @@ export async function getRangeStyles(rangeId) {
 export async function getMyAssignedStyles(personId) {
   const { data, error } = await supabase
     .from('range_styles')
-    .select('*, ranges!range_id(id, name, division), assignee:assigned_to(id, name)')
+    .select('*, ranges!range_id(id, name, division), assignee:assigned_to(id, name), stage:production_stage_id(id, name, color, sort_order)')
     .eq('assigned_to', personId)
     .order('range_id')
+  if (error) throw error
+  return data
+}
+
+export async function getAllAssignedStyles() {
+  const { data, error } = await supabase
+    .from('range_styles')
+    .select('*, ranges!range_id(id, name, division), assignee:assigned_to(id, name), stage:production_stage_id(id, name, color, sort_order)')
+    .not('assigned_to', 'is', null)
+    .order('assigned_to')
   if (error) throw error
   return data
 }

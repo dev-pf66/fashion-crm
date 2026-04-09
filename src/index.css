@@ -4603,6 +4603,125 @@ tr:hover .quick-view-btn {
   width: auto;
 }
 
+/* Kanban Board */
+.kanban-board {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  min-height: 400px;
+}
+.kanban-column {
+  flex: 1;
+  min-width: 220px;
+  max-width: 320px;
+  background: var(--gray-50);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+}
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-top: 3px solid;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+.kanban-column-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.kanban-column-title {
+  flex: 1;
+}
+.kanban-column-count {
+  background: var(--gray-200);
+  color: var(--gray-600);
+  font-size: 0.6875rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+}
+.kanban-column-body {
+  flex: 1;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 100px;
+  transition: background 0.15s;
+}
+.kanban-column-body.drag-over {
+  background: var(--gray-100);
+}
+.kanban-card {
+  background: var(--card-bg);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: grab;
+  transition: box-shadow 0.15s, transform 0.1s;
+}
+.kanban-card:hover {
+  box-shadow: var(--shadow-sm);
+}
+.kanban-card.dragging {
+  box-shadow: var(--shadow-lg);
+  transform: rotate(2deg);
+  opacity: 0.9;
+}
+.kanban-card-thumb {
+  height: 80px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.kanban-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.kanban-card-body {
+  padding: 0.5rem 0.625rem;
+}
+.kanban-card-name {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+}
+.kanban-card-meta {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+.kanban-card-overdue {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--danger);
+  margin-top: 0.25rem;
+}
+.kanban-empty {
+  text-align: center;
+  padding: 1.5rem 0.5rem;
+  color: var(--gray-400);
+  font-size: 0.75rem;
+}
+@media (max-width: 768px) {
+  .kanban-board {
+    flex-direction: column;
+  }
+  .kanban-column {
+    max-width: 100%;
+  }
+}
+
 /* Nested Silhouette → Price Groups */
 .rp-nested-group {
   background: var(--card-bg);
