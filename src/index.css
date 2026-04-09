@@ -8204,3 +8204,93 @@ html, body {
 [data-theme="dark"] .content-card-menu button:hover { background: var(--gray-700); }
 [data-theme="dark"] .content-list th { background: #1e2330; }
 [data-theme="dark"] .content-list td { border-color: var(--gray-700); }
+
+/* ============================================================
+   RANGE DASHBOARD
+   ============================================================ */
+
+.range-dashboard { max-width: 1200px; }
+.range-dashboard .page-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; }
+.rd-range-selector select { padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--gray-300); font-size: 0.875rem; background: var(--card-bg); }
+
+/* Quick Stats */
+.rd-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+.rd-stat-card { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--gray-200); }
+.rd-stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rd-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--gray-900); line-height: 1.2; }
+.rd-stat-label { font-size: 0.75rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Sections */
+.rd-section { background: var(--card-bg); border: 1px solid var(--gray-200); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.rd-section h3 { display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--gray-900); }
+
+/* Progress bar */
+.rd-progress-block { margin-bottom: 1.5rem; padding: 1rem; background: var(--gray-50); border-radius: 8px; }
+.rd-progress-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; font-size: 0.875rem; flex-wrap: wrap; }
+.rd-progress-nums { font-weight: 600; color: var(--gray-700); }
+.rd-progress-bar { height: 12px; background: var(--gray-200); border-radius: 6px; overflow: hidden; }
+.rd-progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #22c55e); border-radius: 6px; transition: width 0.5s ease; }
+
+/* Editable target */
+.rd-editable-target { display: inline-flex; align-items: center; gap: 0.35rem; }
+.rd-target-input { width: 70px; padding: 0.25rem 0.5rem; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 0.8rem; }
+.rd-target-clickable { cursor: pointer; color: var(--primary); text-decoration: underline dotted; font-weight: 600; }
+.rd-target-clickable:hover { color: var(--primary-dark); }
+
+/* Breakdown tables */
+.rd-breakdown { margin-bottom: 1.25rem; }
+.rd-breakdown h4 { font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: 0.5rem; }
+.rd-breakdown-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.rd-breakdown-table th { text-align: left; padding: 0.5rem 0.75rem; background: var(--gray-50); border-bottom: 2px solid var(--gray-200); color: var(--gray-600); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+.rd-breakdown-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--gray-100); }
+.rd-gap-negative { color: #ef4444; font-weight: 600; }
+.rd-gap-over { color: #22c55e; font-weight: 600; }
+
+/* Merch performance table */
+.rd-merch-table-wrap { overflow-x: auto; }
+.rd-merch-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.rd-merch-table th { text-align: left; padding: 0.6rem 0.75rem; background: var(--gray-50); border-bottom: 2px solid var(--gray-200); color: var(--gray-600); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+.rd-merch-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--gray-100); }
+.rd-merch-row:hover { background: var(--gray-50); }
+.rd-merch-name { display: flex; align-items: center; gap: 0.5rem; font-weight: 500; }
+.rd-merch-pct { display: flex; align-items: center; gap: 0.5rem; }
+.rd-mini-progress { width: 60px; height: 6px; background: var(--gray-200); border-radius: 3px; overflow: hidden; }
+.rd-mini-fill { height: 100%; background: #22c55e; border-radius: 3px; transition: width 0.3s; }
+.rd-chevron-open { transform: rotate(180deg); }
+
+/* Merch drill-down */
+.rd-merch-detail-row td { padding: 0.75rem; background: var(--gray-50); }
+.rd-merch-pieces { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.rd-merch-piece { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--card-bg); border: 1px solid var(--gray-200); border-radius: 8px; min-width: 200px; }
+.rd-piece-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; }
+.rd-piece-info { display: flex; flex-direction: column; gap: 0.2rem; }
+.rd-piece-name { font-weight: 500; font-size: 0.8rem; }
+.rd-piece-stage { font-size: 0.7rem; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 500; width: fit-content; }
+.rd-piece-due { font-size: 0.7rem; color: var(--gray-500); }
+.rd-piece-due.overdue { color: #ef4444; font-weight: 600; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .rd-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .rd-merch-table { font-size: 0.8rem; }
+  .rd-merch-pieces { flex-direction: column; }
+}
+@media (max-width: 480px) {
+  .rd-stats-grid { grid-template-columns: 1fr; }
+}
+
+/* Dark mode */
+[data-theme="dark"] .rd-stat-card { background: var(--card-bg); border-color: var(--gray-700); }
+[data-theme="dark"] .rd-stat-value { color: var(--gray-100); }
+[data-theme="dark"] .rd-section { background: var(--card-bg); border-color: var(--gray-700); }
+[data-theme="dark"] .rd-section h3 { color: var(--gray-100); }
+[data-theme="dark"] .rd-progress-block { background: var(--gray-800); }
+[data-theme="dark"] .rd-progress-bar { background: var(--gray-700); }
+[data-theme="dark"] .rd-breakdown-table th,
+[data-theme="dark"] .rd-merch-table th { background: #1e2330; border-color: var(--gray-700); color: var(--gray-400); }
+[data-theme="dark"] .rd-breakdown-table td,
+[data-theme="dark"] .rd-merch-table td { border-color: var(--gray-700); }
+[data-theme="dark"] .rd-merch-row:hover { background: var(--gray-800); }
+[data-theme="dark"] .rd-merch-detail-row td { background: var(--gray-800); }
+[data-theme="dark"] .rd-merch-piece { background: var(--card-bg); border-color: var(--gray-700); }
+[data-theme="dark"] .rd-range-selector select { background: var(--card-bg); border-color: var(--gray-700); color: var(--gray-200); }

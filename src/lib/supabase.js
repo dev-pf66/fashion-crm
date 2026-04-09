@@ -158,6 +158,61 @@ export async function getProductionStatusLog(styleId) {
   return data
 }
 
+// ============================================================
+// DASHBOARD TARGETS
+// ============================================================
+
+export async function getDashboardTargets(rangeId) {
+  const { data, error } = await supabase
+    .from('dashboard_targets')
+    .select('*')
+    .eq('range_id', rangeId)
+  if (error) throw error
+  return data
+}
+
+export async function upsertDashboardTarget({ range_id, target_type, target_key, target_value, updated_by }) {
+  const { data, error } = await supabase
+    .from('dashboard_targets')
+    .upsert({
+      range_id,
+      target_type,
+      target_key: target_key || '_total',
+      target_value,
+      updated_by,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'range_id,target_type,target_key' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function getRangeDashboardData(rangeId) {
+  const [stylesRes, targetsRes, stagesRes] = await Promise.all([
+    supabase
+      .from('range_styles')
+      .select('id, name, category, silhouette, embroidery, price_category, assigned_to, production_stage_id, due_date, thumbnail_url, assignee:assigned_to(id, name), stage:production_stage_id(id, name, color, sort_order)')
+      .eq('range_id', rangeId),
+    supabase
+      .from('dashboard_targets')
+      .select('*')
+      .eq('range_id', rangeId),
+    supabase
+      .from('production_stages')
+      .select('*')
+      .order('sort_order'),
+  ])
+  if (stylesRes.error) throw stylesRes.error
+  if (targetsRes.error) throw targetsRes.error
+  if (stagesRes.error) throw stagesRes.error
+  return {
+    styles: stylesRes.data || [],
+    targets: targetsRes.data || [],
+    stages: stagesRes.data || [],
+  }
+}
+
 export async function getPersonByEmail(email) {
   const { data, error } = await supabase.from('people').select('*').eq('email', email).single()
   if (error && error.code !== 'PGRST116') throw error

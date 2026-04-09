@@ -33,6 +33,7 @@ const ProductionBoard = lazy(() => import('./pages/ProductionBoard'))
 const ContentCalendar = lazy(() => import('./pages/ContentCalendar'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const MyWork = lazy(() => import('./pages/MyWork'))
+const RangeDashboard = lazy(() => import('./pages/RangeDashboard'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 
 export const AppContext = createContext()
@@ -146,6 +147,7 @@ function AppRoutes() {
             <Route path="by-embroidery" element={<ByEmbroidery />} />
             <Route path="production" element={<ProductionBoard />} />
             <Route path="my-work" element={<MyWork />} />
+            <Route path="range-dashboard" element={<RangeDashboard />} />
             <Route path="content" element={<ContentCalendar />} />
             <Route path="admin" element={<ProtectedRoute action="admin.access"><AdminDashboard /></ProtectedRoute>} />
             <Route path="activity" element={<ProtectedRoute action="activity.view"><Activity /></ProtectedRoute>} />
