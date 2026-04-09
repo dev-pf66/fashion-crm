@@ -8234,8 +8234,10 @@ html, body {
 /* Editable target */
 .rd-editable-target { display: inline-flex; align-items: center; gap: 0.35rem; }
 .rd-target-input { width: 70px; padding: 0.25rem 0.5rem; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 0.8rem; }
-.rd-target-clickable { cursor: pointer; color: var(--primary); text-decoration: underline dotted; font-weight: 600; }
-.rd-target-clickable:hover { color: var(--primary-dark); }
+.rd-target-clickable { cursor: pointer; color: var(--primary); font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px dashed var(--primary); transition: background 0.15s; }
+.rd-target-clickable:hover { background: var(--primary-light); }
+.rd-set-target-btn { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.7rem; border-radius: 6px; border: 1px solid var(--primary); background: var(--primary-light); color: var(--primary); font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+.rd-set-target-btn:hover { background: var(--primary); color: #fff; }
 
 /* Breakdown tables */
 .rd-breakdown { margin-bottom: 1.25rem; }
@@ -8279,18 +8281,21 @@ html, body {
   .rd-stats-grid { grid-template-columns: 1fr; }
 }
 
-/* Dark mode */
-[data-theme="dark"] .rd-stat-card { background: var(--card-bg); border-color: var(--gray-700); }
-[data-theme="dark"] .rd-stat-value { color: var(--gray-100); }
-[data-theme="dark"] .rd-section { background: var(--card-bg); border-color: var(--gray-700); }
-[data-theme="dark"] .rd-section h3 { color: var(--gray-100); }
-[data-theme="dark"] .rd-progress-block { background: var(--gray-800); }
-[data-theme="dark"] .rd-progress-bar { background: var(--gray-700); }
-[data-theme="dark"] .rd-breakdown-table th,
-[data-theme="dark"] .rd-merch-table th { background: #1e2330; border-color: var(--gray-700); color: var(--gray-400); }
-[data-theme="dark"] .rd-breakdown-table td,
-[data-theme="dark"] .rd-merch-table td { border-color: var(--gray-700); }
-[data-theme="dark"] .rd-merch-row:hover { background: var(--gray-800); }
-[data-theme="dark"] .rd-merch-detail-row td { background: var(--gray-800); }
-[data-theme="dark"] .rd-merch-piece { background: var(--card-bg); border-color: var(--gray-700); }
-[data-theme="dark"] .rd-range-selector select { background: var(--card-bg); border-color: var(--gray-700); color: var(--gray-200); }
+/* Dark mode — use CSS variables that already adapt via [data-theme] and prefers-color-scheme */
+.rd-stat-card { border-color: var(--gray-200); }
+.rd-stat-value { color: var(--gray-900); }
+.rd-section { border-color: var(--gray-200); }
+.rd-section h3 { color: var(--gray-900); }
+.rd-progress-block { background: var(--gray-100); }
+.rd-progress-bar { background: var(--gray-200); }
+.rd-progress-nums { color: var(--gray-900); }
+.rd-breakdown h4 { color: var(--gray-900); }
+.rd-breakdown-table th,
+.rd-merch-table th { background: var(--gray-100); border-color: var(--gray-200); color: var(--gray-500); }
+.rd-breakdown-table td,
+.rd-merch-table td { border-color: var(--gray-200); color: var(--gray-900); }
+.rd-merch-row:hover { background: var(--gray-100); }
+.rd-merch-detail-row td { background: var(--gray-100); }
+.rd-merch-piece { border-color: var(--gray-200); }
+.rd-range-selector select { color: var(--gray-900); border-color: var(--gray-200); }
+.rd-target-input { background: var(--card-bg); color: var(--gray-900); border-color: var(--gray-300); }

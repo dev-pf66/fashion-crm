@@ -51,6 +51,45 @@ export async function adminListAuthUsers() {
 }
 
 // ============================================================
+// EMAIL NOTIFICATIONS
+// ============================================================
+
+async function emailApiCall(body) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) return // silently skip if not authenticated
+
+  try {
+    await fetch('/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(body),
+    })
+  } catch (err) {
+    console.error('Email notification failed:', err)
+  }
+}
+
+export async function sendAssignmentEmail(merchandiserId, pieceCount, assignerName) {
+  return emailApiCall({
+    action: 'assignment_notification',
+    merchandiser_id: merchandiserId,
+    piece_count: pieceCount,
+    assigner_name: assignerName,
+  })
+}
+
+export async function updateEmailNotifications(personId, enabled) {
+  const { error } = await supabase
+    .from('people')
+    .update({ email_notifications_enabled: enabled })
+    .eq('id', personId)
+  if (error) throw error
+}
+
+// ============================================================
 // PEOPLE
 // ============================================================
 

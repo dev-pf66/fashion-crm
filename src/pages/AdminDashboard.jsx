@@ -7,9 +7,9 @@ import StatusBadge from '../components/StatusBadge'
 import {
   Shield, Layers, CheckSquare, AlertTriangle, Clock,
   Users, BarChart3, Target, Truck, ArrowRight, Timer, Bell,
-  UserPlus, KeyRound, Eye, EyeOff, Settings, Plus, Pencil, Trash2
+  UserPlus, KeyRound, Eye, EyeOff, Settings, Plus, Pencil, Trash2, Mail, MailX
 } from 'lucide-react'
-import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage } from '../lib/supabase'
+import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage, updateEmailNotifications } from '../lib/supabase'
 import Modal from '../components/Modal'
 
 const STATUS_COLORS = {
@@ -604,6 +604,7 @@ function UsersTab({ people, toast, refreshPeople }) {
               <th>Role</th>
               <th>Last Login</th>
               <th>Status</th>
+              <th>Emails</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -631,6 +632,28 @@ function UsersTab({ people, toast, refreshPeople }) {
                   ) : (
                     <span className="badge" style={{ background: 'var(--gray-100)', color: 'var(--gray-500)' }}>Inactive</span>
                   )}
+                </td>
+                <td>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={async () => {
+                      const newVal = user.email_notifications_enabled === false
+                      try {
+                        await updateEmailNotifications(user.id, newVal)
+                        refreshPeople()
+                        toast.success(`Email notifications ${newVal ? 'enabled' : 'disabled'} for ${user.name}`)
+                      } catch (err) {
+                        toast.error('Failed to update')
+                      }
+                    }}
+                    title={user.email_notifications_enabled !== false ? 'Disable email notifications' : 'Enable email notifications'}
+                  >
+                    {user.email_notifications_enabled !== false ? (
+                      <Mail size={14} style={{ color: 'var(--success)' }} />
+                    ) : (
+                      <MailX size={14} style={{ color: 'var(--gray-400)' }} />
+                    )}
+                  </button>
                 </td>
                 <td>
                   {user.authId && (

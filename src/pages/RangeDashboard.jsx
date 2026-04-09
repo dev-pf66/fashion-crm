@@ -10,7 +10,7 @@ import {
   getSilhouettes,
 } from '../lib/supabase'
 import { useDivision } from '../contexts/DivisionContext'
-import { BarChart3, Target, Users, AlertTriangle, TrendingUp, ChevronDown } from 'lucide-react'
+import { BarChart3, Target, Users, AlertTriangle, TrendingUp, ChevronDown, Pencil } from 'lucide-react'
 
 export default function RangeDashboard() {
   const { currentPerson, people } = useApp()
@@ -432,14 +432,14 @@ function EditableTarget({ value, editing, onEdit, onSave, onCancel, inline }) {
   if (inline) {
     return (
       <span className="rd-target-clickable" onClick={onEdit} title="Click to edit target">
-        {value || '—'}
+        {value || '—'} <Pencil size={12} />
       </span>
     )
   }
 
   return (
-    <button className="btn btn-sm btn-ghost" onClick={onEdit}>
-      Set Target
+    <button className="rd-set-target-btn" onClick={onEdit}>
+      <Pencil size={12} /> Set Target
     </button>
   )
 }

@@ -9,7 +9,7 @@ import {
   getRangeStyles, createRangeStyle, updateRangeStyle, updateRangeStyleOrder, deleteRangeStyle,
   createRangeStyleFile,
   getTasksForRange, getTaskSubtaskCounts,
-  getPriceBrackets, bulkAssignStyles,
+  getPriceBrackets, bulkAssignStyles, sendAssignmentEmail,
 } from '../lib/supabase'
 import { usePermissions } from '../hooks/usePermissions'
 import { uploadRangeStyleFile } from '../lib/storage'
@@ -558,6 +558,7 @@ export default function RangeDetail() {
         : s
       ))
       toast.success(`${selectedIds.size} styles assigned to ${assignee?.name || 'user'}`)
+      sendAssignmentEmail(parseInt(personId), selectedIds.size, currentPerson?.name || 'Admin')
       setSelectedIds(new Set())
     } catch (err) {
       toast.error('Failed to assign styles')

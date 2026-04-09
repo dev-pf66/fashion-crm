@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
-import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets, assignStyleTo } from '../lib/supabase'
+import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets, assignStyleTo, sendAssignmentEmail } from '../lib/supabase'
 import { usePermissions } from '../hooks/usePermissions'
 import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
@@ -270,6 +270,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                     updateField('assigned_to', personId || '')
                     try {
                       await assignStyleTo(styleId, personId)
+                      if (personId) sendAssignmentEmail(personId, 1, currentPerson?.name || 'Admin')
                       toast.success(personId ? `Assigned to ${people.find(p => p.id === personId)?.name}` : 'Unassigned')
                       onUpdate()
                     } catch (err) {
