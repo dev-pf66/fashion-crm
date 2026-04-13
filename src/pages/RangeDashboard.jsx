@@ -107,43 +107,74 @@ export default function RangeDashboard() {
     s.due_date && s.due_date < today && s.production_stage_id !== completedStage?.id
   )
 
-  // Breakdown by price bracket
-  const priceBracketBreakdown = useMemo(() => {
-    const used = new Set(styles.map(s => s.price_category).filter(Boolean))
-    const allLabels = [...new Set([
-      ...priceBrackets.map(b => b.label),
-      ...used,
-    ])]
-    return allLabels.map(label => ({
-      label,
-      target: getTarget('price_bracket', label),
-      punched: styles.filter(s => s.price_category === label).length,
-    }))
-  }, [styles, targets, priceBrackets])
-
-  // Breakdown by silhouette
+  // Breakdown grouped by silhouette, each with price bracket + embroidery rows
   const silhouetteBreakdown = useMemo(() => {
-    const used = new Set(styles.map(s => s.silhouette).filter(Boolean))
-    const allLabels = [...new Set([
+    // Get all silhouettes in use
+    const usedSilhouettes = [...new Set(styles.map(s => s.silhouette).filter(Boolean))]
+    const allSilhouettes = [...new Set([
       ...silhouettes.map(s => s.name),
-      ...used,
+      ...usedSilhouettes,
     ])]
-    return allLabels.map(label => ({
-      label,
-      target: getTarget('silhouette', label),
-      punched: styles.filter(s => s.silhouette === label).length,
-    }))
-  }, [styles, targets, silhouettes])
 
-  // Breakdown by embroidery
-  const embroideryBreakdown = useMemo(() => {
-    const used = [...new Set(styles.map(s => s.embroidery).filter(Boolean))]
-    return used.map(label => ({
-      label,
-      target: getTarget('embroidery', label),
-      punched: styles.filter(s => s.embroidery === label).length,
-    }))
-  }, [styles, targets])
+    // All price bracket labels
+    const bracketLabels = priceBrackets.map(b => b.label)
+
+    return allSilhouettes.map(silName => {
+      const silStyles = styles.filter(s => s.silhouette === silName)
+      const totalPunched = silStyles.length
+
+      // Get all embroidery types used in this silhouette
+      const embTypes = [...new Set(silStyles.map(s => s.embroidery).filter(Boolean))]
+      if (embTypes.length === 0) embTypes.push('') // show at least one row per bracket
+
+      // Build rows: one per price bracket + embroidery combo
+      const rows = []
+      for (const bracket of bracketLabels) {
+        const bracketStyles = silStyles.filter(s => s.price_category === bracket)
+        if (embTypes.length === 0 || (embTypes.length === 1 && embTypes[0] === '')) {
+          // No embroidery data — one row per bracket
+          const targetKey = `${silName}::${bracket}`
+          rows.push({
+            bracket,
+            embroidery: '—',
+            target: getTarget('silhouette_bracket', targetKey),
+            punched: bracketStyles.length,
+            targetKey,
+          })
+        } else {
+          for (const emb of embTypes) {
+            const targetKey = `${silName}::${bracket}::${emb}`
+            rows.push({
+              bracket,
+              embroidery: emb,
+              target: getTarget('silhouette_bracket', targetKey),
+              punched: bracketStyles.filter(s => s.embroidery === emb).length,
+              targetKey,
+            })
+          }
+        }
+      }
+
+      // Also include brackets not in the lookup but used in data
+      const usedBrackets = [...new Set(silStyles.map(s => s.price_category).filter(Boolean))]
+      for (const bracket of usedBrackets) {
+        if (bracketLabels.includes(bracket)) continue
+        const bracketStyles = silStyles.filter(s => s.price_category === bracket)
+        for (const emb of embTypes) {
+          const targetKey = emb ? `${silName}::${bracket}::${emb}` : `${silName}::${bracket}`
+          rows.push({
+            bracket,
+            embroidery: emb || '—',
+            target: getTarget('silhouette_bracket', targetKey),
+            punched: bracketStyles.filter(s => emb ? s.embroidery === emb : true).length,
+            targetKey,
+          })
+        }
+      }
+
+      return { silName, totalPunched, rows }
+    }).filter(s => s.totalPunched > 0 || s.rows.some(r => r.target > 0))
+  }, [styles, targets, silhouettes, priceBrackets])
 
   // Merchandiser performance
   const merchPerformance = useMemo(() => {
@@ -276,43 +307,19 @@ export default function RangeDashboard() {
               )}
             </div>
 
-            {/* Price Bracket Breakdown */}
-            {priceBracketBreakdown.length > 0 && (
-              <BreakdownTable
-                title="By Price Bracket"
-                rows={priceBracketBreakdown}
-                targetType="price_bracket"
+            {/* Silhouette Breakdown Tables */}
+            {silhouetteBreakdown.map(sil => (
+              <SilhouetteTable
+                key={sil.silName}
+                sil={sil}
                 isAdmin={isAdmin}
                 editingTarget={editingTarget}
                 setEditingTarget={setEditingTarget}
                 saveTarget={saveTarget}
               />
-            )}
-
-            {/* Silhouette Breakdown */}
-            {silhouetteBreakdown.length > 0 && (
-              <BreakdownTable
-                title="By Silhouette"
-                rows={silhouetteBreakdown}
-                targetType="silhouette"
-                isAdmin={isAdmin}
-                editingTarget={editingTarget}
-                setEditingTarget={setEditingTarget}
-                saveTarget={saveTarget}
-              />
-            )}
-
-            {/* Embroidery Breakdown */}
-            {embroideryBreakdown.length > 0 && (
-              <BreakdownTable
-                title="By Embroidery"
-                rows={embroideryBreakdown}
-                targetType="embroidery"
-                isAdmin={isAdmin}
-                editingTarget={editingTarget}
-                setEditingTarget={setEditingTarget}
-                saveTarget={saveTarget}
-              />
+            ))}
+            {silhouetteBreakdown.length === 0 && (
+              <p className="empty-state" style={{ fontSize: '0.85rem' }}>No silhouette data yet. Add silhouettes to pieces in the range plan.</p>
             )}
           </div>
 
@@ -356,33 +363,32 @@ export default function RangeDashboard() {
   )
 }
 
-function BreakdownTable({ title, rows, targetType, isAdmin, editingTarget, setEditingTarget, saveTarget }) {
+function SilhouetteTable({ sil, isAdmin, editingTarget, setEditingTarget, saveTarget }) {
   return (
     <div className="rd-breakdown">
-      <h4>{title}</h4>
+      <h4>{sil.silName} <span className="rd-sil-count">({sil.totalPunched} pieces)</span></h4>
       <table className="rd-breakdown-table">
         <thead>
           <tr>
-            <th>{title.replace('By ', '')}</th>
+            <th>Price Bracket</th>
             <th>Target</th>
+            <th>Embroidery</th>
             <th>Punched</th>
-            <th>Gap</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map(row => {
-            const gap = row.target - row.punched
-            const editKey = `${targetType}:${row.label}`
+          {sil.rows.map(row => {
+            const editKey = `sil_bracket:${row.targetKey}`
             return (
-              <tr key={row.label}>
-                <td>{row.label}</td>
+              <tr key={row.targetKey}>
+                <td>{row.bracket}</td>
                 <td>
                   {isAdmin ? (
                     <EditableTarget
                       value={row.target}
                       editing={editingTarget === editKey}
                       onEdit={() => setEditingTarget(editKey)}
-                      onSave={val => saveTarget(targetType, row.label, val)}
+                      onSave={val => saveTarget('silhouette_bracket', row.targetKey, val)}
                       onCancel={() => setEditingTarget(null)}
                       inline
                     />
@@ -390,10 +396,8 @@ function BreakdownTable({ title, rows, targetType, isAdmin, editingTarget, setEd
                     row.target || '—'
                   )}
                 </td>
+                <td>{row.embroidery}</td>
                 <td>{row.punched}</td>
-                <td className={gap > 0 ? 'rd-gap-negative' : gap < 0 ? 'rd-gap-over' : ''}>
-                  {row.target > 0 ? gap : '—'}
-                </td>
               </tr>
             )
           })}

@@ -8241,7 +8241,8 @@ html, body {
 
 /* Breakdown tables */
 .rd-breakdown { margin-bottom: 1.25rem; }
-.rd-breakdown h4 { font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: 0.5rem; }
+.rd-breakdown h4 { font-size: 0.875rem; font-weight: 600; color: var(--gray-700); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem; }
+.rd-sil-count { font-weight: 400; color: var(--gray-500); font-size: 0.8rem; }
 .rd-breakdown-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 .rd-breakdown-table th { text-align: left; padding: 0.5rem 0.75rem; background: var(--gray-50); border-bottom: 2px solid var(--gray-200); color: var(--gray-600); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
 .rd-breakdown-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--gray-100); }
