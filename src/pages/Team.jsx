@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
-import { createPerson, updatePerson, getRoles, adminCreateUser, supabase } from '../lib/supabase'
+import { updatePerson, getRoles } from '../lib/supabase'
 import { ROLES } from '../lib/constants'
 import Modal from '../components/Modal'
-import { Plus, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 
 export default function Team() {
   const { people, refreshPeople } = useApp()
-  const [showForm, setShowForm] = useState(false)
   const [editPerson, setEditPerson] = useState(null)
 
   async function handleSave() {
-    setShowForm(false)
     setEditPerson(null)
     await refreshPeople()
   }
@@ -23,21 +21,18 @@ export default function Team() {
           <h1>Team</h1>
           <p className="subtitle">{people.length} members</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditPerson(null); setShowForm(true) }}>
-          <Plus size={16} /> Add Member
-        </button>
       </div>
 
       {people.length === 0 ? (
         <div className="card"><div className="empty-state">
           <Users size={48} />
           <h3>No team members</h3>
-          <p>Team members are automatically created when they sign in.</p>
+          <p>Add team members from the Command Center.</p>
         </div></div>
       ) : (
         <div className="team-grid">
           {people.map(p => (
-            <div key={p.id} className="team-card" onClick={() => { setEditPerson(p); setShowForm(true) }} style={{ cursor: 'pointer' }}>
+            <div key={p.id} className="team-card" onClick={() => setEditPerson(p)} style={{ cursor: 'pointer' }}>
               <div className="team-card-avatar">
                 {p.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
               </div>
@@ -56,10 +51,10 @@ export default function Team() {
         </div>
       )}
 
-      {showForm && (
+      {editPerson && (
         <PersonForm
           person={editPerson}
-          onClose={() => { setShowForm(false); setEditPerson(null) }}
+          onClose={() => setEditPerson(null)}
           onSave={handleSave}
         />
       )}
@@ -68,15 +63,13 @@ export default function Team() {
 }
 
 function PersonForm({ person, onClose, onSave }) {
-  const isEdit = !!person
   const [roles, setRoles] = useState([])
   const [form, setForm] = useState({
-    name: person?.name || '',
-    email: person?.email || '',
-    password: '',
-    role: person?.role || '',
-    role_id: person?.role_id || '',
-    is_active: person?.is_active ?? true,
+    name: person.name || '',
+    email: person.email || '',
+    role: person.role || '',
+    role_id: person.role_id || '',
+    is_active: person.is_active ?? true,
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -89,33 +82,13 @@ function PersonForm({ person, onClose, onSave }) {
     e.preventDefault()
     setSaving(true)
     try {
-      if (isEdit) {
-        const payload = {
-          name: form.name,
-          email: form.email,
-          role: form.role,
-          role_id: form.role_id ? parseInt(form.role_id) : null,
-          is_active: form.is_active,
-        }
-        await updatePerson(person.id, payload)
-      } else {
-        if (!form.password || form.password.length < 6) {
-          setError('Password must be at least 6 characters')
-          setSaving(false)
-          return
-        }
-        await adminCreateUser({
-          email: form.email,
-          password: form.password,
-          name: form.name,
-          role_id: form.role_id ? parseInt(form.role_id) : null,
-        })
-        // Update job title if set (adminCreateUser doesn't handle it)
-        if (form.role) {
-          const { data: newPerson } = await supabase.from('people').select('id').eq('email', form.email).single()
-          if (newPerson) await updatePerson(newPerson.id, { role: form.role })
-        }
-      }
+      await updatePerson(person.id, {
+        name: form.name,
+        email: form.email,
+        role: form.role,
+        role_id: form.role_id ? parseInt(form.role_id) : null,
+        is_active: form.is_active,
+      })
       onSave?.()
     } catch (err) {
       setError(err.message)
@@ -125,18 +98,11 @@ function PersonForm({ person, onClose, onSave }) {
   }
 
   return (
-    <Modal title={isEdit ? 'Edit Member' : 'Add Member'} onClose={onClose}>
+    <Modal title="Edit Member" onClose={onClose}>
       {error && <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: '0.75rem', borderRadius: 'var(--radius)', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
         <div className="form-group"><label>Name *</label><input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required /></div>
-        <div className="form-group"><label>Email *</label><input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required disabled={isEdit} /></div>
-        {!isEdit && (
-          <div className="form-group">
-            <label>Temporary Password *</label>
-            <input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} required minLength={6} placeholder="Min 6 characters" />
-            <small style={{ color: 'var(--gray-500)', fontSize: '0.75rem' }}>The team member will use this to log in for the first time</small>
-          </div>
-        )}
+        <div className="form-group"><label>Email</label><input type="email" value={form.email} disabled /></div>
         <div className="form-group">
           <label>Permission Role *</label>
           <select value={form.role_id} onChange={e => setForm(p => ({ ...p, role_id: e.target.value }))}>
@@ -151,17 +117,15 @@ function PersonForm({ person, onClose, onSave }) {
             {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
         </div>
-        {isEdit && (
-          <div className="form-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <input type="checkbox" checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))} style={{ width: 'auto' }} />
-              Active
-            </label>
-          </div>
-        )}
+        <div className="form-group">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input type="checkbox" checked={form.is_active} onChange={e => setForm(p => ({ ...p, is_active: e.target.checked }))} style={{ width: 'auto' }} />
+            Active
+          </label>
+        </div>
         <div className="form-actions">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Member'}</button>
+          <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Save Changes' : 'Save Changes'}</button>
         </div>
       </form>
     </Modal>
