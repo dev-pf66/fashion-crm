@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
-import { createPerson, updatePerson, getRoles } from '../lib/supabase'
+import { createPerson, updatePerson, getRoles, adminCreateUser, supabase } from '../lib/supabase'
 import { ROLES } from '../lib/constants'
 import Modal from '../components/Modal'
 import { Plus, Users } from 'lucide-react'
@@ -73,6 +73,7 @@ function PersonForm({ person, onClose, onSave }) {
   const [form, setForm] = useState({
     name: person?.name || '',
     email: person?.email || '',
+    password: '',
     role: person?.role || '',
     role_id: person?.role_id || '',
     is_active: person?.is_active ?? true,
@@ -88,17 +89,32 @@ function PersonForm({ person, onClose, onSave }) {
     e.preventDefault()
     setSaving(true)
     try {
-      const payload = {
-        name: form.name,
-        email: form.email,
-        role: form.role,
-        role_id: form.role_id ? parseInt(form.role_id) : null,
-        is_active: form.is_active,
-      }
       if (isEdit) {
+        const payload = {
+          name: form.name,
+          email: form.email,
+          role: form.role,
+          role_id: form.role_id ? parseInt(form.role_id) : null,
+          is_active: form.is_active,
+        }
         await updatePerson(person.id, payload)
       } else {
-        await createPerson(payload)
+        if (!form.password || form.password.length < 6) {
+          setError('Password must be at least 6 characters')
+          setSaving(false)
+          return
+        }
+        await adminCreateUser({
+          email: form.email,
+          password: form.password,
+          name: form.name,
+          role_id: form.role_id ? parseInt(form.role_id) : null,
+        })
+        // Update job title if set (adminCreateUser doesn't handle it)
+        if (form.role) {
+          const { data: newPerson } = await supabase.from('people').select('id').eq('email', form.email).single()
+          if (newPerson) await updatePerson(newPerson.id, { role: form.role })
+        }
       }
       onSave?.()
     } catch (err) {
@@ -114,6 +130,13 @@ function PersonForm({ person, onClose, onSave }) {
       <form onSubmit={handleSubmit}>
         <div className="form-group"><label>Name *</label><input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required /></div>
         <div className="form-group"><label>Email *</label><input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required disabled={isEdit} /></div>
+        {!isEdit && (
+          <div className="form-group">
+            <label>Temporary Password *</label>
+            <input type="password" value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} required minLength={6} placeholder="Min 6 characters" />
+            <small style={{ color: 'var(--gray-500)', fontSize: '0.75rem' }}>The team member will use this to log in for the first time</small>
+          </div>
+        )}
         <div className="form-group">
           <label>Permission Role *</label>
           <select value={form.role_id} onChange={e => setForm(p => ({ ...p, role_id: e.target.value }))}>
