@@ -41,7 +41,7 @@ export default function RangeDashboard() {
       const [dashData, brackets, sils] = await Promise.all([
         getMultiRangeDashboardData(rangeIds),
         getPriceBrackets(),
-        getSilhouettes(),
+        getSilhouettes(currentDivision?.name),
       ])
       setAllStyles(dashData.styles)
       setAllTargets(dashData.targets)
