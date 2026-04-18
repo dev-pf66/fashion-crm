@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const resendApiKey = process.env.RESEND_API_KEY
-const fromEmail = process.env.EMAIL_FROM || 'notifications@jadecouture.com'
+const fromEmail = process.env.EMAIL_FROM || 'noreply@jadecouture.com'
 const appUrl = process.env.APP_URL || 'https://fashion-crm-five.vercel.app'
 
 async function sendEmail({ to, subject, html }) {
@@ -14,7 +14,7 @@ async function sendEmail({ to, subject, html }) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: `Sourcing CRM <${fromEmail}>`,
+      from: `Jade CRM <${fromEmail}>`,
       to: [to],
       subject,
       html,
@@ -25,8 +25,128 @@ async function sendEmail({ to, subject, html }) {
   return data
 }
 
+function layout({ bannerColor, bannerTitle, bannerSubtitle, body }) {
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1a1a1a;">
+      <div style="background: ${bannerColor}; padding: 28px; border-radius: 12px; color: white; text-align: center; margin-bottom: 20px;">
+        <h1 style="margin: 0 0 6px 0; font-size: 24px;">${bannerTitle}</h1>
+        <p style="margin: 0; opacity: 0.92; font-size: 14px;">${bannerSubtitle}</p>
+      </div>
+      ${body}
+      <div style="text-align: center; padding: 8px 0 4px;">
+        <a href="${appUrl}/my-work" style="background: #1a472a; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">Open My Work</a>
+      </div>
+      <p style="text-align: center; color: #94a3b8; font-size: 12px; margin-top: 24px;">
+        Jade CRM — rooting for you, keeping the list.
+      </p>
+    </div>
+  `
+}
+
+function allClearEmail(person) {
+  const firstName = person.name.split(' ')[0]
+  return {
+    subject: 'Nothing overdue today. Hero behaviour.',
+    html: layout({
+      bannerColor: 'linear-gradient(135deg, #1a472a 0%, #2d6a4f 100%)',
+      bannerTitle: 'All clear.',
+      bannerSubtitle: "You're living the dream. Keep living it.",
+      body: `
+        <div style="background: #f8f9fa; padding: 24px; border-radius: 12px; margin-bottom: 16px; line-height: 1.6;">
+          <p style="margin: 0 0 12px 0;">Hi ${firstName},</p>
+          <p style="margin: 0 0 12px 0;">Zero overdue pieces. No drama, no excuses, no table of shame below. Just vibes.</p>
+          <p style="margin: 0;">The CRM would send a trophy emoji but we're keeping it professional. Consider yourself spiritually high-fived.</p>
+        </div>
+      `,
+    }),
+  }
+}
+
+function lowOverdueEmail(person, items) {
+  const firstName = person.name.split(' ')[0]
+  const rows = items.map(s => `
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">${s.name || s.category || '—'}</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">${s.silhouette || '—'}</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">${s.ranges?.name || '—'}</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #f59e0b; font-weight: 600;">${s.daysOverdue} day${s.daysOverdue > 1 ? 's' : ''}</td>
+    </tr>
+  `).join('')
+
+  return {
+    subject: `${items.length} thing${items.length > 1 ? 's' : ''} would like a word with you`,
+    html: layout({
+      bannerColor: 'linear-gradient(135deg, #b45309 0%, #f59e0b 100%)',
+      bannerTitle: `${items.length} nudge${items.length > 1 ? 's' : ''}.`,
+      bannerSubtitle: "Nothing a coffee and 20 minutes can't fix.",
+      body: `
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 16px; line-height: 1.6;">
+          <p style="margin: 0 0 8px 0;">Hi ${firstName},</p>
+          <p style="margin: 0;">Small list today — <strong>${items.length} overdue piece${items.length > 1 ? 's' : ''}</strong>. Not catastrophic. Not great either. Let's call it character-building.</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin: 0 0 16px 0;">
+          <thead>
+            <tr style="background: #f8fafc;">
+              <th style="padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 11px; text-transform: uppercase;">Piece</th>
+              <th style="padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 11px; text-transform: uppercase;">Silhouette</th>
+              <th style="padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 11px; text-transform: uppercase;">Range</th>
+              <th style="padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 11px; text-transform: uppercase;">Overdue</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p style="background: #fff8e1; padding: 14px 16px; border-radius: 10px; border-left: 4px solid #f59e0b; margin: 0 0 16px 0; font-style: italic; line-height: 1.6;">
+          If you clear these today, we never have to speak of it again.
+        </p>
+      `,
+    }),
+  }
+}
+
+function highOverdueEmail(person, items) {
+  const firstName = person.name.split(' ')[0]
+  const sorted = [...items].sort((a, b) => b.daysOverdue - a.daysOverdue)
+  const rows = sorted.map(s => `
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">${s.name || s.category || '—'}</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">${s.silhouette || '—'}</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">${s.ranges?.name || '—'}</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #dc2626; font-weight: 700;">${s.daysOverdue} day${s.daysOverdue > 1 ? 's' : ''}</td>
+    </tr>
+  `).join('')
+
+  return {
+    subject: `We need to talk. (${items.length} overdue)`,
+    html: layout({
+      bannerColor: 'linear-gradient(135deg, #991b1b 0%, #dc2626 100%)',
+      bannerTitle: `${items.length} overdue.`,
+      bannerSubtitle: "Let's untangle this. Deep breath.",
+      body: `
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 16px; line-height: 1.6;">
+          <p style="margin: 0 0 8px 0;">Hi ${firstName},</p>
+          <p style="margin: 0 0 10px 0;">So. <strong>${items.length} overdue pieces.</strong> That's not a number, that's a situation.</p>
+          <p style="margin: 0;">Here's the roll call. Please don't shoot the messenger — the messenger is a cron job and has no feelings. The messenger does, however, have receipts:</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin: 0 0 16px 0;">
+          <thead>
+            <tr style="background: #fef2f2;">
+              <th style="padding: 10px 12px; text-align: left; border-bottom: 2px solid #fecaca; color: #991b1b; font-size: 11px; text-transform: uppercase;">Piece</th>
+              <th style="padding: 10px 12px; text-align: left; border-bottom: 2px solid #fecaca; color: #991b1b; font-size: 11px; text-transform: uppercase;">Silhouette</th>
+              <th style="padding: 10px 12px; text-align: left; border-bottom: 2px solid #fecaca; color: #991b1b; font-size: 11px; text-transform: uppercase;">Range</th>
+              <th style="padding: 10px 12px; text-align: left; border-bottom: 2px solid #fecaca; color: #991b1b; font-size: 11px; text-transform: uppercase;">Overdue</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p style="background: #fef2f2; padding: 14px 16px; border-radius: 10px; border-left: 4px solid #dc2626; margin: 0 0 16px 0; line-height: 1.6;">
+          Start with the oldest one at the top. You've got this — but also, you've had this for a while.
+        </p>
+      `,
+    }),
+  }
+}
+
 export default async function handler(req, res) {
-  // Verify cron secret (Vercel sets this automatically for cron jobs)
   const authHeader = req.headers.authorization
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).json({ error: 'Unauthorized' })
@@ -42,8 +162,11 @@ export default async function handler(req, res) {
 
   try {
     const today = new Date().toISOString().split('T')[0]
+    // Day of week in IST (UTC+5:30). Cron fires at 03:30 UTC = 09:00 IST.
+    const istNow = new Date(Date.now() + 5.5 * 60 * 60 * 1000)
+    const dayOfWeek = istNow.getUTCDay() // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
+    const sendAllClear = dayOfWeek === 1 || dayOfWeek === 5
 
-    // Get completed stage
     const { data: stages } = await adminClient
       .from('production_stages')
       .select('id')
@@ -51,92 +174,66 @@ export default async function handler(req, res) {
       .single()
     const completedStageId = stages?.id
 
-    // Get all overdue assigned pieces (due_date < today AND not completed)
-    let query = adminClient
+    // Fetch all assigned (non-completed) pieces for all merchandisers
+    let assignedQuery = adminClient
       .from('range_styles')
       .select('id, name, category, silhouette, due_date, assigned_to, ranges!range_id(name)')
       .not('assigned_to', 'is', null)
-      .lt('due_date', today)
-
     if (completedStageId) {
-      query = query.neq('production_stage_id', completedStageId)
+      assignedQuery = assignedQuery.neq('production_stage_id', completedStageId)
     }
+    const { data: assignedStyles, error: assignedError } = await assignedQuery
+    if (assignedError) throw assignedError
 
-    const { data: overdueStyles, error: stylesError } = await query
-    if (stylesError) throw stylesError
-
-    if (!overdueStyles?.length) {
-      return res.status(200).json({ sent: 0, message: 'No overdue items' })
-    }
-
-    // Group by merchandiser
+    // Group per person: overdue list + has-any-active-work flag
     const byPerson = {}
-    overdueStyles.forEach(s => {
-      if (!byPerson[s.assigned_to]) byPerson[s.assigned_to] = []
-      byPerson[s.assigned_to].push(s)
-    })
+    for (const s of (assignedStyles || [])) {
+      if (!byPerson[s.assigned_to]) byPerson[s.assigned_to] = { overdue: [], total: 0 }
+      byPerson[s.assigned_to].total++
+      if (s.due_date && s.due_date < today) {
+        const daysOverdue = Math.ceil((new Date(today) - new Date(s.due_date)) / (1000 * 60 * 60 * 24))
+        byPerson[s.assigned_to].overdue.push({ ...s, daysOverdue })
+      }
+    }
 
-    // Get people with email notifications enabled
     const personIds = Object.keys(byPerson).map(Number)
+    if (!personIds.length) {
+      return res.status(200).json({ sent: 0, message: 'No active assignments' })
+    }
+
     const { data: people } = await adminClient
       .from('people')
-      .select('id, name, email, email_notifications_enabled')
+      .select('id, name, email, email_notifications_enabled, is_active')
       .in('id', personIds)
 
-    let sentCount = 0
+    const results = { allClear: 0, sassy: 0, verySassy: 0, skipped: 0 }
+
     for (const person of (people || [])) {
-      if (!person.email || person.email_notifications_enabled === false) continue
+      if (!person.email || person.is_active === false || person.email_notifications_enabled === false) {
+        results.skipped++
+        continue
+      }
 
-      const items = byPerson[person.id]
-      if (!items?.length) continue
+      const overdue = byPerson[person.id]?.overdue || []
+      const count = overdue.length
 
-      const itemRows = items.map(s => {
-        const daysOverdue = Math.ceil((new Date(today) - new Date(s.due_date)) / (1000 * 60 * 60 * 24))
-        return `
-          <tr>
-            <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid #e2e8f0;">${s.name || s.category || '—'}</td>
-            <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid #e2e8f0;">${s.silhouette || '—'}</td>
-            <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid #e2e8f0;">${s.ranges?.name || '—'}</td>
-            <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid #e2e8f0; color: #ef4444; font-weight: 600;">${daysOverdue} day${daysOverdue > 1 ? 's' : ''}</td>
-          </tr>
-        `
-      }).join('')
+      let email
+      if (count === 0) {
+        if (!sendAllClear) { results.skipped++; continue }
+        email = allClearEmail(person)
+        results.allClear++
+      } else if (count < 10) {
+        email = lowOverdueEmail(person, overdue)
+        results.sassy++
+      } else {
+        email = highOverdueEmail(person, overdue)
+        results.verySassy++
+      }
 
-      await sendEmail({
-        to: person.email,
-        subject: `${items.length} overdue piece${items.length > 1 ? 's' : ''} need attention`,
-        html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 2rem;">
-            <h2 style="color: #1e293b; margin-bottom: 0.5rem;">Overdue Brief</h2>
-            <p style="color: #64748b; font-size: 0.95rem;">
-              Hi ${person.name.split(' ')[0]}, you have <strong style="color: #ef4444;">${items.length}</strong> overdue piece${items.length > 1 ? 's' : ''}:
-            </p>
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem; margin: 1rem 0;">
-              <thead>
-                <tr style="background: #f8fafc;">
-                  <th style="padding: 0.5rem 0.75rem; text-align: left; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">Piece</th>
-                  <th style="padding: 0.5rem 0.75rem; text-align: left; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">Silhouette</th>
-                  <th style="padding: 0.5rem 0.75rem; text-align: left; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">Range</th>
-                  <th style="padding: 0.5rem 0.75rem; text-align: left; border-bottom: 2px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">Overdue</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itemRows}
-              </tbody>
-            </table>
-            <a href="${appUrl}/my-work" style="display: inline-block; margin-top: 0.5rem; padding: 0.6rem 1.5rem; background: #6366f1; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 500;">
-              View My Work
-            </a>
-            <p style="color: #94a3b8; font-size: 0.8rem; margin-top: 2rem;">
-              Sourcing CRM — Jade Couture
-            </p>
-          </div>
-        `,
-      })
-      sentCount++
+      await sendEmail({ to: person.email, ...email })
     }
 
-    return res.status(200).json({ sent: sentCount, overdueTotal: overdueStyles.length })
+    return res.status(200).json({ dayOfWeek, sendAllClear, ...results })
   } catch (err) {
     console.error('Daily overdue cron error:', err)
     return res.status(500).json({ error: err.message })
