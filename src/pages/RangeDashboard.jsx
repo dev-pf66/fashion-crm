@@ -99,7 +99,7 @@ export default function RangeDashboard() {
   // Computed stats
   const totalTarget = getTarget('total')
   const totalPunched = styles.length
-  const completedStage = stages.find(s => s.name === 'Completed')
+  const completedStage = stages.find(s => s.name === 'Finishing')
   const completedCount = styles.filter(s => s.production_stage_id === completedStage?.id).length
   const completionPct = totalPunched > 0 ? Math.round((completedCount / totalPunched) * 100) : 0
   const today = new Date().toISOString().split('T')[0]
@@ -487,7 +487,7 @@ function MerchRow({ m, expanded, onToggle, stages }) {
                       </span>
                     )}
                     {s.due_date && (
-                      <span className={`rd-piece-due ${s.due_date < new Date().toISOString().split('T')[0] && s.production_stage_id !== stages.find(st => st.name === 'Completed')?.id ? 'overdue' : ''}`}>
+                      <span className={`rd-piece-due ${s.due_date < new Date().toISOString().split('T')[0] && s.production_stage_id !== stages.find(st => st.name === 'Finishing')?.id ? 'overdue' : ''}`}>
                         Due: {new Date(s.due_date + 'T00:00:00').toLocaleDateString()}
                       </span>
                     )}

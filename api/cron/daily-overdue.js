@@ -170,7 +170,7 @@ export default async function handler(req, res) {
     const { data: stages } = await adminClient
       .from('production_stages')
       .select('id')
-      .eq('name', 'Completed')
+      .eq('name', 'Finishing')
       .single()
     const completedStageId = stages?.id
 
