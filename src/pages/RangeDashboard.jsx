@@ -395,6 +395,24 @@ function EditableTarget({ value, editing, onEdit, onSave, onCancel, inline, comp
   useEffect(() => { setVal(value) }, [value])
 
   if (editing) {
+    if (compact) {
+      return (
+        <input
+          type="number"
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') { onSave(val); e.preventDefault() }
+            if (e.key === 'Escape') { onCancel(); e.preventDefault() }
+          }}
+          onBlur={() => onSave(val)}
+          autoFocus
+          min="0"
+          className="rd-target-input-compact"
+          title="Enter to save, Esc to cancel"
+        />
+      )
+    }
     return (
       <span className="rd-editable-target">
         <input
