@@ -8300,3 +8300,29 @@ html, body {
 .rd-merch-piece { border-color: var(--gray-200); }
 .rd-range-selector select { color: var(--gray-900); border-color: var(--gray-200); }
 .rd-target-input { background: var(--card-bg); color: var(--gray-900); border-color: var(--gray-300); }
+
+/* Excel-style matrix (Range Dashboard) */
+.rd-range-block { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--gray-200); }
+.rd-range-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.rd-range-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+.rd-range-title h4 { font-size: 1rem; font-weight: 600; color: var(--gray-900); margin: 0 0 0.25rem 0; }
+.rd-range-meta { font-size: 0.8rem; color: var(--gray-600); display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.rd-meta-sep { color: var(--gray-300); }
+.rd-matrix-wrap { overflow-x: auto; border: 1px solid var(--gray-200); border-radius: 8px; }
+.rd-matrix { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--card-bg); }
+.rd-matrix th, .rd-matrix td { border-right: 1px solid var(--gray-200); border-bottom: 1px solid var(--gray-200); padding: 0.5rem 0.75rem; text-align: center; }
+.rd-matrix th:last-child, .rd-matrix td:last-child { border-right: none; }
+.rd-matrix tr:last-child th, .rd-matrix tr:last-child td { border-bottom: none; }
+.rd-matrix thead th { background: var(--gray-50); font-weight: 600; color: var(--gray-700); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.rd-matrix-corner { text-align: left !important; color: var(--gray-500) !important; font-weight: 500 !important; min-width: 160px; }
+.rd-matrix-rowlabel { text-align: left !important; background: var(--gray-50); font-weight: 600; color: var(--gray-800); min-width: 160px; }
+.rd-matrix-cell { vertical-align: middle; min-width: 90px; }
+.rd-cell-count { font-size: 1rem; font-weight: 600; color: var(--gray-900); line-height: 1.1; }
+.rd-cell-target { font-size: 0.7rem; color: var(--gray-500); margin-top: 0.15rem; }
+.rd-cell-target-edit { font-size: 0.7rem; color: var(--gray-400); margin-top: 0.15rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.1rem 0.3rem; border-radius: 4px; }
+.rd-cell-target-edit:hover { background: var(--primary-light); color: var(--primary); }
+.rd-matrix thead th.rd-matrix-total,
+.rd-matrix .rd-matrix-total,
+.rd-matrix-totalrow th,
+.rd-matrix-totalrow td { background: var(--gray-50); font-weight: 700; color: var(--gray-900); }
+.rd-matrix-grandtotal { background: var(--gray-100) !important; }

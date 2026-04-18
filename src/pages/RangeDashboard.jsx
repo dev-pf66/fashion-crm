@@ -4,7 +4,7 @@ import { usePermissions } from '../hooks/usePermissions'
 import { useToast } from '../contexts/ToastContext'
 import {
   getRanges,
-  getRangeDashboardData,
+  getMultiRangeDashboardData,
   upsertDashboardTarget,
   getPriceBrackets,
   getSilhouettes,
@@ -14,53 +14,37 @@ import { BarChart3, Target, Users, AlertTriangle, TrendingUp, ChevronDown, Penci
 
 export default function RangeDashboard() {
   const { currentPerson, people } = useApp()
-  const { isAdmin, can } = usePermissions()
+  const { isAdmin } = usePermissions()
   const { addToast } = useToast()
   const { currentDivision } = useDivision()
 
   const [ranges, setRanges] = useState([])
-  const [selectedRangeId, setSelectedRangeId] = useState(null)
-  const [styles, setStyles] = useState([])
-  const [targets, setTargets] = useState([])
+  const [allStyles, setAllStyles] = useState([])
+  const [allTargets, setAllTargets] = useState([])
   const [stages, setStages] = useState([])
   const [priceBrackets, setPriceBrackets] = useState([])
   const [silhouettes, setSilhouettes] = useState([])
   const [loading, setLoading] = useState(true)
-  const [editingTarget, setEditingTarget] = useState(null)
+  const [editingTarget, setEditingTarget] = useState(null) // "rangeId:type:key"
   const [expandedMerch, setExpandedMerch] = useState(null)
 
-  // Load ranges
   useEffect(() => {
-    loadRanges()
+    loadAll()
   }, [currentDivision])
 
-  async function loadRanges() {
-    try {
-      const data = await getRanges(currentDivision?.id)
-      setRanges(data)
-      if (data.length && !selectedRangeId) {
-        setSelectedRangeId(data[0].id)
-      }
-    } catch (err) {
-      console.error('Failed to load ranges:', err)
-    }
-  }
-
-  // Load dashboard data when range changes
-  useEffect(() => {
-    if (selectedRangeId) loadDashboardData()
-  }, [selectedRangeId])
-
-  async function loadDashboardData() {
+  async function loadAll() {
     setLoading(true)
     try {
+      const rangeList = await getRanges(currentDivision?.id)
+      setRanges(rangeList)
+      const rangeIds = rangeList.map(r => r.id)
       const [dashData, brackets, sils] = await Promise.all([
-        getRangeDashboardData(selectedRangeId),
+        getMultiRangeDashboardData(rangeIds),
         getPriceBrackets(),
         getSilhouettes(),
       ])
-      setStyles(dashData.styles)
-      setTargets(dashData.targets)
+      setAllStyles(dashData.styles)
+      setAllTargets(dashData.targets)
       setStages(dashData.stages)
       setPriceBrackets(brackets)
       setSilhouettes(sils)
@@ -72,23 +56,16 @@ export default function RangeDashboard() {
     }
   }
 
-  // Helper: get target value
-  function getTarget(type, key = '_total') {
-    const t = targets.find(t => t.target_type === type && t.target_key === key)
-    return t?.target_value || 0
-  }
-
-  // Save target
-  async function saveTarget(type, key, value) {
+  async function saveTarget(rangeId, type, key, value) {
     try {
       await upsertDashboardTarget({
-        range_id: selectedRangeId,
+        range_id: rangeId,
         target_type: type,
         target_key: key || '_total',
         target_value: parseInt(value) || 0,
         updated_by: currentPerson?.id,
       })
-      await loadDashboardData()
+      await loadAll()
       setEditingTarget(null)
       addToast('Target updated', 'success')
     } catch (err) {
@@ -96,92 +73,23 @@ export default function RangeDashboard() {
     }
   }
 
-  // Computed stats
-  const totalTarget = getTarget('total')
-  const totalPunched = styles.length
   const completedStage = stages.find(s => s.name === 'Finishing')
-  const completedCount = styles.filter(s => s.production_stage_id === completedStage?.id).length
-  const completionPct = totalPunched > 0 ? Math.round((completedCount / totalPunched) * 100) : 0
   const today = new Date().toISOString().split('T')[0]
-  const overdueStyles = styles.filter(s =>
+
+  // Aggregated stats across all ranges
+  const totalPunched = allStyles.length
+  const completedCount = allStyles.filter(s => s.production_stage_id === completedStage?.id).length
+  const completionPct = totalPunched > 0 ? Math.round((completedCount / totalPunched) * 100) : 0
+  const overdueStyles = allStyles.filter(s =>
     s.due_date && s.due_date < today && s.production_stage_id !== completedStage?.id
   )
 
-  // Breakdown grouped by silhouette, each with price bracket + embroidery rows
-  const silhouetteBreakdown = useMemo(() => {
-    // Get all silhouettes in use
-    const usedSilhouettes = [...new Set(styles.map(s => s.silhouette).filter(Boolean))]
-    const allSilhouettes = [...new Set([
-      ...silhouettes.map(s => s.name),
-      ...usedSilhouettes,
-    ])]
-
-    // All price bracket labels
-    const bracketLabels = priceBrackets.map(b => b.label)
-
-    return allSilhouettes.map(silName => {
-      const silStyles = styles.filter(s => s.silhouette === silName)
-      const totalPunched = silStyles.length
-
-      // Get all embroidery types used in this silhouette
-      const embTypes = [...new Set(silStyles.map(s => s.embroidery).filter(Boolean))]
-      if (embTypes.length === 0) embTypes.push('') // show at least one row per bracket
-
-      // Build rows: one per price bracket + embroidery combo
-      const rows = []
-      for (const bracket of bracketLabels) {
-        const bracketStyles = silStyles.filter(s => s.price_category === bracket)
-        if (embTypes.length === 0 || (embTypes.length === 1 && embTypes[0] === '')) {
-          // No embroidery data — one row per bracket
-          const targetKey = `${silName}::${bracket}`
-          rows.push({
-            bracket,
-            embroidery: '—',
-            target: getTarget('silhouette_bracket', targetKey),
-            punched: bracketStyles.length,
-            targetKey,
-          })
-        } else {
-          for (const emb of embTypes) {
-            const targetKey = `${silName}::${bracket}::${emb}`
-            rows.push({
-              bracket,
-              embroidery: emb,
-              target: getTarget('silhouette_bracket', targetKey),
-              punched: bracketStyles.filter(s => s.embroidery === emb).length,
-              targetKey,
-            })
-          }
-        }
-      }
-
-      // Also include brackets not in the lookup but used in data
-      const usedBrackets = [...new Set(silStyles.map(s => s.price_category).filter(Boolean))]
-      for (const bracket of usedBrackets) {
-        if (bracketLabels.includes(bracket)) continue
-        const bracketStyles = silStyles.filter(s => s.price_category === bracket)
-        for (const emb of embTypes) {
-          const targetKey = emb ? `${silName}::${bracket}::${emb}` : `${silName}::${bracket}`
-          rows.push({
-            bracket,
-            embroidery: emb || '—',
-            target: getTarget('silhouette_bracket', targetKey),
-            punched: bracketStyles.filter(s => emb ? s.embroidery === emb : true).length,
-            targetKey,
-          })
-        }
-      }
-
-      return { silName, totalPunched, rows }
-    }).filter(s => s.totalPunched > 0 || s.rows.some(r => r.target > 0))
-  }, [styles, targets, silhouettes, priceBrackets])
-
-  // Merchandiser performance
+  // Merchandiser performance aggregated across all ranges
   const merchPerformance = useMemo(() => {
-    const assignedPeople = [...new Set(styles.filter(s => s.assigned_to).map(s => s.assigned_to))]
+    const assignedPeople = [...new Set(allStyles.filter(s => s.assigned_to).map(s => s.assigned_to))]
     return assignedPeople.map(personId => {
       const person = people.find(p => p.id === personId)
-      const myStyles = styles.filter(s => s.assigned_to === personId)
+      const myStyles = allStyles.filter(s => s.assigned_to === personId)
       const completed = myStyles.filter(s => s.production_stage_id === completedStage?.id).length
       const overdue = myStyles.filter(s =>
         s.due_date && s.due_date < today && s.production_stage_id !== completedStage?.id
@@ -198,14 +106,12 @@ export default function RangeDashboard() {
         styles: myStyles,
       }
     }).sort((a, b) => b.assigned - a.assigned)
-  }, [styles, people, stages])
+  }, [allStyles, people, stages])
 
-  // Find most behind merchandiser
   const mostBehind = merchPerformance.length > 0
     ? merchPerformance.reduce((worst, m) => m.pct < worst.pct ? m : worst, merchPerformance[0])
     : null
 
-  // Filter for merchandiser role (non-admin sees only their own)
   const isMerchandiser = !isAdmin && currentPerson
   const visibleMerchPerf = isMerchandiser
     ? merchPerformance.filter(m => m.personId === currentPerson.id)
@@ -225,17 +131,7 @@ export default function RangeDashboard() {
       <div className="page-header">
         <div>
           <h2>Range Dashboard</h2>
-          <p className="page-subtitle">Track range completion and merchandiser performance</p>
-        </div>
-        <div className="rd-range-selector">
-          <select
-            value={selectedRangeId || ''}
-            onChange={e => setSelectedRangeId(e.target.value)}
-          >
-            {ranges.map(r => (
-              <option key={r.id} value={r.id}>{r.name}</option>
-            ))}
-          </select>
+          <p className="page-subtitle">All ranges in {currentDivision?.name || 'this division'} — pieces by silhouette × price</p>
         </div>
       </div>
 
@@ -243,7 +139,7 @@ export default function RangeDashboard() {
         <div className="loading-container"><div className="loading-spinner" /></div>
       ) : (
         <>
-          {/* Section C: Quick Stats */}
+          {/* Aggregated Quick Stats */}
           <div className="rd-stats-grid">
             <div className="rd-stat-card">
               <div className="rd-stat-icon" style={{ background: '#eff6ff', color: '#3b82f6' }}><Target size={20} /></div>
@@ -275,55 +171,28 @@ export default function RangeDashboard() {
             </div>
           </div>
 
-          {/* Section A: Range Completion Tracker */}
+          {/* Per-range Excel-style matrix: silhouette × price bracket */}
           <div className="rd-section">
-            <h3><BarChart3 size={18} /> Range Completion</h3>
-
-            {/* Overall progress */}
-            <div className="rd-progress-block">
-              <div className="rd-progress-header">
-                <span>Total Progress</span>
-                <span className="rd-progress-nums">
-                  {totalPunched} / {totalTarget > 0 ? totalTarget : '—'}
-                  {totalTarget > 0 && ` (${Math.round((totalPunched / totalTarget) * 100)}%)`}
-                </span>
-                {isAdmin && (
-                  <EditableTarget
-                    value={totalTarget}
-                    editing={editingTarget === 'total'}
-                    onEdit={() => setEditingTarget('total')}
-                    onSave={val => saveTarget('total', '_total', val)}
-                    onCancel={() => setEditingTarget(null)}
-                  />
-                )}
-              </div>
-              {totalTarget > 0 && (
-                <div className="rd-progress-bar">
-                  <div
-                    className="rd-progress-fill"
-                    style={{ width: `${Math.min(100, (totalPunched / totalTarget) * 100)}%` }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Silhouette Breakdown Tables */}
-            {silhouetteBreakdown.map(sil => (
-              <SilhouetteTable
-                key={sil.silName}
-                sil={sil}
+            <h3><BarChart3 size={18} /> Pieces by Silhouette × Price</h3>
+            {ranges.map(range => (
+              <RangeMatrix
+                key={range.id}
+                range={range}
+                styles={allStyles.filter(s => s.range_id === range.id)}
+                targets={allTargets.filter(t => t.range_id === range.id)}
+                silhouettes={silhouettes}
+                priceBrackets={priceBrackets}
                 isAdmin={isAdmin}
                 editingTarget={editingTarget}
                 setEditingTarget={setEditingTarget}
                 saveTarget={saveTarget}
+                completedStage={completedStage}
+                today={today}
               />
             ))}
-            {silhouetteBreakdown.length === 0 && (
-              <p className="empty-state" style={{ fontSize: '0.85rem' }}>No silhouette data yet. Add silhouettes to pieces in the range plan.</p>
-            )}
           </div>
 
-          {/* Section B: Merchandiser Performance */}
+          {/* Merchandiser Performance */}
           <div className="rd-section">
             <h3><Users size={18} /> Merchandiser Performance</h3>
             {visibleMerchPerf.length === 0 ? (
@@ -363,51 +232,151 @@ export default function RangeDashboard() {
   )
 }
 
-function SilhouetteTable({ sil, isAdmin, editingTarget, setEditingTarget, saveTarget }) {
+function RangeMatrix({
+  range, styles, targets, silhouettes, priceBrackets,
+  isAdmin, editingTarget, setEditingTarget, saveTarget,
+  completedStage, today,
+}) {
+  const totalPunched = styles.length
+  const completed = styles.filter(s => s.production_stage_id === completedStage?.id).length
+  const overdue = styles.filter(s =>
+    s.due_date && s.due_date < today && s.production_stage_id !== completedStage?.id
+  ).length
+  const pct = totalPunched > 0 ? Math.round((completed / totalPunched) * 100) : 0
+
+  function getTarget(type, key) {
+    const t = targets.find(t => t.target_type === type && t.target_key === key)
+    return t?.target_value || 0
+  }
+
+  // Rows: silhouettes from lookup + any used in data
+  const usedSilhouettes = [...new Set(styles.map(s => s.silhouette).filter(Boolean))]
+  const silRows = [
+    ...silhouettes.map(s => s.name),
+    ...usedSilhouettes.filter(s => !silhouettes.some(x => x.name === s)),
+  ]
+
+  // Columns: price brackets from lookup + any used in data
+  const usedBrackets = [...new Set(styles.map(s => s.price_category).filter(Boolean))]
+  const bracketCols = [
+    ...priceBrackets.map(b => b.label),
+    ...usedBrackets.filter(b => !priceBrackets.some(x => x.label === b)),
+  ]
+
+  // Filter to rows/cols that have data OR a target
+  const activeSilRows = silRows.filter(silName => {
+    if (styles.some(s => s.silhouette === silName)) return true
+    return bracketCols.some(b => getTarget('silhouette_bracket', `${silName}::${b}`) > 0)
+  })
+  const activeBracketCols = bracketCols.filter(bracket => {
+    if (styles.some(s => s.price_category === bracket)) return true
+    return activeSilRows.some(sil => getTarget('silhouette_bracket', `${sil}::${bracket}`) > 0)
+  })
+
+  // Cell counts + totals
+  function cellCount(silName, bracket) {
+    return styles.filter(s => s.silhouette === silName && s.price_category === bracket).length
+  }
+  function rowTotal(silName) {
+    return styles.filter(s => s.silhouette === silName).length
+  }
+  function colTotal(bracket) {
+    return styles.filter(s => s.price_category === bracket).length
+  }
+
+  const rangeTarget = getTarget('total', '_total')
+  const rangeEditKey = `${range.id}:total:_total`
+
   return (
-    <div className="rd-breakdown">
-      <h4>{sil.silName} <span className="rd-sil-count">({sil.totalPunched} pieces)</span></h4>
-      <table className="rd-breakdown-table">
-        <thead>
-          <tr>
-            <th>Price Bracket</th>
-            <th>Target</th>
-            <th>Embroidery</th>
-            <th>Punched</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sil.rows.map(row => {
-            const editKey = `sil_bracket:${row.targetKey}`
-            return (
-              <tr key={row.targetKey}>
-                <td>{row.bracket}</td>
-                <td>
-                  {isAdmin ? (
-                    <EditableTarget
-                      value={row.target}
-                      editing={editingTarget === editKey}
-                      onEdit={() => setEditingTarget(editKey)}
-                      onSave={val => saveTarget('silhouette_bracket', row.targetKey, val)}
-                      onCancel={() => setEditingTarget(null)}
-                      inline
-                    />
-                  ) : (
-                    row.target || '—'
-                  )}
-                </td>
-                <td>{row.embroidery}</td>
-                <td>{row.punched}</td>
+    <div className="rd-range-block">
+      <div className="rd-range-header">
+        <div className="rd-range-title">
+          <h4>{range.name}</h4>
+          <div className="rd-range-meta">
+            <span><strong>{totalPunched}</strong> punched{rangeTarget > 0 ? ` / ${rangeTarget}` : ''}</span>
+            <span className="rd-meta-sep">•</span>
+            <span>{pct}% complete</span>
+            {overdue > 0 && (
+              <>
+                <span className="rd-meta-sep">•</span>
+                <span className="rd-gap-negative">{overdue} overdue</span>
+              </>
+            )}
+          </div>
+        </div>
+        {isAdmin && (
+          <EditableTarget
+            value={rangeTarget}
+            editing={editingTarget === rangeEditKey}
+            onEdit={() => setEditingTarget(rangeEditKey)}
+            onSave={val => saveTarget(range.id, 'total', '_total', val)}
+            onCancel={() => setEditingTarget(null)}
+            label="Range target"
+          />
+        )}
+      </div>
+
+      {activeSilRows.length === 0 || activeBracketCols.length === 0 ? (
+        <p className="empty-state" style={{ fontSize: '0.85rem' }}>No pieces with silhouette + price bracket yet.</p>
+      ) : (
+        <div className="rd-matrix-wrap">
+          <table className="rd-matrix">
+            <thead>
+              <tr>
+                <th className="rd-matrix-corner">Silhouette \ Price</th>
+                {activeBracketCols.map(b => (
+                  <th key={b}>{b}</th>
+                ))}
+                <th className="rd-matrix-total">Total</th>
               </tr>
-            )
-          })}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+              {activeSilRows.map(silName => (
+                <tr key={silName}>
+                  <th className="rd-matrix-rowlabel">{silName}</th>
+                  {activeBracketCols.map(bracket => {
+                    const count = cellCount(silName, bracket)
+                    const key = `${silName}::${bracket}`
+                    const target = getTarget('silhouette_bracket', key)
+                    const editKey = `${range.id}:silhouette_bracket:${key}`
+                    return (
+                      <td key={bracket} className="rd-matrix-cell">
+                        <div className="rd-cell-count">{count}</div>
+                        {isAdmin ? (
+                          <EditableTarget
+                            value={target}
+                            editing={editingTarget === editKey}
+                            onEdit={() => setEditingTarget(editKey)}
+                            onSave={val => saveTarget(range.id, 'silhouette_bracket', key, val)}
+                            onCancel={() => setEditingTarget(null)}
+                            inline
+                            compact
+                          />
+                        ) : target > 0 ? (
+                          <div className="rd-cell-target">/ {target}</div>
+                        ) : null}
+                      </td>
+                    )
+                  })}
+                  <td className="rd-matrix-cell rd-matrix-total"><strong>{rowTotal(silName)}</strong></td>
+                </tr>
+              ))}
+              <tr className="rd-matrix-totalrow">
+                <th className="rd-matrix-rowlabel">Total</th>
+                {activeBracketCols.map(b => (
+                  <td key={b} className="rd-matrix-cell"><strong>{colTotal(b)}</strong></td>
+                ))}
+                <td className="rd-matrix-cell rd-matrix-grandtotal"><strong>{totalPunched}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
 
-function EditableTarget({ value, editing, onEdit, onSave, onCancel, inline }) {
+function EditableTarget({ value, editing, onEdit, onSave, onCancel, inline, compact, label }) {
   const [val, setVal] = useState(value)
 
   useEffect(() => { setVal(value) }, [value])
@@ -435,15 +404,19 @@ function EditableTarget({ value, editing, onEdit, onSave, onCancel, inline }) {
 
   if (inline) {
     return (
-      <span className="rd-target-clickable" onClick={onEdit} title="Click to edit target">
-        {value || '—'} <Pencil size={12} />
+      <span
+        className={compact ? 'rd-cell-target-edit' : 'rd-target-clickable'}
+        onClick={onEdit}
+        title="Click to edit target"
+      >
+        {value > 0 ? `/ ${value}` : <>+ <Pencil size={10} /></>}
       </span>
     )
   }
 
   return (
     <button className="rd-set-target-btn" onClick={onEdit}>
-      <Pencil size={12} /> Set Target
+      <Pencil size={12} /> {label || 'Set Target'}
     </button>
   )
 }
