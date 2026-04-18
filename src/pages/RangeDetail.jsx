@@ -339,6 +339,7 @@ export default function RangeDetail() {
 
   // Drag and drop — supports group reorder, card reorder, and cross-group moves
   function handleDragEnd(result) {
+    if (!can('range_plan.edit')) return
     if (!result.destination) return
 
     // Group reordering
@@ -755,7 +756,7 @@ export default function RangeDetail() {
       {tab === 'styles' && <>
 
       {/* Bulk Actions Bar */}
-      {selectedIds.size > 0 && (
+      {selectedIds.size > 0 && can('range_plan.edit') && (
         <div className="bulk-bar">
           <span className="bulk-bar-count">{selectedIds.size} selected</span>
           {isAdmin && (

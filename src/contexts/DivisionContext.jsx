@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { getDivisions } from '../lib/supabase'
+import { useApp } from '../App'
 
 const DivisionContext = createContext({})
 
@@ -9,18 +10,22 @@ export function useDivision() {
 }
 
 export function DivisionProvider({ children }) {
+  const { currentPerson } = useApp()
   const [divisions, setDivisions] = useState([])
   const [currentDivision, setCurrentDivision] = useState(null)
   const [loading, setLoading] = useState(true)
   const [searchParams, setSearchParams] = useSearchParams()
 
+  const allowedCodes = currentPerson?.roles?.division_codes || null
+
   useEffect(() => {
     loadDivisions()
-  }, [])
+  }, [currentPerson?.roles?.id])
 
   async function loadDivisions() {
     try {
-      const data = await getDivisions()
+      const all = await getDivisions()
+      const data = allowedCodes ? all.filter(d => allowedCodes.includes(d.code)) : all
       setDivisions(data)
 
       const divisionParam = searchParams.get('division')

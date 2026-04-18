@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../App'
 import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
+import { usePermissions } from '../hooks/usePermissions'
 import { getRanges, createRange, updateRange, deleteRange } from '../lib/supabase'
 import { STYLE_CATEGORIES } from '../lib/constants'
 import Modal from '../components/Modal'
@@ -19,6 +20,8 @@ export default function RangePlanning() {
   const { currentPerson } = useApp()
   const { divisions, currentDivision } = useDivision()
   const toast = useToast()
+  const { can } = usePermissions()
+  const canEdit = can('range_plan.edit')
   const [ranges, setRanges] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -105,9 +108,11 @@ export default function RangePlanning() {
             {folders.length > 0 && ` in ${folders.length} folder${folders.length !== 1 ? 's' : ''}`}
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-          <Plus size={16} /> New Range
-        </button>
+        {canEdit && (
+          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+            <Plus size={16} /> New Range
+          </button>
+        )}
       </div>
 
       {ranges.length === 0 ? (
@@ -115,10 +120,12 @@ export default function RangePlanning() {
           <div className="empty-state">
             <Layers size={48} />
             <h3>No ranges yet</h3>
-            <p>Create your first range to start planning a collection.</p>
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-              <Plus size={16} /> New Range
-            </button>
+            <p>{canEdit ? 'Create your first range to start planning a collection.' : 'Nothing here yet.'}</p>
+            {canEdit && (
+              <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+                <Plus size={16} /> New Range
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -150,7 +157,7 @@ export default function RangePlanning() {
                 {!isCollapsed && (
                   <div className="rp-range-list">
                     {folder.ranges.map(range => (
-                      <RangeCard key={range.id} range={range} onDelete={handleDelete} folderNames={folderNames} onMoveToFolder={handleMoveToFolder} />
+                      <RangeCard key={range.id} range={range} onDelete={handleDelete} folderNames={folderNames} onMoveToFolder={handleMoveToFolder} canEdit={canEdit} />
                     ))}
                   </div>
                 )}
@@ -166,7 +173,7 @@ export default function RangePlanning() {
               )}
               <div className="rp-range-list">
                 {ungrouped.map(range => (
-                  <RangeCard key={range.id} range={range} onDelete={handleDelete} folderNames={folderNames} onMoveToFolder={handleMoveToFolder} />
+                  <RangeCard key={range.id} range={range} onDelete={handleDelete} folderNames={folderNames} onMoveToFolder={handleMoveToFolder} canEdit={canEdit} />
                 ))}
               </div>
             </>
@@ -188,7 +195,7 @@ export default function RangePlanning() {
   )
 }
 
-function RangeCard({ range, onDelete, folderNames, onMoveToFolder }) {
+function RangeCard({ range, onDelete, folderNames, onMoveToFolder, canEdit = true }) {
   const toast = useToast()
   const [showFolderMenu, setShowFolderMenu] = useState(false)
   const styleCount = range.range_styles?.length || 0
@@ -224,40 +231,44 @@ function RangeCard({ range, onDelete, folderNames, onMoveToFolder }) {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <StatusBadge status={range.status} />
-          <div style={{ position: 'relative' }}>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowFolderMenu(!showFolderMenu) }}
-              title="Move to folder"
-            >
-              <FolderOpen size={14} />
-            </button>
-            {showFolderMenu && (
-              <div className="rp-folder-menu" onClick={e => { e.preventDefault(); e.stopPropagation() }}>
-                <div className="rp-folder-menu-title">Move to folder</div>
-                <button className="rp-folder-menu-item" onClick={(e) => handleMoveToFolder(e, null)}>
-                  <X size={12} /> No folder
+          {canEdit && (
+            <>
+              <div style={{ position: 'relative' }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowFolderMenu(!showFolderMenu) }}
+                  title="Move to folder"
+                >
+                  <FolderOpen size={14} />
                 </button>
-                {folderNames.map(f => (
-                  <button
-                    key={f}
-                    className={`rp-folder-menu-item ${range.folder === f ? 'active' : ''}`}
-                    onClick={(e) => handleMoveToFolder(e, f)}
-                  >
-                    <Folder size={12} /> {f}
-                  </button>
-                ))}
-                <NewFolderInput onSubmit={(e, name) => handleMoveToFolder(e, name)} />
+                {showFolderMenu && (
+                  <div className="rp-folder-menu" onClick={e => { e.preventDefault(); e.stopPropagation() }}>
+                    <div className="rp-folder-menu-title">Move to folder</div>
+                    <button className="rp-folder-menu-item" onClick={(e) => handleMoveToFolder(e, null)}>
+                      <X size={12} /> No folder
+                    </button>
+                    {folderNames.map(f => (
+                      <button
+                        key={f}
+                        className={`rp-folder-menu-item ${range.folder === f ? 'active' : ''}`}
+                        onClick={(e) => handleMoveToFolder(e, f)}
+                      >
+                        <Folder size={12} /> {f}
+                      </button>
+                    ))}
+                    <NewFolderInput onSubmit={(e, name) => handleMoveToFolder(e, name)} />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={(e) => onDelete(e, range.id, range.name, styleCount)}
-            style={{ color: 'var(--danger)' }}
-          >
-            <Trash2 size={14} />
-          </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={(e) => onDelete(e, range.id, range.name, styleCount)}
+                style={{ color: 'var(--danger)' }}
+              >
+                <Trash2 size={14} />
+              </button>
+            </>
+          )}
         </div>
       </div>
       <div className="rp-range-card-stats">

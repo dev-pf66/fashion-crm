@@ -11,7 +11,8 @@ import {
 
 export default function MyWork() {
   const { currentPerson, people } = useApp()
-  const { isAdmin } = usePermissions()
+  const { isAdmin, can } = usePermissions()
+  const canEditKanban = isAdmin || can('my_work.edit')
   const toast = useToast()
   const [styles, setStyles] = useState([])
   const [stages, setStages] = useState([])
@@ -78,6 +79,7 @@ export default function MyWork() {
   }
 
   function handleDragEnd(result) {
+    if (!canEditKanban) return
     if (!result.destination) return
     const styleId = result.draggableId
     const newStageId = parseInt(result.destination.droppableId)

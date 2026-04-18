@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useApp } from '../App'
 import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
+import { usePermissions } from '../hooks/usePermissions'
 import { getTasks, updateTask, updateTaskOrder, getTaskSubtaskCounts } from '../lib/supabase'
 import { TASK_STATUSES, TASK_PRIORITIES, TASK_TAGS } from '../lib/constants'
 import TaskCard from '../components/TaskCard'
@@ -18,6 +19,8 @@ export default function Tasks() {
   const { people } = useApp()
   const { currentDivision } = useDivision()
   const toast = useToast()
+  const { can } = usePermissions()
+  const canEdit = can('tasks.edit')
   const [tasks, setTasks] = useState([])
   const [subtaskCounts, setSubtaskCounts] = useState({})
   const [loading, setLoading] = useState(true)
@@ -102,6 +105,7 @@ export default function Tasks() {
   }, [setSearchParams])
 
   async function handleDragEnd(result) {
+    if (!canEdit) return
     const { destination, source, draggableId } = result
     if (!destination) return
     if (destination.droppableId === source.droppableId && destination.index === source.index) return
@@ -167,9 +171,11 @@ export default function Tasks() {
               <List size={16} />
             </button>
           </div>
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-            <Plus size={16} /> New Task
-          </button>
+          {canEdit && (
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+              <Plus size={16} /> New Task
+            </button>
+          )}
         </div>
       </div>
 
@@ -228,10 +234,12 @@ export default function Tasks() {
           <div className="empty-state">
             <CheckSquare size={48} />
             <h3>No tasks yet</h3>
-            <p>Create a task to get started.</p>
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-              <Plus size={16} /> New Task
-            </button>
+            <p>{canEdit ? 'Create a task to get started.' : 'Nothing here yet.'}</p>
+            {canEdit && (
+              <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+                <Plus size={16} /> New Task
+              </button>
+            )}
           </div>
         </div>
       ) : filtered.length === 0 ? (

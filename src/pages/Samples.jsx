@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
 import { useDivision } from '../contexts/DivisionContext'
+import { usePermissions } from '../hooks/usePermissions'
 import { getSamples, getSuppliers, updateSample } from '../lib/supabase'
 import { SAMPLE_STATUSES, SAMPLE_ROUNDS, maskSupplierName } from '../lib/constants'
 import { exportToCSV } from '../lib/csvExporter'
@@ -16,6 +17,8 @@ import { Plus, FlaskConical, Download } from 'lucide-react'
 export default function Samples() {
   const { people, currentPerson } = useApp()
   const { currentDivision } = useDivision()
+  const { can } = usePermissions()
+  const canEdit = can('samples.edit')
   const [samples, setSamples] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -77,6 +80,7 @@ export default function Samples() {
   }))
 
   async function handleDragEnd(result) {
+    if (!canEdit) return
     const { destination, source, draggableId } = result
     if (!destination) return
     if (destination.droppableId === source.droppableId) return
@@ -125,9 +129,11 @@ export default function Samples() {
           <button className="btn btn-secondary btn-sm" onClick={handleExport} disabled={filtered.length === 0}>
             <Download size={14} /> Export
           </button>
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-            <Plus size={16} /> New Sample
-          </button>
+          {canEdit && (
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+              <Plus size={16} /> New Sample
+            </button>
+          )}
         </div>
       </div>
 
@@ -163,10 +169,12 @@ export default function Samples() {
           <div className="empty-state">
             <FlaskConical size={48} />
             <h3>No samples yet</h3>
-            <p>Create a sample to start tracking rounds.</p>
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-              <Plus size={16} /> New Sample
-            </button>
+            <p>{canEdit ? 'Create a sample to start tracking rounds.' : 'Nothing here yet.'}</p>
+            {canEdit && (
+              <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+                <Plus size={16} /> New Sample
+              </button>
+            )}
           </div>
         </div>
       ) : (

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
+import { usePermissions } from '../hooks/usePermissions'
 import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, getSuppliers } from '../lib/supabase'
 import { PO_STATUSES, maskSupplierName } from '../lib/constants'
 import { exportToCSV } from '../lib/csvExporter'
@@ -17,6 +18,8 @@ import { Plus, Grid3X3, List, ClipboardList, Search, Download, ArrowUpDown, Eye 
 export default function Orders() {
   const { currentDivision } = useDivision()
   const { people, currentPerson } = useApp()
+  const { can } = usePermissions()
+  const canEdit = can('orders.edit')
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -129,9 +132,11 @@ export default function Orders() {
             <button className={view === 'grid' ? 'active' : ''} onClick={() => setView('grid')}><Grid3X3 size={14} /> Grid</button>
             <button className={view === 'table' ? 'active' : ''} onClick={() => setView('table')}><List size={14} /> Table</button>
           </div>
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-            <Plus size={16} /> New PO
-          </button>
+          {canEdit && (
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+              <Plus size={16} /> New PO
+            </button>
+          )}
         </div>
       </div>
 
@@ -156,7 +161,7 @@ export default function Orders() {
             <ClipboardList size={48} />
             <h3>No purchase orders found</h3>
             <p>{orders.length === 0 ? 'Create your first purchase order.' : 'Try adjusting your filters.'}</p>
-            {orders.length === 0 && (
+            {orders.length === 0 && canEdit && (
               <button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Create PO</button>
             )}
           </div>
@@ -192,7 +197,9 @@ export default function Orders() {
                   <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', fontWeight: 600 }}>{po.po_number}</td>
                   <td>{po.suppliers?.name ? maskSupplierName(po.suppliers.name, currentPerson) : '-'}</td>
                   <td onClick={e => e.stopPropagation()}>
-                    <InlineStatusSelect status={po.status} statuses={PO_STATUSES} onChange={v => handleInlineStatusChange(po.id, v)} />
+                    {canEdit
+                      ? <InlineStatusSelect status={po.status} statuses={PO_STATUSES} onChange={v => handleInlineStatusChange(po.id, v)} />
+                      : (PO_STATUSES.find(s => s.value === po.status)?.label || po.status || '-')}
                   </td>
                   <td>{po.issue_date ? new Date(po.issue_date).toLocaleDateString() : '-'}</td>
                   <td>{po.delivery_date ? new Date(po.delivery_date).toLocaleDateString() : '-'}</td>

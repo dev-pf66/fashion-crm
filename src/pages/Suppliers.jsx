@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getSuppliers, createSupplier, updateSupplier } from '../lib/supabase'
 import { SUPPLIER_STATUSES, PRODUCT_TYPES, CERTIFICATIONS, maskSupplierName } from '../lib/constants'
 import { useApp } from '../App'
+import { usePermissions } from '../hooks/usePermissions'
 import StatusBadge from '../components/StatusBadge'
 import InlineStatusSelect from '../components/InlineStatusSelect'
 import QuickViewDrawer from '../components/QuickViewDrawer'
@@ -16,6 +17,8 @@ import { Plus, Factory, Search, Grid3X3, List, Download, ArrowUpDown, Eye } from
 export default function Suppliers() {
   const navigate = useNavigate()
   const { currentPerson } = useApp()
+  const { can } = usePermissions()
+  const canEdit = can('suppliers.edit')
   const [suppliers, setSuppliers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -108,9 +111,11 @@ export default function Suppliers() {
             <button className={view === 'grid' ? 'active' : ''} onClick={() => setView('grid')}><Grid3X3 size={14} /> Grid</button>
             <button className={view === 'table' ? 'active' : ''} onClick={() => setView('table')}><List size={14} /> Table</button>
           </div>
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-            <Plus size={16} /> New Supplier
-          </button>
+          {canEdit && (
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+              <Plus size={16} /> New Supplier
+            </button>
+          )}
         </div>
       </div>
 
@@ -134,7 +139,7 @@ export default function Suppliers() {
           <Factory size={48} />
           <h3>No suppliers found</h3>
           <p>{suppliers.length === 0 ? 'Add your first supplier.' : 'Try adjusting your filters.'}</p>
-          {suppliers.length === 0 && <button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Add Supplier</button>}
+          {suppliers.length === 0 && canEdit && <button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Add Supplier</button>}
         </div></div>
       ) : view === 'grid' ? (
         <>
@@ -190,7 +195,9 @@ export default function Suppliers() {
                   <td style={{ fontWeight: 500 }}>{maskSupplierName(s.name, currentPerson)}</td>
                   <td>{s.country || '-'}</td>
                   <td onClick={e => e.stopPropagation()}>
-                    <InlineStatusSelect status={s.status} statuses={SUPPLIER_STATUSES} onChange={v => handleInlineStatusChange(s.id, v)} />
+                    {canEdit
+                      ? <InlineStatusSelect status={s.status} statuses={SUPPLIER_STATUSES} onChange={v => handleInlineStatusChange(s.id, v)} />
+                      : (SUPPLIER_STATUSES.find(x => x.value === s.status)?.label || s.status || '-')}
                   </td>
                   <td>{(s.product_types || []).join(', ') || '-'}</td>
                   <td>{s.overall_score ? parseFloat(s.overall_score).toFixed(1) : '-'}</td>

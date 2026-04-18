@@ -94,7 +94,7 @@ export async function updateEmailNotifications(personId, enabled) {
 // ============================================================
 
 export async function getPeople() {
-  const { data, error } = await supabase.from('people').select('*, roles(id, name, permissions)').order('name')
+  const { data, error } = await supabase.from('people').select('*, roles(id, name, permissions, division_codes)').order('name')
   if (error) throw error
   return data
 }

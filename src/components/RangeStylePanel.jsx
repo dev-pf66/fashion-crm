@@ -21,7 +21,8 @@ const STATUSES = [
 
 export default function RangeStylePanel({ styleId, rangeId, categories, onClose, onUpdate, onDelete }) {
   const { currentPerson, people } = useApp()
-  const { isAdmin } = usePermissions()
+  const { isAdmin, can } = usePermissions()
+  const canEdit = can('range_plan.edit')
   const STYLE_CATEGORIES = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES
   const toast = useToast()
   const fileInputRef = useRef(null)
@@ -339,52 +340,62 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               <textarea value={form.notes} onChange={e => updateField('notes', e.target.value)} rows={3} placeholder="Design notes, references, construction details..." />
             </div>
 
-            <div className="form-actions" style={{ marginBottom: '1.5rem' }}>
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-              {form.status !== 'production' && (
-                <button
-                  className="btn btn-primary"
-                  onClick={() => setShowProductionModal(true)}
-                >
-                  <PackageCheck size={16} /> Push to Production
+            {canEdit && (
+              <div className="form-actions" style={{ marginBottom: '1.5rem' }}>
+                <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                  {saving ? 'Saving...' : 'Save Changes'}
                 </button>
-              )}
-              {form.status === 'production' && (
-                <span className="tag" style={{ background: 'var(--success-bg, #dcfce7)', color: 'var(--success-text, #15803d)', fontWeight: 600 }}>In Production</span>
-              )}
-            </div>
+                {form.status !== 'production' && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setShowProductionModal(true)}
+                  >
+                    <PackageCheck size={16} /> Push to Production
+                  </button>
+                )}
+                {form.status === 'production' && (
+                  <span className="tag" style={{ background: 'var(--success-bg, #dcfce7)', color: 'var(--success-text, #15803d)', fontWeight: 600 }}>In Production</span>
+                )}
+              </div>
+            )}
 
             {/* Files section */}
             <div className="rp-panel-section">
               <div className="rp-panel-section-header">
                 <h3>Files & Images</h3>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                >
-                  {uploading ? <><Loader size={14} className="spin" /> Uploading...</> : <><Upload size={14} /> Upload</>}
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*,.pdf,.ai,.psd,.sketch"
-                  onChange={handleFileUpload}
-                  style={{ display: 'none' }}
-                />
+                {canEdit && (
+                  <>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading ? <><Loader size={14} className="spin" /> Uploading...</> : <><Upload size={14} /> Upload</>}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.ai,.psd,.sketch"
+                      onChange={handleFileUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </>
+                )}
               </div>
 
               {files.length === 0 ? (
-                <div
-                  className="rp-upload-drop"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload size={24} />
-                  <p>Click to upload images, sketches, or tech packs</p>
-                </div>
+                canEdit ? (
+                  <div
+                    className="rp-upload-drop"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload size={24} />
+                    <p>Click to upload images, sketches, or tech packs</p>
+                  </div>
+                ) : (
+                  <p className="text-muted" style={{ fontSize: '0.875rem' }}>No files uploaded.</p>
+                )
               ) : (
                 <div className="rp-file-grid">
                   {files.map(file => (
@@ -397,24 +408,26 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                           <span>{file.file_name?.split('.').pop()?.toUpperCase()}</span>
                         </div>
                       )}
-                      <div className="rp-file-actions">
-                        {isImage(file.file_type) && (
+                      {canEdit && (
+                        <div className="rp-file-actions">
+                          {isImage(file.file_type) && (
+                            <button
+                              className="rp-file-btn"
+                              onClick={() => handleSetThumbnail(file.file_url)}
+                              title="Set as thumbnail"
+                            >
+                              <Star size={12} fill={style.thumbnail_url === file.file_url ? 'currentColor' : 'none'} />
+                            </button>
+                          )}
                           <button
-                            className="rp-file-btn"
-                            onClick={() => handleSetThumbnail(file.file_url)}
-                            title="Set as thumbnail"
+                            className="rp-file-btn danger"
+                            onClick={() => handleDeleteFile(file.id, file.file_url)}
+                            title="Delete file"
                           >
-                            <Star size={12} fill={style.thumbnail_url === file.file_url ? 'currentColor' : 'none'} />
+                            <Trash2 size={12} />
                           </button>
-                        )}
-                        <button
-                          className="rp-file-btn danger"
-                          onClick={() => handleDeleteFile(file.id, file.file_url)}
-                          title="Delete file"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
+                        </div>
+                      )}
                       {style.thumbnail_url === file.file_url && (
                         <div className="rp-thumbnail-badge">Thumbnail</div>
                       )}
@@ -430,11 +443,13 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
             </div>
 
             {/* Delete */}
-            <div className="rp-panel-danger">
-              <button className="btn btn-sm" style={{ color: 'var(--danger)' }} onClick={handleDeleteStyle}>
-                <Trash2 size={14} /> Delete Style
-              </button>
-            </div>
+            {canEdit && (
+              <div className="rp-panel-danger">
+                <button className="btn btn-sm" style={{ color: 'var(--danger)' }} onClick={handleDeleteStyle}>
+                  <Trash2 size={14} /> Delete Style
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

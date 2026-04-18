@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
+import { usePermissions } from '../hooks/usePermissions'
 import { getStyles, getSuppliers, updateStyle } from '../lib/supabase'
 import { STYLE_STATUSES, STYLE_CATEGORIES, maskSupplierName } from '../lib/constants'
 import StyleCard from '../components/StyleCard'
@@ -17,6 +18,8 @@ import { useNavigate } from 'react-router-dom'
 export default function Styles() {
   const { currentDivision } = useDivision()
   const { people, currentPerson } = useApp()
+  const { can } = usePermissions()
+  const canEdit = can('styles.edit')
   const navigate = useNavigate()
   const [styles, setStyles] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -136,9 +139,11 @@ export default function Styles() {
               <List size={14} /> Table
             </button>
           </div>
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-            <Plus size={16} /> New Style
-          </button>
+          {canEdit && (
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+              <Plus size={16} /> New Style
+            </button>
+          )}
         </div>
       </div>
 
@@ -220,7 +225,9 @@ export default function Styles() {
                   <td>{style.category || '-'}</td>
                   <td>{style.suppliers?.name ? maskSupplierName(style.suppliers.name, currentPerson) : '-'}</td>
                   <td onClick={e => e.stopPropagation()}>
-                    <InlineStatusSelect status={style.status} statuses={STYLE_STATUSES} onChange={v => handleInlineStatusChange(style.id, v)} />
+                    {canEdit
+                      ? <InlineStatusSelect status={style.status} statuses={STYLE_STATUSES} onChange={v => handleInlineStatusChange(style.id, v)} />
+                      : (STYLE_STATUSES.find(s => s.value === style.status)?.label || style.status || '-')}
                   </td>
                   <td>{style.target_fob ? `$${parseFloat(style.target_fob).toFixed(2)}` : '-'}</td>
                   <td>{style.people?.name || '-'}</td>

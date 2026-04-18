@@ -4,6 +4,7 @@ import { getStyle, updateStyle, createStyle } from '../lib/supabase'
 import { STYLE_STATUSES, maskSupplierName } from '../lib/constants'
 import { useApp } from '../App'
 import { useToast } from '../contexts/ToastContext'
+import { usePermissions } from '../hooks/usePermissions'
 import StyleForm from '../components/StyleForm'
 import BomTable from '../components/BomTable'
 import SampleTimeline from '../components/SampleTimeline'
@@ -19,6 +20,8 @@ export default function StyleDetail() {
   const navigate = useNavigate()
   const { currentPerson } = useApp()
   const toast = useToast()
+  const { can } = usePermissions()
+  const canEdit = can('styles.edit')
   const [style, setStyle] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
@@ -90,15 +93,23 @@ export default function StyleDetail() {
               <div className="style-header-name">{style.name}</div>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <select value={style.status} onChange={e => handleStatusChange(e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem', padding: '0.375rem 0.5rem' }}>
-                {STYLE_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
-              <button className="btn btn-secondary btn-sm" onClick={handleDuplicate}>
-                <Copy size={14} /> Duplicate
-              </button>
-              <button className="btn btn-secondary btn-sm" onClick={() => setShowEdit(true)}>
-                <Edit size={14} /> Edit
-              </button>
+              {canEdit ? (
+                <select value={style.status} onChange={e => handleStatusChange(e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem', padding: '0.375rem 0.5rem' }}>
+                  {STYLE_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </select>
+              ) : (
+                <span className="tag">{STYLE_STATUSES.find(s => s.value === style.status)?.label || style.status}</span>
+              )}
+              {canEdit && (
+                <>
+                  <button className="btn btn-secondary btn-sm" onClick={handleDuplicate}>
+                    <Copy size={14} /> Duplicate
+                  </button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setShowEdit(true)}>
+                    <Edit size={14} /> Edit
+                  </button>
+                </>
+              )}
             </div>
           </div>
           <div className="style-header-meta">
