@@ -7,9 +7,9 @@ import StatusBadge from '../components/StatusBadge'
 import {
   Shield, Layers, CheckSquare, AlertTriangle, Clock,
   Users, BarChart3, Target, Truck, ArrowRight, Timer, Bell,
-  UserPlus, KeyRound, Eye, EyeOff, Settings, Plus, Pencil, Trash2, Mail, MailX
+  UserPlus, KeyRound, Eye, EyeOff, Settings, Plus, Pencil, Trash2, Mail, MailX, Activity as ActivityIcon, Filter, X as XIcon
 } from 'lucide-react'
-import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage, updateEmailNotifications } from '../lib/supabase'
+import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage, updateEmailNotifications, getAuditLog, getLastActivityPerPerson } from '../lib/supabase'
 import Modal from '../components/Modal'
 
 const STATUS_COLORS = {
@@ -147,6 +147,13 @@ export default function AdminDashboard() {
           <Settings size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
           Config
         </button>
+        <button
+          className={`tab ${activeTab === 'activity' ? 'active' : ''}`}
+          onClick={() => setActiveTab('activity')}
+        >
+          <ActivityIcon size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
+          Activity
+        </button>
       </div>
 
       {activeTab === 'ranges' ? (
@@ -172,8 +179,10 @@ export default function AdminDashboard() {
         />
       ) : activeTab === 'users' ? (
         <UsersTab people={people} toast={toast} refreshPeople={refreshPeople} />
-      ) : (
+      ) : activeTab === 'config' ? (
         <ConfigTab toast={toast} />
+      ) : (
+        <ActivityTab people={people} toast={toast} />
       )}
     </div>
   )
@@ -1318,5 +1327,216 @@ function ResetPasswordModal({ user, onClose, toast }) {
         </div>
       </form>
     </Modal>
+  )
+}
+
+// ============================================================
+// ACTIVITY TAB — audit log for admins
+// ============================================================
+
+const ENTITY_TYPES = ['ranges', 'range_styles', 'styles', 'samples', 'tasks', 'orders', 'order_items', 'suppliers', 'people', 'production_stages', 'silhouettes', 'price_brackets', 'dashboard_targets', 'roles']
+const ACTION_TYPES = ['created', 'updated', 'deleted']
+
+function formatRelative(ts) {
+  const diff = Date.now() - new Date(ts).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins} min ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days}d ago`
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function entityLabel(type) {
+  return type?.replace(/_/g, ' ')
+}
+
+function actionColor(action) {
+  if (action === 'deleted') return { bg: '#fef2f2', fg: '#991b1b', border: '#fecaca' }
+  if (action === 'created') return { bg: '#f0fdf4', fg: '#166534', border: '#bbf7d0' }
+  if (action === 'updated') return { bg: '#eff6ff', fg: '#1e40af', border: '#bfdbfe' }
+  return { bg: '#f8fafc', fg: '#334155', border: '#e2e8f0' }
+}
+
+function ActivityTab({ people, toast }) {
+  const [entries, setEntries] = useState([])
+  const [lastSeen, setLastSeen] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState({ personId: '', action: '', entityType: '' })
+  const [expanded, setExpanded] = useState(null)
+
+  useEffect(() => {
+    loadActivity()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.personId, filters.action, filters.entityType])
+
+  async function loadActivity() {
+    setLoading(true)
+    try {
+      const [audit, last] = await Promise.all([
+        getAuditLog({
+          personId: filters.personId ? parseInt(filters.personId) : undefined,
+          action: filters.action || undefined,
+          entityType: filters.entityType || undefined,
+          limit: 300,
+        }),
+        getLastActivityPerPerson(),
+      ])
+      setEntries(audit)
+      setLastSeen(last)
+    } catch (err) {
+      console.error('Failed to load activity:', err)
+      toast.error('Failed to load activity log')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const activePeople = people.filter(p => p.is_active !== false)
+  const dormantThresholdMs = 7 * 86400000
+
+  return (
+    <div>
+      {/* Last activity per user */}
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1rem' }}>Last activity per member</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.75rem' }}>
+          {activePeople.map(p => {
+            const entry = lastSeen[p.id]
+            const isDormant = !entry || (Date.now() - new Date(entry.created_at).getTime()) > dormantThresholdMs
+            return (
+              <div
+                key={p.id}
+                onClick={() => setFilters(f => ({ ...f, personId: String(p.id) }))}
+                style={{
+                  padding: '0.75rem 1rem',
+                  borderRadius: '8px',
+                  border: '1px solid var(--gray-200)',
+                  cursor: 'pointer',
+                  background: isDormant ? 'var(--gray-50)' : 'var(--bg)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <strong style={{ fontSize: '0.875rem' }}>{p.name}</strong>
+                  {isDormant && <span style={{ fontSize: '0.65rem', color: 'var(--gray-500)', textTransform: 'uppercase' }}>Dormant</span>}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--gray-500)', marginTop: '0.25rem' }}>
+                  {entry ? `${entry.action} ${entityLabel(entry.entity_type)} · ${formatRelative(entry.created_at)}` : 'No activity yet'}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <Filter size={16} style={{ color: 'var(--gray-500)' }} />
+          <select value={filters.personId} onChange={e => setFilters(f => ({ ...f, personId: e.target.value }))} style={{ padding: '0.5rem', minWidth: '160px' }}>
+            <option value="">All members</option>
+            {activePeople.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <select value={filters.action} onChange={e => setFilters(f => ({ ...f, action: e.target.value }))} style={{ padding: '0.5rem', minWidth: '140px' }}>
+            <option value="">All actions</option>
+            {ACTION_TYPES.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+          <select value={filters.entityType} onChange={e => setFilters(f => ({ ...f, entityType: e.target.value }))} style={{ padding: '0.5rem', minWidth: '160px' }}>
+            <option value="">All entities</option>
+            {ENTITY_TYPES.map(t => <option key={t} value={t}>{entityLabel(t)}</option>)}
+          </select>
+          {(filters.personId || filters.action || filters.entityType) && (
+            <button className="btn btn-secondary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }} onClick={() => setFilters({ personId: '', action: '', entityType: '' })}>
+              <XIcon size={14} /> Clear
+            </button>
+          )}
+          <div style={{ marginLeft: 'auto', fontSize: '0.8rem', color: 'var(--gray-500)' }}>
+            {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+          </div>
+        </div>
+      </div>
+
+      {/* Log */}
+      {loading ? (
+        <div className="loading-container"><div className="loading-spinner" /></div>
+      ) : entries.length === 0 ? (
+        <div className="card"><div className="empty-state" style={{ padding: '2rem' }}>
+          <ActivityIcon size={40} />
+          <h3 style={{ marginTop: '0.5rem' }}>No activity yet</h3>
+          <p>Once database triggers are enabled, all create/update/delete actions will appear here.</p>
+        </div></div>
+      ) : (
+        <div className="card" style={{ padding: 0 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+            <thead>
+              <tr style={{ background: 'var(--gray-50)', borderBottom: '2px solid var(--gray-200)' }}>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--gray-500)' }}>When</th>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--gray-500)' }}>Who</th>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--gray-500)' }}>Action</th>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--gray-500)' }}>Entity</th>
+                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--gray-500)' }}>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map(e => {
+                const c = actionColor(e.action)
+                const isOpen = expanded === e.id
+                const name = e.details?.name || `#${e.entity_id || '—'}`
+                const diffFields = e.after_data ? Object.keys(e.after_data).filter(k => k !== 'updated_at') : []
+                return (
+                  <>
+                    <tr key={e.id} onClick={() => setExpanded(isOpen ? null : e.id)} style={{ borderBottom: '1px solid var(--gray-100)', cursor: 'pointer', background: e.action === 'deleted' ? 'rgba(239, 68, 68, 0.04)' : undefined }}>
+                      <td style={{ padding: '0.6rem 1rem', color: 'var(--gray-500)', fontSize: '0.8rem' }} title={new Date(e.created_at).toLocaleString()}>{formatRelative(e.created_at)}</td>
+                      <td style={{ padding: '0.6rem 1rem' }}>{e.people?.name || <span style={{ color: 'var(--gray-400)', fontStyle: 'italic' }}>system</span>}</td>
+                      <td style={{ padding: '0.6rem 1rem' }}>
+                        <span style={{ padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 600, background: c.bg, color: c.fg, border: `1px solid ${c.border}` }}>
+                          {e.action}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.6rem 1rem' }}>
+                        <div style={{ fontWeight: 500 }}>{name}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--gray-500)' }}>{entityLabel(e.entity_type)}</div>
+                      </td>
+                      <td style={{ padding: '0.6rem 1rem', fontSize: '0.8rem', color: 'var(--gray-500)' }}>
+                        {e.action === 'updated' && diffFields.length > 0 ? `${diffFields.length} field${diffFields.length > 1 ? 's' : ''} changed` : e.action === 'deleted' ? 'record removed' : 'new record'}
+                      </td>
+                    </tr>
+                    {isOpen && (
+                      <tr key={`${e.id}-expanded`}>
+                        <td colSpan={5} style={{ background: 'var(--gray-50)', padding: '1rem 1.5rem', borderBottom: '1px solid var(--gray-200)' }}>
+                          {e.action === 'updated' && e.before_data && e.after_data ? (
+                            <table style={{ width: '100%', fontSize: '0.8rem' }}>
+                              <thead>
+                                <tr><th style={{ textAlign: 'left', padding: '0.25rem 0.5rem', color: 'var(--gray-500)' }}>Field</th><th style={{ textAlign: 'left', padding: '0.25rem 0.5rem', color: 'var(--gray-500)' }}>Before</th><th style={{ textAlign: 'left', padding: '0.25rem 0.5rem', color: 'var(--gray-500)' }}>After</th></tr>
+                              </thead>
+                              <tbody>
+                                {diffFields.map(k => (
+                                  <tr key={k}>
+                                    <td style={{ padding: '0.25rem 0.5rem', fontWeight: 500 }}>{k}</td>
+                                    <td style={{ padding: '0.25rem 0.5rem', fontFamily: 'monospace', color: '#991b1b' }}>{JSON.stringify(e.before_data[k])}</td>
+                                    <td style={{ padding: '0.25rem 0.5rem', fontFamily: 'monospace', color: '#166534' }}>{JSON.stringify(e.after_data[k])}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          ) : (
+                            <pre style={{ margin: 0, fontSize: '0.75rem', fontFamily: 'monospace', overflow: 'auto' }}>
+                              {JSON.stringify(e.before_data || e.after_data || e.details, null, 2)}
+                            </pre>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   )
 }

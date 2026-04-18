@@ -689,6 +689,36 @@ export async function getActivityLog(divisionId, filters = {}) {
   return data
 }
 
+export async function getAuditLog({ personId, action, entityType, since, limit = 200 } = {}) {
+  let query = supabase
+    .from('activity_log')
+    .select('id, created_at, person_id, action, entity_type, entity_id, details, before_data, after_data, people(id, name, email)')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (personId) query = query.eq('person_id', personId)
+  if (action) query = query.eq('action', action)
+  if (entityType) query = query.eq('entity_type', entityType)
+  if (since) query = query.gte('created_at', since)
+  const { data, error } = await query
+  if (error) throw error
+  return data || []
+}
+
+export async function getLastActivityPerPerson() {
+  const { data, error } = await supabase
+    .from('activity_log')
+    .select('person_id, created_at, action, entity_type')
+    .order('created_at', { ascending: false })
+    .limit(2000)
+  if (error) throw error
+  const seen = {}
+  for (const row of (data || [])) {
+    if (!row.person_id) continue
+    if (!seen[row.person_id]) seen[row.person_id] = row
+  }
+  return seen
+}
+
 // ============================================================
 // DASHBOARD ENHANCEMENTS
 // ============================================================
