@@ -249,40 +249,53 @@ function RangeMatrix({
     return t?.target_value || 0
   }
 
-  // Rows: silhouettes from lookup + any used in data
-  const usedSilhouettes = [...new Set(styles.map(s => s.silhouette).filter(Boolean))]
-  const silRows = [
-    ...silhouettes.map(s => s.name),
-    ...usedSilhouettes.filter(s => !silhouettes.some(x => x.name === s)),
-  ]
+  const norm = v => (v || '').trim().toLowerCase()
 
-  // Columns: price brackets from lookup + any used in data
-  const usedBrackets = [...new Set(styles.map(s => s.price_category).filter(Boolean))]
-  const bracketCols = [
-    ...priceBrackets.map(b => b.label),
-    ...usedBrackets.filter(b => !priceBrackets.some(x => x.label === b)),
-  ]
+  // Dedupe silhouettes case-insensitively; prefer lookup label, else data value
+  const silByKey = new Map()
+  for (const s of silhouettes) {
+    const k = norm(s.name)
+    if (k && !silByKey.has(k)) silByKey.set(k, s.name)
+  }
+  for (const s of styles) {
+    const k = norm(s.silhouette)
+    if (k && !silByKey.has(k)) silByKey.set(k, s.silhouette)
+  }
 
-  // Filter to rows/cols that have data OR a target
-  const activeSilRows = silRows.filter(silName => {
-    if (styles.some(s => s.silhouette === silName)) return true
-    return bracketCols.some(b => getTarget('silhouette_bracket', `${silName}::${b}`) > 0)
-  })
-  const activeBracketCols = bracketCols.filter(bracket => {
-    if (styles.some(s => s.price_category === bracket)) return true
-    return activeSilRows.some(sil => getTarget('silhouette_bracket', `${sil}::${bracket}`) > 0)
-  })
+  // Dedupe brackets case-insensitively
+  const bracketByKey = new Map()
+  for (const b of priceBrackets) {
+    const k = norm(b.label)
+    if (k && !bracketByKey.has(k)) bracketByKey.set(k, b.label)
+  }
+  for (const s of styles) {
+    const k = norm(s.price_category)
+    if (k && !bracketByKey.has(k)) bracketByKey.set(k, s.price_category)
+  }
 
-  // Cell counts + totals
-  function cellCount(silName, bracket) {
-    return styles.filter(s => s.silhouette === silName && s.price_category === bracket).length
+  function cellCount(silKey, bracketKey) {
+    return styles.filter(s => norm(s.silhouette) === silKey && norm(s.price_category) === bracketKey).length
   }
-  function rowTotal(silName) {
-    return styles.filter(s => s.silhouette === silName).length
+  function rowTotal(silKey) {
+    return styles.filter(s => norm(s.silhouette) === silKey).length
   }
-  function colTotal(bracket) {
-    return styles.filter(s => s.price_category === bracket).length
+  function colTotal(bracketKey) {
+    return styles.filter(s => norm(s.price_category) === bracketKey).length
   }
+
+  const activeSilRows = [...silByKey.entries()]
+    .filter(([silKey, display]) => {
+      if (rowTotal(silKey) > 0) return true
+      return [...bracketByKey.values()].some(b => getTarget('silhouette_bracket', `${display}::${b}`) > 0)
+    })
+    .map(([silKey, display]) => ({ silKey, display }))
+
+  const activeBracketCols = [...bracketByKey.entries()]
+    .filter(([bracketKey, display]) => {
+      if (colTotal(bracketKey) > 0) return true
+      return activeSilRows.some(r => getTarget('silhouette_bracket', `${r.display}::${display}`) > 0)
+    })
+    .map(([bracketKey, display]) => ({ bracketKey, display }))
 
   const rangeTarget = getTarget('total', '_total')
   const rangeEditKey = `${range.id}:total:_total`
@@ -325,22 +338,22 @@ function RangeMatrix({
               <tr>
                 <th className="rd-matrix-corner">Silhouette \ Price</th>
                 {activeBracketCols.map(b => (
-                  <th key={b}>{b}</th>
+                  <th key={b.bracketKey}>{b.display}</th>
                 ))}
                 <th className="rd-matrix-total">Total</th>
               </tr>
             </thead>
             <tbody>
-              {activeSilRows.map(silName => (
-                <tr key={silName}>
-                  <th className="rd-matrix-rowlabel">{silName}</th>
-                  {activeBracketCols.map(bracket => {
-                    const count = cellCount(silName, bracket)
-                    const key = `${silName}::${bracket}`
+              {activeSilRows.map(row => (
+                <tr key={row.silKey}>
+                  <th className="rd-matrix-rowlabel">{row.display}</th>
+                  {activeBracketCols.map(col => {
+                    const count = cellCount(row.silKey, col.bracketKey)
+                    const key = `${row.display}::${col.display}`
                     const target = getTarget('silhouette_bracket', key)
                     const editKey = `${range.id}:silhouette_bracket:${key}`
                     return (
-                      <td key={bracket} className="rd-matrix-cell">
+                      <td key={col.bracketKey} className="rd-matrix-cell">
                         <div className="rd-cell-count">{count}</div>
                         {isAdmin ? (
                           <EditableTarget
@@ -358,13 +371,13 @@ function RangeMatrix({
                       </td>
                     )
                   })}
-                  <td className="rd-matrix-cell rd-matrix-total"><strong>{rowTotal(silName)}</strong></td>
+                  <td className="rd-matrix-cell rd-matrix-total"><strong>{rowTotal(row.silKey)}</strong></td>
                 </tr>
               ))}
               <tr className="rd-matrix-totalrow">
                 <th className="rd-matrix-rowlabel">Total</th>
-                {activeBracketCols.map(b => (
-                  <td key={b} className="rd-matrix-cell"><strong>{colTotal(b)}</strong></td>
+                {activeBracketCols.map(col => (
+                  <td key={col.bracketKey} className="rd-matrix-cell"><strong>{colTotal(col.bracketKey)}</strong></td>
                 ))}
                 <td className="rd-matrix-cell rd-matrix-grandtotal"><strong>{totalPunched}</strong></td>
               </tr>
