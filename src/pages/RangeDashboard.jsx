@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useApp } from '../App'
 import { usePermissions } from '../hooks/usePermissions'
 import { useToast } from '../contexts/ToastContext'
@@ -106,7 +106,7 @@ export default function RangeDashboard() {
         styles: myStyles,
       }
     }).sort((a, b) => b.assigned - a.assigned)
-  }, [allStyles, people, stages])
+  }, [allStyles, people, completedStage, today])
 
   const mostBehind = merchPerformance.length > 0
     ? merchPerformance.reduce((worst, m) => m.pct < worst.pct ? m : worst, merchPerformance[0])
@@ -297,6 +297,11 @@ function RangeMatrix({
     })
     .map(([bracketKey, display]) => ({ bracketKey, display }))
 
+  // Grand total = sum of matrix cells (styles with both silhouette + bracket set).
+  // Pieces missing either dimension are excluded so row/col totals reconcile.
+  const matrixTotal = activeBracketCols.reduce((sum, col) => sum + colTotal(col.bracketKey), 0)
+  const orphanCount = totalPunched - matrixTotal
+
   const rangeTarget = getTarget('total', '_total')
   const rangeEditKey = `${range.id}:total:_total`
 
@@ -333,6 +338,11 @@ function RangeMatrix({
         <p className="empty-state" style={{ fontSize: '0.85rem' }}>No pieces with silhouette + price bracket yet.</p>
       ) : (
         <div className="rd-matrix-wrap">
+          {orphanCount > 0 && (
+            <div className="rd-matrix-note">
+              {orphanCount} piece{orphanCount === 1 ? '' : 's'} missing silhouette or price bracket — not shown below.
+            </div>
+          )}
           <table className="rd-matrix">
             <thead>
               <tr>
@@ -379,7 +389,7 @@ function RangeMatrix({
                 {activeBracketCols.map(col => (
                   <td key={col.bracketKey} className="rd-matrix-cell"><strong>{colTotal(col.bracketKey)}</strong></td>
                 ))}
-                <td className="rd-matrix-cell rd-matrix-grandtotal"><strong>{totalPunched}</strong></td>
+                <td className="rd-matrix-cell rd-matrix-grandtotal"><strong>{matrixTotal}</strong></td>
               </tr>
             </tbody>
           </table>
@@ -391,8 +401,21 @@ function RangeMatrix({
 
 function EditableTarget({ value, editing, onEdit, onSave, onCancel, inline, compact, label }) {
   const [val, setVal] = useState(value)
+  const committedRef = useRef(false)
 
   useEffect(() => { setVal(value) }, [value])
+  useEffect(() => { if (editing) committedRef.current = false }, [editing])
+
+  const commitSave = () => {
+    if (committedRef.current) return
+    committedRef.current = true
+    onSave(val)
+  }
+  const commitCancel = () => {
+    if (committedRef.current) return
+    committedRef.current = true
+    onCancel()
+  }
 
   if (editing) {
     if (compact) {
@@ -402,10 +425,10 @@ function EditableTarget({ value, editing, onEdit, onSave, onCancel, inline, comp
           value={val}
           onChange={e => setVal(e.target.value)}
           onKeyDown={e => {
-            if (e.key === 'Enter') { onSave(val); e.preventDefault() }
-            if (e.key === 'Escape') { onCancel(); e.preventDefault() }
+            if (e.key === 'Enter') { commitSave(); e.preventDefault() }
+            if (e.key === 'Escape') { commitCancel(); e.preventDefault() }
           }}
-          onBlur={() => onSave(val)}
+          onBlur={commitSave}
           autoFocus
           min="0"
           className="rd-target-input-compact"

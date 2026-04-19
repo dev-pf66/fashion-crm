@@ -8309,6 +8309,7 @@ html, body {
 .rd-range-meta { font-size: 0.8rem; color: var(--gray-600); display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 .rd-meta-sep { color: var(--gray-300); }
 .rd-matrix-wrap { overflow-x: auto; border: 1px solid var(--gray-200); border-radius: 8px; }
+.rd-matrix-note { padding: 0.5rem 0.75rem; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); color: var(--gray-600); font-size: 0.75rem; }
 .rd-matrix { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--card-bg); }
 .rd-matrix th, .rd-matrix td { border-right: 1px solid var(--gray-200); border-bottom: 1px solid var(--gray-200); padding: 0.5rem 0.75rem; text-align: center; }
 .rd-matrix th:last-child, .rd-matrix td:last-child { border-right: none; }
