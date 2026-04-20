@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { getDivisions } from '../lib/supabase'
 import { useApp } from '../App'
@@ -14,6 +14,8 @@ export function DivisionProvider({ children }) {
   const [divisions, setDivisions] = useState([])
   const [currentDivision, setCurrentDivision] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isSwitching, setIsSwitching] = useState(false)
+  const switchTimerRef = useRef(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
   const allowedCodes = currentPerson?.roles?.division_codes || null
@@ -55,12 +57,20 @@ export function DivisionProvider({ children }) {
   }
 
   function changeDivision(division) {
+    if (division?.id === currentDivision?.id) return
+    setIsSwitching(true)
     setCurrentDivision(division)
     setSearchParams(prev => {
       prev.set('division', division.id.toString())
       return prev
     }, { replace: true })
+    if (switchTimerRef.current) clearTimeout(switchTimerRef.current)
+    // Give page effects a beat to start their fetches, then release the bar.
+    // Individual pages still show their own refreshing state if they're slow.
+    switchTimerRef.current = setTimeout(() => setIsSwitching(false), 800)
   }
+
+  useEffect(() => () => { if (switchTimerRef.current) clearTimeout(switchTimerRef.current) }, [])
 
   return (
     <DivisionContext.Provider value={{
@@ -68,6 +78,7 @@ export function DivisionProvider({ children }) {
       currentDivision,
       changeDivision,
       loading,
+      isSwitching,
       refreshDivisions: loadDivisions,
     }}>
       {children}

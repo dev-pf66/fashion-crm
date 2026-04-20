@@ -35,7 +35,6 @@ export default function Orders() {
   }, [currentDivision])
 
   async function loadData() {
-    setLoading(true)
     try {
       const [ordersData, suppData] = await Promise.all([
         getPurchaseOrders(currentDivision.id),

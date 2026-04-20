@@ -76,7 +76,7 @@ export default function Layout() {
   const { currentPerson } = useApp()
   const { user, signOut } = useAuth()
   const { can, hasRole } = usePermissions()
-  const { divisions, currentDivision, changeDivision, loading: divisionsLoading } = useDivision()
+  const { divisions, currentDivision, changeDivision, loading: divisionsLoading, isSwitching } = useDivision()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
@@ -125,6 +125,7 @@ export default function Layout() {
 
   return (
     <div className="app-layout">
+      {isSwitching && <div className="division-switch-bar" aria-hidden="true" />}
       {mobileMenuOpen && (
         <div className="sidebar-overlay" onClick={() => setMobileMenuOpen(false)} />
       )}

@@ -30,7 +30,6 @@ export default function RangePlanning() {
   useEffect(() => { loadData() }, [currentDivision])
 
   async function loadData() {
-    setLoading(true)
     try {
       const data = await getRanges(currentDivision?.id)
       setRanges(data || [])

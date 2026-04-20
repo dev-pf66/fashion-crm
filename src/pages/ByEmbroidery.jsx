@@ -17,7 +17,6 @@ export default function ByEmbroidery() {
   useEffect(() => { loadData() }, [currentDivision])
 
   async function loadData() {
-    setLoading(true)
     try {
       // Fetch all range styles with their range info
       let query = supabase

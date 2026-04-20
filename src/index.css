@@ -8332,3 +8332,20 @@ html, body {
 .rd-matrix-totalrow th,
 .rd-matrix-totalrow td { background: var(--gray-50); font-weight: 700; color: var(--gray-900); }
 .rd-matrix-grandtotal { background: var(--gray-100) !important; }
+
+.division-switch-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 9999;
+  background: linear-gradient(90deg, transparent 0%, var(--primary) 40%, var(--primary) 60%, transparent 100%);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: division-switch-slide 0.9s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes division-switch-slide {
+  0%   { background-position: -40% 0; }
+  100% { background-position: 140% 0; }
+}
