@@ -36,7 +36,7 @@ export default function Dashboard() {
       const [statsData, stylesData, deadlinesData, overdueData, taskData, allTasks] = await Promise.all([
         getDashboardStats(currentDivision.id),
         getStyles(currentDivision.id),
-        getUpcomingDeadlines(currentDivision.id, currentPerson?.name),
+        getUpcomingDeadlines(currentDivision.id, currentPerson),
         getOverdueItems(currentDivision.id),
         getTaskMetrics(),
         getTasks().catch(() => []),

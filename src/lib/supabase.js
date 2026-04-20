@@ -777,7 +777,7 @@ export async function getLastActivityPerPerson() {
 // DASHBOARD ENHANCEMENTS
 // ============================================================
 
-export async function getUpcomingDeadlines(divisionId, personName) {
+export async function getUpcomingDeadlines(divisionId, currentPerson) {
   const now = new Date()
   const weekFromNow = new Date(now.getTime() + 7 * 86400000)
   const nowStr = now.toISOString().slice(0, 10)
@@ -818,7 +818,7 @@ export async function getUpcomingDeadlines(divisionId, personName) {
     deadlines.push({
       type: 'po',
       id: p.id,
-      label: `${p.po_number} - ${p.suppliers?.name ? maskSupplierName(p.suppliers.name, adminAccess) : ''}`,
+      label: `${p.po_number} - ${p.suppliers?.name ? maskSupplierName(p.suppliers.name, currentPerson) : ''}`,
       date: p.delivery_date,
       status: p.status,
     })
