@@ -147,9 +147,15 @@ export default async function handler(req, res) {
     }
 
     if (action === 'list_users') {
-      const { data: { users }, error: listError } = await adminClient.auth.admin.listUsers()
-      if (listError) {
-        return res.status(400).json({ error: listError.message })
+      const perPage = 1000
+      const users = []
+      for (let page = 1; ; page++) {
+        const { data, error: listError } = await adminClient.auth.admin.listUsers({ page, perPage })
+        if (listError) {
+          return res.status(400).json({ error: listError.message })
+        }
+        users.push(...(data?.users || []))
+        if (!data?.users?.length || data.users.length < perPage) break
       }
 
       return res.status(200).json({ users })
