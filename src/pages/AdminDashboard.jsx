@@ -9,7 +9,7 @@ import {
   Users, BarChart3, Target, Truck, ArrowRight, Timer, Bell,
   UserPlus, KeyRound, Eye, EyeOff, Settings, Plus, Pencil, Trash2, Mail, MailX, Activity as ActivityIcon, Filter, X as XIcon
 } from 'lucide-react'
-import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage, updateEmailNotifications, getAuditLog, getLastActivityPerPerson } from '../lib/supabase'
+import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage, getStyleStatuses, createStyleStatus, updateStyleStatus, deleteStyleStatus, updateEmailNotifications, getAuditLog, getLastActivityPerPerson } from '../lib/supabase'
 import Modal from '../components/Modal'
 
 const STATUS_COLORS = {
@@ -786,16 +786,16 @@ function CreateUserModal({ onClose, onCreated, toast }) {
 // ── Config Tab ──────────────────────────────────────────────
 
 function ConfigTab({ toast }) {
-  const [subTab, setSubTab] = useState('silhouettes')
+  const [subTab, setSubTab] = useState('statuses')
 
   return (
     <>
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
         <button
-          className={`btn btn-sm ${subTab === 'silhouettes' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setSubTab('silhouettes')}
+          className={`btn btn-sm ${subTab === 'statuses' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setSubTab('statuses')}
         >
-          Silhouettes
+          Statuses
         </button>
         <button
           className={`btn btn-sm ${subTab === 'price_brackets' ? 'btn-primary' : 'btn-secondary'}`}
@@ -804,14 +804,194 @@ function ConfigTab({ toast }) {
           Price Brackets
         </button>
         <button
+          className={`btn btn-sm ${subTab === 'silhouettes' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setSubTab('silhouettes')}
+        >
+          Silhouettes
+        </button>
+        <button
           className={`btn btn-sm ${subTab === 'stages' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setSubTab('stages')}
         >
           Production Stages
         </button>
       </div>
-      {subTab === 'silhouettes' ? <SilhouettesManager toast={toast} /> : subTab === 'price_brackets' ? <PriceBracketsManager toast={toast} /> : <ProductionStagesManager toast={toast} />}
+      {subTab === 'statuses' ? <StatusesManager toast={toast} />
+        : subTab === 'silhouettes' ? <SilhouettesManager toast={toast} />
+        : subTab === 'price_brackets' ? <PriceBracketsManager toast={toast} />
+        : <ProductionStagesManager toast={toast} />}
     </>
+  )
+}
+
+function StatusesManager({ toast }) {
+  const [statuses, setStatuses] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ value: '', label: '', color: '#9ca3af', sort_order: 0, is_active: true })
+  const [adding, setAdding] = useState(false)
+  const [addForm, setAddForm] = useState({ value: '', label: '', color: '#9ca3af', sort_order: 0 })
+
+  useEffect(() => { loadStatuses() }, [])
+
+  async function loadStatuses() {
+    setLoading(true)
+    try {
+      const data = await getStyleStatuses()
+      setStatuses(data)
+    } catch (err) {
+      toast.error('Failed to load statuses')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function slugify(s) {
+    return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+  }
+
+  async function handleAdd(e) {
+    e.preventDefault()
+    if (!addForm.label.trim()) return
+    const value = addForm.value.trim() || slugify(addForm.label)
+    try {
+      await createStyleStatus({
+        value,
+        label: addForm.label.trim(),
+        color: addForm.color,
+        sort_order: addForm.sort_order || 0,
+      })
+      toast.success('Status added')
+      setAdding(false)
+      setAddForm({ value: '', label: '', color: '#9ca3af', sort_order: 0 })
+      loadStatuses()
+    } catch (err) {
+      toast.error(err.message?.includes('duplicate') ? 'A status with this value already exists' : 'Failed to add')
+    }
+  }
+
+  async function handleUpdate(id) {
+    try {
+      await updateStyleStatus(id, {
+        value: editForm.value.trim(),
+        label: editForm.label.trim(),
+        color: editForm.color,
+        sort_order: editForm.sort_order || 0,
+        is_active: editForm.is_active,
+      })
+      toast.success('Status updated')
+      setEditingId(null)
+      loadStatuses()
+    } catch (err) {
+      toast.error('Failed to update')
+    }
+  }
+
+  async function handleDelete(id, label) {
+    if (!confirm(`Delete status "${label}"?\n\nExisting pieces with this status will keep the value but it won't appear in the dropdown anymore.`)) return
+    try {
+      await deleteStyleStatus(id)
+      toast.success('Status deleted')
+      loadStatuses()
+    } catch (err) {
+      toast.error('Failed to delete')
+    }
+  }
+
+  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+
+  return (
+    <div className="card">
+      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h3>Range Plan Statuses</h3>
+          <p className="text-muted text-sm" style={{ margin: 0 }}>Edit the status dropdown shown on every range plan piece.</p>
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setAddForm({ value: '', label: '', color: '#9ca3af', sort_order: (statuses[statuses.length - 1]?.sort_order || 0) + 1 }) }}>
+          <Plus size={14} /> Add
+        </button>
+      </div>
+
+      {adding && (
+        <form onSubmit={handleAdd} style={{ padding: '0.75rem 1rem', background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)', display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div className="form-group" style={{ flex: 1, minWidth: 140, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Label</label>
+            <input type="text" value={addForm.label} onChange={e => setAddForm(p => ({ ...p, label: e.target.value }))} placeholder="e.g. In Review" required autoFocus />
+          </div>
+          <div className="form-group" style={{ flex: 1, minWidth: 140, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Value <span className="text-muted">(auto from label)</span></label>
+            <input type="text" value={addForm.value} onChange={e => setAddForm(p => ({ ...p, value: e.target.value }))} placeholder="auto" />
+          </div>
+          <div className="form-group" style={{ width: 60, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Color</label>
+            <input type="color" value={addForm.color} onChange={e => setAddForm(p => ({ ...p, color: e.target.value }))} style={{ height: 32, padding: 2 }} />
+          </div>
+          <div className="form-group" style={{ width: 70, marginBottom: 0 }}>
+            <label style={{ fontSize: '0.75rem' }}>Order</label>
+            <input type="number" value={addForm.sort_order} onChange={e => setAddForm(p => ({ ...p, sort_order: parseInt(e.target.value) || 0 }))} />
+          </div>
+          <button type="submit" className="btn btn-primary btn-sm">Save</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+        </form>
+      )}
+
+      <table className="data-table" style={{ fontSize: '0.8125rem' }}>
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>Value</th>
+            <th>Color</th>
+            <th>Order</th>
+            <th>Active</th>
+            <th style={{ width: 80 }}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {statuses.map(s => (
+            <tr key={s.id}>
+              {editingId === s.id ? (
+                <>
+                  <td><input type="text" value={editForm.label} onChange={e => setEditForm(p => ({ ...p, label: e.target.value }))} style={{ fontSize: '0.8125rem' }} /></td>
+                  <td><input type="text" value={editForm.value} onChange={e => setEditForm(p => ({ ...p, value: e.target.value }))} style={{ fontSize: '0.8125rem' }} /></td>
+                  <td><input type="color" value={editForm.color} onChange={e => setEditForm(p => ({ ...p, color: e.target.value }))} style={{ height: 28, padding: 2, width: 50 }} /></td>
+                  <td><input type="number" value={editForm.sort_order} onChange={e => setEditForm(p => ({ ...p, sort_order: parseInt(e.target.value) || 0 }))} style={{ fontSize: '0.8125rem', width: 60 }} /></td>
+                  <td><input type="checkbox" checked={editForm.is_active} onChange={e => setEditForm(p => ({ ...p, is_active: e.target.checked }))} /></td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button className="btn btn-primary btn-sm" onClick={() => handleUpdate(s.id)} style={{ padding: '0.25rem 0.5rem' }}>Save</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setEditingId(null)} style={{ padding: '0.25rem 0.5rem' }}>Cancel</button>
+                    </div>
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td>
+                    <span className="tag" style={{ background: s.color, color: '#fff', fontWeight: 500 }}>{s.label}</span>
+                  </td>
+                  <td className="text-muted"><code style={{ fontSize: '0.75rem' }}>{s.value}</code></td>
+                  <td><span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: 3, background: s.color, border: '1px solid var(--gray-200)', verticalAlign: 'middle' }} /></td>
+                  <td className="text-muted">{s.sort_order}</td>
+                  <td>{s.is_active ? <span className="badge" style={{ background: 'var(--success-light)', color: 'var(--success)' }}>Yes</span> : <span className="badge" style={{ background: 'var(--gray-100)', color: 'var(--gray-500)' }}>No</span>}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => { setEditingId(s.id); setEditForm({ value: s.value, label: s.label, color: s.color || '#9ca3af', sort_order: s.sort_order, is_active: s.is_active !== false }) }} style={{ padding: '0.25rem' }}>
+                        <Pencil size={13} />
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(s.id, s.label)} style={{ padding: '0.25rem', color: 'var(--danger)' }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+          {statuses.length === 0 && (
+            <tr><td colSpan={6} className="text-muted" style={{ textAlign: 'center', padding: '1rem' }}>No statuses found</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   )
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
-import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets, assignStyleTo, sendAssignmentEmail } from '../lib/supabase'
+import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets, getStyleStatuses, assignStyleTo, sendAssignmentEmail } from '../lib/supabase'
 import { usePermissions } from '../hooks/usePermissions'
 import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
@@ -9,7 +9,7 @@ import CommentSection from './CommentSection'
 import Modal from './Modal'
 import { X, Upload, Trash2, Star, FileText, Image as ImageIcon, Loader, PackageCheck } from 'lucide-react'
 
-const STATUSES = [
+const FALLBACK_STATUSES = [
   { value: 'concept', label: 'Concept' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'sampling', label: 'Sampling' },
@@ -35,11 +35,15 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
   const [suppliers, setSuppliers] = useState([])
   const [silhouettes, setSilhouettes] = useState([])
   const [priceBrackets, setPriceBrackets] = useState([])
+  const [statuses, setStatuses] = useState(FALLBACK_STATUSES)
   const [showProductionModal, setShowProductionModal] = useState(false)
 
   useEffect(() => {
     getSuppliers().then(setSuppliers).catch(() => {})
     getPriceBrackets().then(setPriceBrackets).catch(() => {})
+    getStyleStatuses({ activeOnly: true })
+      .then(rows => { if (rows?.length) setStatuses(rows) })
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -238,7 +242,10 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               <div className="form-group">
                 <label>Status</label>
                 <select value={form.status} onChange={e => updateField('status', e.target.value)}>
-                  {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  {statuses.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  {form.status && !statuses.some(s => s.value === form.status) && (
+                    <option value={form.status}>{form.status} (deprecated)</option>
+                  )}
                 </select>
               </div>
               <div className="form-group">

@@ -155,6 +155,32 @@ export async function deletePriceBracket(id) {
   if (error) throw error
 }
 
+// Style Statuses
+export async function getStyleStatuses({ activeOnly = false } = {}) {
+  let query = supabase.from('style_statuses').select('*').order('sort_order')
+  if (activeOnly) query = query.eq('is_active', true)
+  const { data, error } = await query
+  if (error) throw error
+  return data
+}
+
+export async function createStyleStatus(status) {
+  const { data, error } = await supabase.from('style_statuses').insert([status]).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateStyleStatus(id, updates) {
+  const { data, error } = await supabase.from('style_statuses').update(updates).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteStyleStatus(id) {
+  const { error } = await supabase.from('style_statuses').delete().eq('id', id)
+  if (error) throw error
+}
+
 // Production Stages
 export async function getProductionStages() {
   const { data, error } = await supabase.from('production_stages').select('*').order('sort_order')
