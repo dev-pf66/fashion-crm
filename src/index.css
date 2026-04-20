@@ -8320,6 +8320,8 @@ html, body {
 .rd-matrix-cell { vertical-align: middle; min-width: 90px; }
 .rd-cell-count { font-size: 1rem; font-weight: 600; color: var(--gray-900); line-height: 1.1; }
 .rd-cell-target { font-size: 0.7rem; color: var(--gray-500); margin-top: 0.15rem; }
+.rd-cell-progress { height: 4px; background: var(--gray-200); border-radius: 2px; margin: 0.35rem auto 0; overflow: hidden; max-width: 64px; }
+.rd-cell-progress-fill { height: 100%; transition: width 0.3s ease, background 0.3s ease; border-radius: 2px; }
 .rd-cell-target-edit { font-size: 0.7rem; color: var(--gray-400); margin-top: 0.15rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.1rem 0.3rem; border-radius: 4px; }
 .rd-cell-target-edit:hover { background: var(--primary-light); color: var(--primary); }
 .rd-target-input-compact { width: 56px; padding: 0.15rem 0.3rem; border: 1px solid var(--primary); border-radius: 4px; font-size: 0.8rem; text-align: center; background: var(--card-bg); color: var(--gray-900); margin-top: 0.15rem; outline: none; }

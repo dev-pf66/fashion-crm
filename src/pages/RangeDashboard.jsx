@@ -302,6 +302,14 @@ function RangeMatrix({
   const matrixTotal = activeBracketCols.reduce((sum, col) => sum + colTotal(col.bracketKey), 0)
   const orphanCount = totalPunched - matrixTotal
 
+  // Heatmap intensity scaled to the busiest cell in this matrix
+  const maxCellValue = Math.max(
+    1,
+    ...activeSilRows.flatMap(row => activeBracketCols.map(col => cellCount(row.silKey, col.bracketKey)))
+  )
+  const cellHeat = count => count > 0 ? `rgba(99, 102, 241, ${0.06 + (count / maxCellValue) * 0.34})` : undefined
+  const targetFillColor = pct => pct >= 100 ? '#22c55e' : pct >= 80 ? '#f59e0b' : '#ef4444'
+
   const rangeTarget = getTarget('total', '_total')
   const rangeEditKey = `${range.id}:total:_total`
 
@@ -362,8 +370,9 @@ function RangeMatrix({
                     const key = `${row.display}::${col.display}`
                     const target = getTarget('silhouette_bracket', key)
                     const editKey = `${range.id}:silhouette_bracket:${key}`
+                    const pct = target > 0 ? Math.min(100, Math.round((count / target) * 100)) : null
                     return (
-                      <td key={col.bracketKey} className="rd-matrix-cell">
+                      <td key={col.bracketKey} className="rd-matrix-cell" style={{ background: cellHeat(count) }}>
                         <div className="rd-cell-count">{count}</div>
                         {isAdmin ? (
                           <EditableTarget
@@ -378,6 +387,14 @@ function RangeMatrix({
                         ) : target > 0 ? (
                           <div className="rd-cell-target">/ {target}</div>
                         ) : null}
+                        {target > 0 && (
+                          <div className="rd-cell-progress" title={`${count} of ${target} (${pct}%)`}>
+                            <div
+                              className="rd-cell-progress-fill"
+                              style={{ width: `${pct}%`, background: targetFillColor(pct) }}
+                            />
+                          </div>
+                        )}
                       </td>
                     )
                   })}
