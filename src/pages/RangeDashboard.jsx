@@ -342,8 +342,8 @@ function RangeMatrix({
         )}
       </div>
 
-      {activeSilRows.length === 0 || activeBracketCols.length === 0 ? (
-        <p className="empty-state" style={{ fontSize: '0.85rem' }}>No pieces with silhouette + price bracket yet.</p>
+      {activeSilRows.length === 0 && activeBracketCols.length === 0 ? (
+        <p className="empty-state" style={{ fontSize: '0.85rem' }}>No pieces with silhouette or price bracket yet.</p>
       ) : (
         <div className="rd-matrix-wrap">
           {orphanCount > 0 && (
