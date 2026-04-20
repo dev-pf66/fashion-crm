@@ -1,15 +1,31 @@
 import { useState, useEffect } from 'react'
-import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
 import { supabase } from '../lib/supabase'
-import { formatActivityMessage, getRelativeTime } from '../lib/activityLogger'
+import { getRelativeTime } from '../lib/activityLogger'
 import { useToast } from '../contexts/ToastContext'
-import { Clock, Filter } from 'lucide-react'
+import { Clock } from 'lucide-react'
 
-const ENTITY_TYPES = ['style', 'supplier', 'sample', 'material', 'purchase_order']
+const ENTITY_TYPES = [
+  'range_styles',
+  'ranges',
+  'tasks',
+  'people',
+  'suppliers',
+  'samples',
+  'orders',
+  'order_items',
+  'production_stages',
+  'silhouettes',
+  'price_brackets',
+  'dashboard_targets',
+  'roles',
+]
+
+function entityLabel(t) {
+  return (t || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
 
 export default function Activity() {
-  const { currentDivision } = useDivision()
   const { people } = useApp()
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -19,8 +35,8 @@ export default function Activity() {
   const PAGE_SIZE = 30
 
   useEffect(() => {
-    if (currentDivision) loadActivity()
-  }, [currentDivision, filters, page])
+    loadActivity()
+  }, [filters, page])
 
   async function loadActivity() {
     setLoading(true)
@@ -28,7 +44,6 @@ export default function Activity() {
       let query = supabase
         .from('activity_log')
         .select('*, people(id, name)')
-        .eq('division_id', currentDivision.id)
         .order('created_at', { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
@@ -51,7 +66,7 @@ export default function Activity() {
       <div className="page-header">
         <div>
           <h1>Activity Log</h1>
-          <p className="subtitle">Track all changes across your division</p>
+          <p className="subtitle">Track all changes across the workspace</p>
         </div>
       </div>
 
@@ -62,7 +77,7 @@ export default function Activity() {
         >
           <option value="">All Types</option>
           {ENTITY_TYPES.map(t => (
-            <option key={t} value={t}>{t.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
+            <option key={t} value={t}>{entityLabel(t)}</option>
           ))}
         </select>
         <select
@@ -111,7 +126,7 @@ export default function Activity() {
                         {entry.action}
                       </span>
                     </td>
-                    <td>{entry.entity_type?.replace('_', ' ')}</td>
+                    <td>{entityLabel(entry.entity_type)}</td>
                     <td style={{ color: 'var(--gray-500)' }}>
                       {entry.details?.name || entry.details?.style_number || entry.details?.po_number || '-'}
                     </td>
