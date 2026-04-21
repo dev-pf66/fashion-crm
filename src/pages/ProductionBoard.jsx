@@ -38,6 +38,7 @@ export default function ProductionBoard() {
   useEffect(() => { loadData() }, [currentDivision])
 
   async function loadData() {
+    setLoading(true)
     try {
       let query = supabase
         .from('range_styles')

@@ -32,6 +32,7 @@ export default function Dashboard() {
   }, [currentDivision])
 
   async function loadData() {
+    setLoading(true)
     try {
       const [statsData, stylesData, deadlinesData, overdueData, taskData, allTasks] = await Promise.all([
         getDashboardStats(currentDivision.id),

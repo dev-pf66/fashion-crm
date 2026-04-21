@@ -40,6 +40,7 @@ export default function Samples() {
   }, [currentDivision])
 
   async function loadData() {
+    setLoading(true)
     try {
       const [samplesData, suppliersData] = await Promise.all([
         getSamples(currentDivision.id),

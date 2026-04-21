@@ -43,6 +43,7 @@ export default function Styles() {
   }, [currentDivision])
 
   async function loadData() {
+    setLoading(true)
     try {
       const [stylesData, suppData] = await Promise.all([
         getStyles(currentDivision.id),

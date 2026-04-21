@@ -55,6 +55,7 @@ export default function Tasks() {
   }, [currentDivision])
 
   async function loadTasks() {
+    setLoading(true)
     try {
       const [data, counts] = await Promise.all([
         getTasks({ division_id: currentDivision?.id }),

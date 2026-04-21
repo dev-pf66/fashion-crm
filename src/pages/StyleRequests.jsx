@@ -44,6 +44,7 @@ export default function StyleRequests() {
   }, [currentDivision])
 
   async function loadData() {
+    setLoading(true)
     try {
       const data = await getStyleRequests(currentDivision?.id)
       setRequests(data || [])

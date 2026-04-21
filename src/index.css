@@ -8333,19 +8333,58 @@ html, body {
 .rd-matrix-totalrow td { background: var(--gray-50); font-weight: 700; color: var(--gray-900); }
 .rd-matrix-grandtotal { background: var(--gray-100) !important; }
 
-.division-switch-bar {
+.division-switch-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0;
-  height: 3px;
+  inset: 0;
   z-index: 9999;
-  background: linear-gradient(90deg, transparent 0%, var(--primary) 40%, var(--primary) 60%, transparent 100%);
-  background-size: 40% 100%;
-  background-repeat: no-repeat;
-  animation: division-switch-slide 0.9s ease-in-out infinite;
-  pointer-events: none;
+  background: var(--bg, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: division-switch-fade-in 180ms ease-out;
 }
 
-@keyframes division-switch-slide {
-  0%   { background-position: -40% 0; }
-  100% { background-position: 140% 0; }
+[data-theme="dark"] .division-switch-overlay {
+  background: var(--bg, #0b0b0c);
+}
+
+.division-switch-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 3rem;
+}
+
+.division-switch-spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid var(--gray-200, #e5e7eb);
+  border-top-color: var(--primary);
+  animation: division-switch-spin 0.7s linear infinite;
+}
+
+.division-switch-label {
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gray-500, #6b7280);
+  font-weight: 500;
+}
+
+.division-switch-name {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gray-900, #111827);
+  letter-spacing: -0.02em;
+}
+
+@keyframes division-switch-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes division-switch-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }

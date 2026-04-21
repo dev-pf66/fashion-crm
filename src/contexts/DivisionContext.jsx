@@ -15,6 +15,7 @@ export function DivisionProvider({ children }) {
   const [currentDivision, setCurrentDivision] = useState(null)
   const [loading, setLoading] = useState(true)
   const [isSwitching, setIsSwitching] = useState(false)
+  const [pendingDivision, setPendingDivision] = useState(null)
   const switchTimerRef = useRef(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -58,6 +59,7 @@ export function DivisionProvider({ children }) {
 
   function changeDivision(division) {
     if (division?.id === currentDivision?.id) return
+    setPendingDivision(division)
     setIsSwitching(true)
     setCurrentDivision(division)
     setSearchParams(prev => {
@@ -65,9 +67,10 @@ export function DivisionProvider({ children }) {
       return prev
     }, { replace: true })
     if (switchTimerRef.current) clearTimeout(switchTimerRef.current)
-    // Give page effects a beat to start their fetches, then release the bar.
-    // Individual pages still show their own refreshing state if they're slow.
-    switchTimerRef.current = setTimeout(() => setIsSwitching(false), 800)
+    switchTimerRef.current = setTimeout(() => {
+      setIsSwitching(false)
+      setPendingDivision(null)
+    }, 700)
   }
 
   useEffect(() => () => { if (switchTimerRef.current) clearTimeout(switchTimerRef.current) }, [])
@@ -79,6 +82,7 @@ export function DivisionProvider({ children }) {
       changeDivision,
       loading,
       isSwitching,
+      pendingDivision,
       refreshDivisions: loadDivisions,
     }}>
       {children}

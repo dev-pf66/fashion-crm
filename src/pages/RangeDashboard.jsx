@@ -33,6 +33,7 @@ export default function RangeDashboard() {
   }, [currentDivision])
 
   async function loadAll() {
+    setLoading(true)
     try {
       const rangeList = await getRanges(currentDivision?.id)
       setRanges(rangeList)

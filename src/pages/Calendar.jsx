@@ -45,6 +45,7 @@ export default function Calendar() {
   }, [currentDivision, year, month])
 
   async function loadEvents() {
+    setLoading(true)
     try {
       // Load 2 months around current view
       const start = new Date(year, month - 1, 1).toISOString().slice(0, 10)
