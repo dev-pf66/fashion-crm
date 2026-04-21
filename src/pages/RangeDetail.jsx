@@ -90,7 +90,7 @@ export default function RangeDetail() {
   const { currentPerson, people } = useApp()
   const { divisions } = useDivision()
   const toast = useToast()
-  const { can, isAdmin } = usePermissions()
+  const { can } = usePermissions()
 
   const [range, setRange] = useState(null)
   const [styles, setStyles] = useState([])
@@ -759,18 +759,16 @@ export default function RangeDetail() {
       {selectedIds.size > 0 && can('range_plan.edit') && (
         <div className="bulk-bar">
           <span className="bulk-bar-count">{selectedIds.size} selected</span>
-          {isAdmin && (
-            <select
-              className="btn btn-sm"
-              defaultValue=""
-              onChange={e => { if (e.target.value) handleBulkAssign(e.target.value); e.target.value = '' }}
-            >
-              <option value="" disabled>Assign to...</option>
-              {people.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          )}
+          <select
+            className="btn btn-sm"
+            defaultValue=""
+            onChange={e => { if (e.target.value) handleBulkAssign(e.target.value); e.target.value = '' }}
+          >
+            <option value="" disabled>Assign to...</option>
+            {people.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
           <select
             className="btn btn-sm"
             defaultValue=""
@@ -781,11 +779,9 @@ export default function RangeDetail() {
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
-          {isAdmin && (
-            <button className="btn btn-danger btn-sm" onClick={handleBulkDelete}>
-              <Trash2 size={14} /> Delete
-            </button>
-          )}
+          <button className="btn btn-danger btn-sm" onClick={handleBulkDelete}>
+            <Trash2 size={14} /> Delete
+          </button>
           <button className="btn btn-ghost btn-sm" onClick={() => setSelectedIds(new Set())}>
             <X size={14} /> Clear
           </button>

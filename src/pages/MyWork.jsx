@@ -11,7 +11,7 @@ import {
 
 export default function MyWork() {
   const { currentPerson, people } = useApp()
-  const { isAdmin, can } = usePermissions()
+  const { isAdmin, isAllAccess, can } = usePermissions()
   const canEditKanban = isAdmin || can('my_work.edit')
   const toast = useToast()
   const [styles, setStyles] = useState([])
@@ -33,9 +33,9 @@ export default function MyWork() {
     try {
       const [stagesData, stylesData] = await Promise.all([
         getProductionStages(),
-        isAdmin && selectedPerson
+        isAllAccess && selectedPerson
           ? getAllAssignedStyles().then(s => s.filter(x => x.assigned_to === parseInt(selectedPerson)))
-          : isAdmin && !selectedPerson
+          : isAllAccess && !selectedPerson
           ? getAllAssignedStyles()
           : getMyAssignedStyles(currentPerson.id),
       ])
@@ -142,10 +142,10 @@ export default function MyWork() {
       <div className="page-header">
         <div>
           <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Briefcase size={24} /> {isAdmin ? 'Production Board' : 'My Work'}
+            <Briefcase size={24} /> {isAllAccess ? 'Production Board' : 'My Work'}
           </h1>
           <p className="subtitle">
-            {isAdmin
+            {isAllAccess
               ? `${styles.length} assigned piece${styles.length !== 1 ? 's' : ''} across team`
               : `${styles.length} piece${styles.length !== 1 ? 's' : ''} assigned to you`
             }
@@ -153,7 +153,7 @@ export default function MyWork() {
         </div>
       </div>
 
-      {styles.length === 0 && !isAdmin ? (
+      {styles.length === 0 && !isAllAccess ? (
         <div className="card">
           <div className="empty-state">
             <Briefcase size={48} />
@@ -183,9 +183,9 @@ export default function MyWork() {
                 {ranges.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             )}
-            {isAdmin && assignees.length > 0 && (
+            {isAllAccess && assignees.length > 0 && (
               <select value={selectedPerson} onChange={e => setSelectedPerson(e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem' }}>
-                <option value="">All Merchandisers</option>
+                <option value="">All Assignees</option>
                 {assignees.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             )}
@@ -229,7 +229,7 @@ export default function MyWork() {
                                       {style.silhouette && <span className="tag" style={{ fontSize: '0.625rem' }}>{style.silhouette}</span>}
                                       {style.price_category && <span className="tag" style={{ fontSize: '0.625rem', background: 'var(--gray-100)' }}>{style.price_category}</span>}
                                     </div>
-                                    {isAdmin && style.assignee?.name && (
+                                    {isAllAccess && style.assignee?.name && (
                                       <div style={{ fontSize: '0.6875rem', color: 'var(--gray-500)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                         <span className="rp-assignee-avatar" style={{ width: 14, height: 14, fontSize: '0.4rem' }}>{style.assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</span>
                                         {style.assignee.name.split(' ')[0]}
@@ -312,7 +312,7 @@ export default function MyWork() {
                               <span>{style.price_category}</span>
                             </div>
                           )}
-                          {isAdmin && style.assignee?.name && (
+                          {isAllAccess && style.assignee?.name && (
                             <div className="mywork-card-detail">
                               <span className="mywork-detail-label">Assigned</span>
                               <span>{style.assignee.name}</span>

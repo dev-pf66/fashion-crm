@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getSupplier, updateSupplier, deleteSupplier } from '../lib/supabase'
-import { SUPPLIER_STATUSES, maskSupplierName, isAdmin as checkAdmin } from '../lib/constants'
+import { SUPPLIER_STATUSES, maskSupplierName } from '../lib/constants'
+import { usePermissions } from '../hooks/usePermissions'
 import { useApp } from '../App'
 import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../contexts/ToastContext'
@@ -17,7 +18,8 @@ export default function SupplierDetail() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('profile')
   const toast = useToast()
-  const isAdmin = checkAdmin(currentPerson)
+  const { can } = usePermissions()
+  const canEditSuppliers = can('suppliers.edit')
 
   useEffect(() => { loadSupplier() }, [id])
 
@@ -79,7 +81,7 @@ export default function SupplierDetail() {
               <select value={supplier.status} onChange={e => handleStatusChange(e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem', padding: '0.375rem 0.5rem' }}>
                 {SUPPLIER_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
-              {isAdmin && (
+              {canEditSuppliers && (
                 <button className="btn btn-sm" onClick={handleDelete} style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>
                   <Trash2 size={14} /> Delete
                 </button>

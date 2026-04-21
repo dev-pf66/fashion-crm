@@ -6872,6 +6872,21 @@ div:hover > .rp-table-thumb-change {
   color: var(--success);
 }
 
+.role-badge.role-social_media {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.role-badge.role-design {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.role-badge.role-marketing {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
 /* ============================================================
    ONBOARDING WELCOME
    ============================================================ */

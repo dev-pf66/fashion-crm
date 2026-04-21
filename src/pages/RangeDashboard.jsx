@@ -14,7 +14,8 @@ import { BarChart3, Target, Users, AlertTriangle, TrendingUp, ChevronDown, Penci
 
 export default function RangeDashboard() {
   const { currentPerson, people } = useApp()
-  const { isAdmin } = usePermissions()
+  const { role, can } = usePermissions()
+  const canEditTargets = can('dashboard.edit_targets')
   const { addToast } = useToast()
   const { currentDivision } = useDivision()
 
@@ -112,7 +113,7 @@ export default function RangeDashboard() {
     ? merchPerformance.reduce((worst, m) => m.pct < worst.pct ? m : worst, merchPerformance[0])
     : null
 
-  const isMerchandiser = !isAdmin && currentPerson
+  const isMerchandiser = role?.name === 'merchandiser' && currentPerson
   const visibleMerchPerf = isMerchandiser
     ? merchPerformance.filter(m => m.personId === currentPerson.id)
     : merchPerformance
@@ -182,7 +183,7 @@ export default function RangeDashboard() {
                 targets={allTargets.filter(t => t.range_id === range.id)}
                 silhouettes={silhouettes}
                 priceBrackets={priceBrackets}
-                isAdmin={isAdmin}
+                canEditTargets={canEditTargets}
                 editingTarget={editingTarget}
                 setEditingTarget={setEditingTarget}
                 saveTarget={saveTarget}
@@ -234,7 +235,7 @@ export default function RangeDashboard() {
 
 function RangeMatrix({
   range, styles, targets, silhouettes, priceBrackets,
-  isAdmin, editingTarget, setEditingTarget, saveTarget,
+  canEditTargets, editingTarget, setEditingTarget, saveTarget,
   completedStage, today,
 }) {
   const totalPunched = styles.length
@@ -330,7 +331,7 @@ function RangeMatrix({
             )}
           </div>
         </div>
-        {isAdmin && (
+        {canEditTargets && (
           <EditableTarget
             value={rangeTarget}
             editing={editingTarget === rangeEditKey}
@@ -374,7 +375,7 @@ function RangeMatrix({
                     return (
                       <td key={col.bracketKey} className="rd-matrix-cell" style={{ background: cellHeat(count) }}>
                         <div className="rd-cell-count">{count}</div>
-                        {isAdmin ? (
+                        {canEditTargets ? (
                           <EditableTarget
                             value={target}
                             editing={editingTarget === editKey}

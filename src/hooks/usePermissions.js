@@ -16,6 +16,9 @@ export function usePermissions() {
 
   const isAdmin = can('admin.access')
   const hasRole = !!role
+  // Roles with cross-team visibility (see everyone's work, assign pieces, etc.)
+  // without the admin panel itself. Expands as we add team roles.
+  const isAllAccess = isAdmin || ['social_media', 'design', 'marketing'].includes(role?.name)
 
-  return { role, can, isAdmin, hasRole }
+  return { role, can, isAdmin, isAllAccess, hasRole }
 }

@@ -21,7 +21,8 @@ const FALLBACK_STATUSES = [
 
 export default function RangeStylePanel({ styleId, rangeId, categories, onClose, onUpdate, onDelete }) {
   const { currentPerson, people } = useApp()
-  const { isAdmin, can } = usePermissions()
+  const { can } = usePermissions()
+  const canAssign = can('range_plan.edit')
   const canEdit = can('range_plan.edit')
   const STYLE_CATEGORIES = (categories && categories.length > 0) ? categories : DEFAULT_CATEGORIES
   const toast = useToast()
@@ -268,7 +269,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               </div>
             </div>
 
-            {isAdmin && (
+            {canAssign && (
               <div className="form-group">
                 <label>Assigned To</label>
                 <select
