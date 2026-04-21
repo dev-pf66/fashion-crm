@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
 import { globalSearch, getRanges, getSuppliers, createTask, createRangeStyle } from '../lib/supabase'
-import { STYLE_CATEGORIES, maskSupplierName, isAdmin } from '../lib/constants'
+import { STYLE_CATEGORIES, maskSupplierName } from '../lib/constants'
 import { useToast } from '../contexts/ToastContext'
 import { Search, Scissors, Factory, ClipboardList, FlaskConical, Users, CheckSquare, X, Plus, Layers } from 'lucide-react'
 
@@ -73,7 +73,7 @@ export default function CommandPalette({ isOpen, onClose }) {
     debounceRef.current = setTimeout(async () => {
       setLoading(true)
       try {
-        const data = await globalSearch(query.trim(), currentDivision?.id, isAdmin(currentPerson))
+        const data = await globalSearch(query.trim(), currentDivision?.id, currentPerson)
         setResults(data)
         setSelectedIndex(0)
       } catch (err) {
@@ -395,7 +395,7 @@ function QuickPieceForm({ currentPerson, onCreated, onBack }) {
         <div className="cmd-form-row">
           <select value={supplierId} onChange={e => setSupplierId(e.target.value)}>
             <option value="">No supplier</option>
-            {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson?.name)}</option>)}
+            {suppliers.map(s => <option key={s.id} value={s.id}>{maskSupplierName(s.name, currentPerson)}</option>)}
           </select>
         </div>
         <div className="cmd-form-actions">
