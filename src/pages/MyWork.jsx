@@ -11,8 +11,8 @@ import {
 
 export default function MyWork() {
   const { currentPerson, people } = useApp()
-  const { isAdmin, isAllAccess, can } = usePermissions()
-  const canEditKanban = isAdmin || can('my_work.edit')
+  const { isAllAccess, can } = usePermissions()
+  const canEditKanban = can('my_work.edit')
   const toast = useToast()
   const [styles, setStyles] = useState([])
   const [stages, setStages] = useState([])

@@ -6,7 +6,6 @@ import { ToastProvider } from './contexts/ToastContext'
 import { getPeople, getPersonByEmail, getPersonByUserId, createPerson, updatePerson } from './lib/supabase'
 import Layout from './components/Layout'
 import Login from './pages/Login'
-import { isAdmin } from './lib/constants'
 import ProtectedRoute from './components/ProtectedRoute'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
