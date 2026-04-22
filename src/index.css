@@ -8448,3 +8448,337 @@ html, body {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* ============================================================
+   ONBOARDING WIZARD
+   ============================================================ */
+
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.onboarding-modal {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 640px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.onboarding-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--gray-500);
+  cursor: pointer;
+  padding: 0.375rem;
+  border-radius: var(--radius);
+  z-index: 2;
+}
+.onboarding-close:hover {
+  background: var(--gray-100);
+  color: var(--gray-800);
+}
+
+.onboarding-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 1rem 1.25rem 0.5rem;
+}
+.onboarding-progress-dot {
+  width: 28px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--gray-200);
+  transition: background 0.2s;
+}
+.onboarding-progress-dot.active {
+  background: var(--primary);
+}
+.onboarding-progress-label {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--gray-500);
+}
+
+.onboarding-body {
+  padding: 0.5rem 1.5rem 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.onboarding-step h2 {
+  margin: 0.5rem 0 0.5rem;
+  font-size: 1.375rem;
+}
+
+.onboarding-lead {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  margin-bottom: 1rem;
+}
+
+.onboarding-role-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark, #4338ca));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.onboarding-role-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+.onboarding-role-card:has(.onboarding-role-col:only-child) {
+  grid-template-columns: 1fr;
+}
+
+.onboarding-role-col-head {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  color: var(--success);
+  margin-bottom: 0.5rem;
+}
+.onboarding-role-col-head.muted {
+  color: var(--gray-500);
+}
+
+.onboarding-role-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.onboarding-role-col li {
+  font-size: 0.8125rem;
+  color: var(--gray-700);
+  padding-left: 0.875rem;
+  position: relative;
+  line-height: 1.45;
+}
+.onboarding-role-col li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gray-400);
+}
+
+.onboarding-role-note {
+  margin-top: 0.5rem;
+  font-size: 0.6875rem;
+  color: var(--gray-500);
+  font-style: italic;
+}
+
+.onboarding-starting-points {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.onboarding-sp-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+}
+.onboarding-sp-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(79, 70, 229, 0.1);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.onboarding-sp-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+.onboarding-sp-desc {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+}
+
+.onboarding-hint {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.onboarding-email-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  background: rgba(79, 70, 229, 0.06);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  border-radius: var(--radius);
+  color: var(--gray-700);
+  font-size: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.onboarding-question {
+  margin-bottom: 1.25rem;
+}
+.onboarding-question > label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 0.375rem;
+}
+.onboarding-q-desc {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  margin-bottom: 0.5rem;
+}
+.onboarding-question select {
+  width: 100%;
+}
+
+.onboarding-chip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.onboarding-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  text-align: left;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-200);
+  background: var(--card-bg);
+  color: var(--gray-700);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+}
+.onboarding-chip:hover {
+  border-color: var(--gray-400);
+}
+.onboarding-chip.selected {
+  border-color: var(--primary);
+  background: rgba(79, 70, 229, 0.05);
+}
+.onboarding-chip > svg {
+  margin-top: 2px;
+  color: var(--gray-500);
+  flex-shrink: 0;
+}
+.onboarding-chip.selected > svg {
+  color: var(--primary);
+}
+.onboarding-chip-label {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--gray-800);
+}
+.onboarding-chip-desc {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.onboarding-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.onboarding-chip-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.75rem;
+  border: 1px solid var(--gray-200);
+  background: var(--card-bg);
+  color: var(--gray-700);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.onboarding-chip-pill:hover {
+  border-color: var(--gray-400);
+}
+.onboarding-chip-pill.selected {
+  border-color: var(--primary);
+  background: rgba(79, 70, 229, 0.08);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.onboarding-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.875rem 1.25rem;
+  border-top: 1px solid var(--gray-200);
+  background: var(--gray-50);
+}
+
+@media (max-width: 540px) {
+  .onboarding-overlay {
+    padding: 0.5rem;
+  }
+  .onboarding-modal {
+    max-height: 96vh;
+  }
+  .onboarding-role-card {
+    grid-template-columns: 1fr;
+  }
+  .onboarding-chip-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -7,6 +7,7 @@ import { getPeople, getPersonByEmail, getPersonByUserId, createPerson, updatePer
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import ProtectedRoute from './components/ProtectedRoute'
+import OnboardingWizard from './components/OnboardingWizard'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Styles = lazy(() => import('./pages/Styles'))
@@ -124,6 +125,7 @@ function AppRoutes() {
     <AppContext.Provider value={{ currentPerson, people, setPeople, refreshPeople }}>
       <ToastProvider>
       <DivisionProvider>
+        <OnboardingGate />
         <Suspense fallback={<div className="loading-container"><div className="loading-spinner" /></div>}>
         <Routes>
           <Route path="/" element={<Layout />}>
@@ -161,6 +163,13 @@ function AppRoutes() {
       </ToastProvider>
     </AppContext.Provider>
   )
+}
+
+function OnboardingGate() {
+  const { currentPerson } = useApp()
+  const [open, setOpen] = useState(true)
+  if (!currentPerson || currentPerson.onboarded_at || !open) return null
+  return <OnboardingWizard onClose={() => setOpen(false)} />
 }
 
 export default function App() {

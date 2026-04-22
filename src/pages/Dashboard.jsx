@@ -12,7 +12,6 @@ import {
   LayoutDashboard, Scissors, FlaskConical, ClipboardList,
   AlertTriangle, Calendar, Clock, CheckSquare
 } from 'lucide-react'
-import OnboardingWelcome from '../components/OnboardingWelcome'
 import EmptyState from '../components/EmptyState'
 
 export default function Dashboard() {
@@ -72,8 +71,6 @@ export default function Dashboard() {
           <p className="subtitle">{currentDivision?.name || 'No division selected'}</p>
         </div>
       </div>
-
-      <OnboardingWelcome />
 
       {/* Overdue Alert */}
       {overdue && overdue.total > 0 && (

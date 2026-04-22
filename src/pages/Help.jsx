@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { HelpCircle, Scissors, Factory, Palette, FlaskConical, ClipboardList, Users, LayoutDashboard, Clock, Download, Keyboard } from 'lucide-react'
+import { HelpCircle, Scissors, Factory, Palette, FlaskConical, ClipboardList, Users, LayoutDashboard, Clock, Download, Keyboard, RefreshCw } from 'lucide-react'
+import { useApp } from '../App'
+import { useToast } from '../contexts/ToastContext'
+import { updatePerson } from '../lib/supabase'
 
 const SECTIONS = [
   { id: 'getting-started', label: 'Getting Started', icon: HelpCircle },
@@ -17,12 +20,36 @@ const SECTIONS = [
 ]
 
 export default function Help() {
+  const { currentPerson, refreshPeople } = useApp()
+  const toast = useToast()
+  const [replaying, setReplaying] = useState(false)
+
+  async function handleReplayTour() {
+    if (!currentPerson) return
+    setReplaying(true)
+    try {
+      await updatePerson(currentPerson.id, { onboarded_at: null })
+      await refreshPeople()
+      toast.success('Welcome tour will start now')
+    } catch (err) {
+      console.error(err)
+      toast.error('Could not restart tour')
+    } finally {
+      setReplaying(false)
+    }
+  }
+
   return (
     <div>
       <div className="page-header">
         <div>
           <h1>Help & Documentation</h1>
           <p className="subtitle">Learn how to use Sourcing CRM</p>
+        </div>
+        <div className="page-header-actions">
+          <button className="btn btn-secondary btn-sm" onClick={handleReplayTour} disabled={replaying}>
+            <RefreshCw size={14} /> {replaying ? 'Loading…' : 'Replay welcome tour'}
+          </button>
         </div>
       </div>
 
