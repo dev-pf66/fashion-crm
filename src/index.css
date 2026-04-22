@@ -46,6 +46,26 @@
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Type scale */
+  --text-2xs: 0.6875rem;  /* 11px - micro labels */
+  --text-xs:  0.75rem;    /* 12px - small captions, table cells */
+  --text-sm:  0.8125rem;  /* 13px - default small body */
+  --text-base:0.875rem;   /* 14px - secondary body */
+  --text-md:  1rem;       /* 16px - body */
+  --text-lg:  1.25rem;    /* 20px - section headings */
+  --text-xl:  1.5rem;     /* 24px - page headings */
+  --text-2xl: 1.875rem;   /* 30px - dashboard hero numbers */
+
+  /* Spacing scale (4-based) */
+  --space-1:   0.25rem;   /* 4px */
+  --space-1-5: 0.375rem;  /* 6px */
+  --space-2:   0.5rem;    /* 8px */
+  --space-3:   0.75rem;   /* 12px */
+  --space-4:   1rem;      /* 16px */
+  --space-5:   1.5rem;    /* 24px */
+  --space-6:   2rem;      /* 32px */
+  --space-8:   3rem;      /* 48px */
 }
 
 /* ============================================================
