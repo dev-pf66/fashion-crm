@@ -4,6 +4,7 @@ import { MATERIAL_TYPES, maskSupplierName } from '../lib/constants'
 import { useApp } from '../App'
 import Modal from '../components/Modal'
 import { Plus, Palette, Search, ImageOff } from 'lucide-react'
+import { GridSkeleton } from '../components/PageSkeleton'
 
 export default function Materials() {
   const { currentPerson } = useApp()
@@ -38,7 +39,7 @@ export default function Materials() {
     return true
   })
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <GridSkeleton />
 
   return (
     <div>

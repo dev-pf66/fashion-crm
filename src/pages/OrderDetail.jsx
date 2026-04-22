@@ -10,6 +10,7 @@ import POLineItemTable from '../components/POLineItemTable'
 import Breadcrumbs from '../components/Breadcrumbs'
 import CommentThread from '../components/CommentThread'
 import { Edit, Calendar, DollarSign, Package, Truck, Copy } from 'lucide-react'
+import { DetailSkeleton } from '../components/PageSkeleton'
 
 export default function OrderDetail() {
   const { id } = useParams()
@@ -97,7 +98,7 @@ export default function OrderDetail() {
 
   const formatDate = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <DetailSkeleton />
   if (!po) return <div className="card"><div className="empty-state"><h3>Purchase order not found</h3></div></div>
 
   return (

@@ -24,6 +24,7 @@ import {
   Maximize2, Minimize2, Square, X, ChevronLeft, ChevronRight, Factory,
   CheckSquare, Clock, Calendar, Download, Trash2, ChevronDown, ChevronUp,
 } from 'lucide-react'
+import { KanbanSkeleton } from '../components/PageSkeleton'
 
 const RANGE_STYLE_STATUSES = [
   { value: 'concept', label: 'Concept', bg: '#f3f4f6', color: '#4b5563' },
@@ -567,7 +568,7 @@ export default function RangeDetail() {
     }
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <KanbanSkeleton columns={5} />
   if (!range) return <div className="card"><div className="empty-state"><h3>Range not found</h3></div></div>
 
   return (

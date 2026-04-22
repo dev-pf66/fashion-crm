@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { getRelativeTime } from '../lib/activityLogger'
 import { useToast } from '../contexts/ToastContext'
 import { Clock } from 'lucide-react'
+import { ListSkeleton } from '../components/PageSkeleton'
 
 const ENTITY_TYPES = [
   'range_styles',
@@ -92,7 +93,7 @@ export default function Activity() {
       </div>
 
       {loading ? (
-        <div className="loading-container"><div className="loading-spinner" /></div>
+        <ListSkeleton />
       ) : entries.length === 0 ? (
         <div className="card">
           <div className="empty-state">

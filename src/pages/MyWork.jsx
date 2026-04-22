@@ -8,6 +8,7 @@ import {
   Briefcase, Image as ImageIcon, X, ChevronLeft, ChevronRight,
   Maximize2, Search, LayoutGrid, List, Clock, Users,
 } from 'lucide-react'
+import { KanbanSkeleton } from '../components/PageSkeleton'
 
 export default function MyWork() {
   const { currentPerson, people } = useApp()
@@ -135,7 +136,8 @@ export default function MyWork() {
     }
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <KanbanSkeleton />
+
 
   return (
     <div>

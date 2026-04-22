@@ -5,6 +5,7 @@ import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
 import { PackageCheck, Search, User, Clock, Filter, GripVertical } from 'lucide-react'
+import { KanbanSkeleton } from '../components/PageSkeleton'
 
 const PROD_STATUSES = [
   { value: 'pending', label: 'Pending', bg: '#fef3c7', color: '#b45309' },
@@ -110,7 +111,7 @@ export default function ProductionBoard() {
 
   const totalQty = filtered.reduce((sum, i) => sum + (i.production_qty || 0), 0)
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <KanbanSkeleton columns={3} />
 
   return (
     <div>

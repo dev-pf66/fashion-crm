@@ -4,6 +4,7 @@ import { Bell, Check, CheckCheck, Search } from 'lucide-react'
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/supabase'
 import { useApp } from '../App'
 import { useToast } from '../contexts/ToastContext'
+import { ListSkeleton } from '../components/PageSkeleton'
 
 function timeAgo(date) {
   const seconds = Math.floor((new Date() - new Date(date)) / 1000)
@@ -148,7 +149,7 @@ export default function Notifications() {
       </div>
 
       {loading ? (
-        <div className="loading-container"><div className="loading-spinner" /></div>
+        <ListSkeleton />
       ) : filtered.length === 0 ? (
         <div className="notif-page-empty">
           <Bell size={48} />

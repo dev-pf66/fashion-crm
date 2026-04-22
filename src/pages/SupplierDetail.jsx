@@ -8,6 +8,7 @@ import StatusBadge from '../components/StatusBadge'
 import { useToast } from '../contexts/ToastContext'
 import CommentThread from '../components/CommentThread'
 import { ArrowLeft, Edit, MapPin, Phone, Mail, Globe, Trash2 } from 'lucide-react'
+import { DetailSkeleton } from '../components/PageSkeleton'
 
 export default function SupplierDetail() {
   const { id } = useParams()
@@ -56,7 +57,7 @@ export default function SupplierDetail() {
     }
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <DetailSkeleton />
   if (!supplier) return <div className="card"><div className="empty-state"><h3>Supplier not found</h3></div></div>
 
   return (

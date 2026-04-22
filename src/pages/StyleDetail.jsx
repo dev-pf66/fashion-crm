@@ -13,6 +13,7 @@ import CostingSheet from '../components/CostingSheet'
 import ComplianceTracker from '../components/ComplianceTracker'
 import MeasurementTable from '../components/MeasurementTable'
 import CommentThread from '../components/CommentThread'
+import { DetailSkeleton } from '../components/PageSkeleton'
 import { Edit, ImageOff, Copy } from 'lucide-react'
 
 export default function StyleDetail() {
@@ -69,7 +70,7 @@ export default function StyleDetail() {
     }
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <DetailSkeleton />
   if (!style) return <div className="card"><div className="empty-state"><h3>Style not found</h3></div></div>
 
   const colorways = style.colorways || []

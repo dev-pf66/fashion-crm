@@ -11,6 +11,7 @@ import {
 } from '../lib/supabase'
 import { useDivision } from '../contexts/DivisionContext'
 import { BarChart3, Target, Users, AlertTriangle, TrendingUp, ChevronDown, Pencil } from 'lucide-react'
+import { DashboardSkeleton } from '../components/PageSkeleton'
 
 export default function RangeDashboard() {
   const { currentPerson, people } = useApp()
@@ -137,7 +138,7 @@ export default function RangeDashboard() {
       </div>
 
       {loading ? (
-        <div className="loading-container"><div className="loading-spinner" /></div>
+        <DashboardSkeleton />
       ) : (
         <>
           {/* Aggregated Quick Stats */}

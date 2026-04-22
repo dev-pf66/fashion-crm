@@ -5,6 +5,7 @@ import { useDivision } from '../contexts/DivisionContext'
 import { supabase } from '../lib/supabase'
 import { ChevronDown, ChevronRight, Layers, Image as ImageIcon } from 'lucide-react'
 import StatusBadge from '../components/StatusBadge'
+import { GridSkeleton } from '../components/PageSkeleton'
 
 export default function ByEmbroidery() {
   const { currentPerson } = useApp()
@@ -66,7 +67,7 @@ export default function ByEmbroidery() {
     setCollapsed(prev => ({ ...prev, [name]: !prev[name] }))
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <GridSkeleton />
 
   return (
     <div>

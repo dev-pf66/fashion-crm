@@ -7,6 +7,7 @@ import { STYLE_CATEGORIES } from '../lib/constants'
 import StatusBadge from '../components/StatusBadge'
 import Modal from '../components/Modal'
 import { Plus, FileText, Trash2, Eye, ChevronDown, ChevronUp } from 'lucide-react'
+import { TableSkeleton } from '../components/PageSkeleton'
 
 const REQUEST_STATUSES = [
   { value: 'new', label: 'New' },
@@ -78,7 +79,7 @@ export default function StyleRequests() {
 
   const filtered = requests.filter(r => !filterStatus || r.status === filterStatus)
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <TableSkeleton />
 
   return (
     <div>

@@ -8,6 +8,7 @@ import { getRanges, createRange, updateRange, deleteRange } from '../lib/supabas
 import { STYLE_CATEGORIES } from '../lib/constants'
 import Modal from '../components/Modal'
 import StatusBadge from '../components/StatusBadge'
+import { GridSkeleton } from '../components/PageSkeleton'
 import { Plus, Layers, Trash2, X, Calendar, FolderOpen, Folder, ChevronDown, ChevronRight, Edit2, Check } from 'lucide-react'
 
 const RANGE_STATUSES = [
@@ -96,7 +97,7 @@ export default function RangePlanning() {
     }
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <GridSkeleton />
 
   return (
     <div>

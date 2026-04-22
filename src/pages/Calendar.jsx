@@ -7,6 +7,7 @@ import {
   Calendar as CalendarIcon, ChevronLeft, ChevronRight,
   FlaskConical, ClipboardList, Scissors, Truck, CheckSquare
 } from 'lucide-react'
+import { ListSkeleton } from '../components/PageSkeleton'
 
 const EVENT_COLORS = {
   sample: 'var(--info)',
@@ -170,7 +171,7 @@ export default function Calendar() {
       ) : (
         <div className="calendar-list">
           {loading ? (
-            <div className="loading-container"><div className="loading-spinner" /></div>
+            <ListSkeleton rows={5} />
           ) : upcoming.length === 0 ? (
             <div className="card"><div className="empty-state">
               <CalendarIcon size={48} />

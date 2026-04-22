@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage, getStyleStatuses, createStyleStatus, updateStyleStatus, deleteStyleStatus, updateEmailNotifications, getAuditLog, getLastActivityPerPerson } from '../lib/supabase'
 import Modal from '../components/Modal'
+import { DashboardSkeleton, ListSkeleton } from '../components/PageSkeleton'
 
 const STATUS_COLORS = {
   concept: '#818cf8',
@@ -87,9 +88,7 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner" />
-      </div>
+      <DashboardSkeleton />
     )
   }
 
@@ -898,7 +897,7 @@ function StatusesManager({ toast }) {
     }
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <ListSkeleton rows={5} />
 
   return (
     <div className="card">
@@ -1065,7 +1064,7 @@ function SilhouettesManager({ toast }) {
     }
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <ListSkeleton rows={5} />
 
   return (
     <div className="card">
@@ -1226,7 +1225,7 @@ function PriceBracketsManager({ toast }) {
     }
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <ListSkeleton rows={5} />
 
   return (
     <div className="card">
@@ -1373,7 +1372,7 @@ function ProductionStagesManager({ toast }) {
     }
   }
 
-  if (loading) return <div className="loading-container"><div className="loading-spinner" /></div>
+  if (loading) return <ListSkeleton rows={5} />
 
   return (
     <div className="card">
@@ -1641,7 +1640,7 @@ function ActivityTab({ people, toast }) {
 
       {/* Log */}
       {loading ? (
-        <div className="loading-container"><div className="loading-spinner" /></div>
+        <ListSkeleton />
       ) : entries.length === 0 ? (
         <div className="card"><div className="empty-state" style={{ padding: '2rem' }}>
           <ActivityIcon size={40} />

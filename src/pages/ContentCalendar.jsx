@@ -7,6 +7,7 @@ import {
   Camera, Image as ImageIcon, Edit3, CheckCircle, Send, Eye,
   Search, Filter, Calendar, Clock, ChevronDown, ChevronRight, Sparkles
 } from 'lucide-react'
+import { GridSkeleton } from '../components/PageSkeleton'
 
 const CONTENT_STATUSES = [
   { value: 'needs_shoot', label: 'Needs Shoot', icon: Camera, bg: '#fef3c7', color: '#b45309' },
@@ -119,7 +120,7 @@ export default function ContentCalendar() {
   }
 
   if (loading) {
-    return <div className="loading-container"><div className="loading-spinner" /></div>
+    return <GridSkeleton />
   }
 
   return (
