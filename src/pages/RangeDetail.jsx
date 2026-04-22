@@ -159,7 +159,7 @@ export default function RangeDetail() {
   async function loadData() {
     setLoading(true)
     try {
-      const [rangeData, stylesData, tasksData, subtaskCountsData] = await Promise.all([
+      const [rangeData, stylesData, tasksData] = await Promise.all([
         getRange(id),
         getRangeStyles(id).catch(err => {
           console.error('Failed to load styles:', err)
@@ -170,11 +170,12 @@ export default function RangeDetail() {
           console.error('Failed to load tasks:', err)
           return []
         }),
-        getTaskSubtaskCounts().catch(() => ({})),
       ])
       setRange(rangeData)
       setStyles(stylesData || [])
       setTasks(tasksData || [])
+      const taskIds = (tasksData || []).map(t => t.id)
+      const subtaskCountsData = await getTaskSubtaskCounts(taskIds).catch(() => ({}))
       setSubtaskCounts(subtaskCountsData || {})
     } catch (err) {
       console.error('Failed to load range:', err)

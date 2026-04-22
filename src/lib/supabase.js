@@ -1479,10 +1479,11 @@ export async function resolveCollaborators(collaboratorIds) {
   return data || []
 }
 
-export async function getTaskSubtaskCounts() {
-  const { data, error } = await supabase
-    .from('task_subtasks')
-    .select('task_id, completed')
+export async function getTaskSubtaskCounts(taskIds) {
+  if (taskIds && taskIds.length === 0) return {}
+  let query = supabase.from('task_subtasks').select('task_id, completed')
+  if (taskIds) query = query.in('task_id', taskIds)
+  const { data, error } = await query
   if (error) throw error
   const counts = {}
   ;(data || []).forEach(s => {
