@@ -13,6 +13,7 @@ import QuickViewDrawer from '../components/QuickViewDrawer'
 import useStickyFilters from '../lib/useStickyFilters'
 import usePagination, { PaginationBar } from '../lib/usePagination'
 import { GridSkeleton } from '../components/PageSkeleton'
+import EmptyState from '../components/EmptyState'
 import { Plus, Grid3X3, List, ClipboardList, Search, Download, ArrowUpDown, Eye } from 'lucide-react'
 
 export default function Orders() {
@@ -157,14 +158,12 @@ export default function Orders() {
 
       {filtered.length === 0 ? (
         <div className="card">
-          <div className="empty-state">
-            <ClipboardList size={48} />
-            <h3>No purchase orders found</h3>
-            <p>{orders.length === 0 ? 'Create your first purchase order.' : 'Try adjusting your filters.'}</p>
-            {orders.length === 0 && canEdit && (
-              <button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Create PO</button>
-            )}
-          </div>
+          <EmptyState
+            icon={ClipboardList}
+            title={orders.length === 0 ? 'No purchase orders yet' : 'No POs match your filters'}
+            description={orders.length === 0 ? 'Create your first purchase order.' : 'Try adjusting your filters.'}
+            cta={orders.length === 0 && canEdit ? { label: 'Create PO', onClick: () => setShowForm(true) } : undefined}
+          />
         </div>
       ) : view === 'grid' ? (
         <>

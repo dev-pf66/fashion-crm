@@ -12,6 +12,7 @@ import { exportToCSV } from '../lib/csvExporter'
 import useStickyFilters from '../lib/useStickyFilters'
 import usePagination, { PaginationBar } from '../lib/usePagination'
 import { GridSkeleton } from '../components/PageSkeleton'
+import EmptyState from '../components/EmptyState'
 import { Plus, Factory, Search, Grid3X3, List, Download, ArrowUpDown, Eye } from 'lucide-react'
 
 export default function Suppliers() {
@@ -135,12 +136,14 @@ export default function Suppliers() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="card"><div className="empty-state">
-          <Factory size={48} />
-          <h3>No suppliers found</h3>
-          <p>{suppliers.length === 0 ? 'Add your first supplier.' : 'Try adjusting your filters.'}</p>
-          {suppliers.length === 0 && canEdit && <button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> Add Supplier</button>}
-        </div></div>
+        <div className="card">
+          <EmptyState
+            icon={Factory}
+            title={suppliers.length === 0 ? 'No suppliers yet' : 'No suppliers match your filters'}
+            description={suppliers.length === 0 ? 'Add your first supplier.' : 'Try adjusting your filters.'}
+            cta={suppliers.length === 0 && canEdit ? { label: 'Add Supplier', onClick: () => setShowForm(true) } : undefined}
+          />
+        </div>
       ) : view === 'grid' ? (
         <>
           <div className="suppliers-grid">

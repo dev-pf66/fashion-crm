@@ -13,6 +13,7 @@ import {
   AlertTriangle, Calendar, Clock, CheckSquare
 } from 'lucide-react'
 import OnboardingWelcome from '../components/OnboardingWelcome'
+import EmptyState from '../components/EmptyState'
 
 export default function Dashboard() {
   const { currentDivision } = useDivision()
@@ -203,7 +204,13 @@ export default function Dashboard() {
               )
             })}
             {Object.keys(stats?.stylesByStatus || {}).length === 0 && (
-              <div className="text-muted text-sm" style={{ padding: '1rem', textAlign: 'center' }}>No styles yet</div>
+              <EmptyState
+                compact
+                icon={Scissors}
+                title="No styles yet"
+                description="Add a style to see the breakdown by status."
+                cta={{ label: 'Add Style', onClick: () => navigate('/styles'), variant: 'secondary' }}
+              />
             )}
           </div>
         </div>
@@ -231,7 +238,13 @@ export default function Dashboard() {
               )
             })}
             {Object.keys(stats?.samplesByRound || {}).length === 0 && (
-              <div className="text-muted text-sm" style={{ padding: '1rem', textAlign: 'center' }}>No samples yet</div>
+              <EmptyState
+                compact
+                icon={FlaskConical}
+                title="No samples yet"
+                description="Request a sample to track review rounds."
+                cta={{ label: 'View Samples', onClick: () => navigate('/samples'), variant: 'secondary' }}
+              />
             )}
           </div>
         </div>
@@ -246,9 +259,12 @@ export default function Dashboard() {
             <span className="text-sm text-muted">Next 7 days</span>
           </div>
           {deadlines.length === 0 ? (
-            <div className="text-muted text-sm" style={{ padding: '1rem', textAlign: 'center' }}>
-              No upcoming deadlines
-            </div>
+            <EmptyState
+              compact
+              icon={Calendar}
+              title="Nothing due this week"
+              description="Set sample or PO dates to see them here."
+            />
           ) : (
             <div className="deadline-list">
               {deadlines.slice(0, 8).map((d, i) => (
@@ -296,14 +312,12 @@ export default function Dashboard() {
             </button>
           </div>
           {recentStyles.length === 0 ? (
-            <div className="empty-state">
-              <Scissors size={32} />
-              <h3>No styles yet</h3>
-              <p>Create your first style to get started.</p>
-              <button className="btn btn-primary btn-sm" onClick={() => navigate('/styles')}>
-                Go to Styles
-              </button>
-            </div>
+            <EmptyState
+              icon={Scissors}
+              title="No styles yet"
+              description="Create your first style to get started."
+              cta={{ label: 'Go to Styles', onClick: () => navigate('/styles') }}
+            />
           ) : (
             <table className="data-table">
               <thead>

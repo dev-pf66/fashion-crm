@@ -12,6 +12,7 @@ import SampleDetail from '../components/SampleDetail'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useToast } from '../contexts/ToastContext'
 import { KanbanSkeleton } from '../components/PageSkeleton'
+import EmptyState from '../components/EmptyState'
 import { Plus, FlaskConical, Download } from 'lucide-react'
 
 export default function Samples() {
@@ -166,16 +167,12 @@ export default function Samples() {
 
       {filtered.length === 0 ? (
         <div className="card">
-          <div className="empty-state">
-            <FlaskConical size={48} />
-            <h3>No samples yet</h3>
-            <p>{canEdit ? 'Create a sample to start tracking rounds.' : 'Nothing here yet.'}</p>
-            {canEdit && (
-              <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-                <Plus size={16} /> New Sample
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={FlaskConical}
+            title="No samples yet"
+            description={canEdit ? 'Create a sample to start tracking rounds.' : 'Nothing here yet.'}
+            cta={canEdit ? { label: 'New Sample', onClick: () => setShowForm(true) } : undefined}
+          />
         </div>
       ) : (
         <DragDropContext onDragEnd={handleDragEnd}>

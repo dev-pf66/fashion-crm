@@ -12,6 +12,7 @@ import { exportToCSV } from '../lib/csvExporter'
 import useStickyFilters from '../lib/useStickyFilters'
 import usePagination, { PaginationBar } from '../lib/usePagination'
 import { GridSkeleton } from '../components/PageSkeleton'
+import EmptyState from '../components/EmptyState'
 import { Plus, Grid3X3, List, Scissors, Search, Download, ArrowUpDown, Eye } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -180,16 +181,12 @@ export default function Styles() {
 
       {filtered.length === 0 ? (
         <div className="card">
-          <div className="empty-state">
-            <Scissors size={48} />
-            <h3>No styles found</h3>
-            <p>{styles.length === 0 ? 'Create your first style for this division.' : 'Try adjusting your filters.'}</p>
-            {styles.length === 0 && (
-              <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-                <Plus size={16} /> Create Style
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={Scissors}
+            title={styles.length === 0 ? 'No styles yet' : 'No styles match your filters'}
+            description={styles.length === 0 ? 'Create your first style for this division.' : 'Try adjusting your filters.'}
+            cta={styles.length === 0 ? { label: 'Create Style', onClick: () => setShowForm(true) } : undefined}
+          />
         </div>
       ) : view === 'grid' ? (
         <>

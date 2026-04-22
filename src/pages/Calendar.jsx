@@ -8,6 +8,7 @@ import {
   FlaskConical, ClipboardList, Scissors, Truck, CheckSquare
 } from 'lucide-react'
 import { ListSkeleton } from '../components/PageSkeleton'
+import EmptyState from '../components/EmptyState'
 
 const EVENT_COLORS = {
   sample: 'var(--info)',
@@ -173,11 +174,13 @@ export default function Calendar() {
           {loading ? (
             <ListSkeleton rows={5} />
           ) : upcoming.length === 0 ? (
-            <div className="card"><div className="empty-state">
-              <CalendarIcon size={48} />
-              <h3>No upcoming events</h3>
-              <p>Add dates to styles, samples, and POs to see them here.</p>
-            </div></div>
+            <div className="card">
+              <EmptyState
+                icon={CalendarIcon}
+                title="No upcoming events"
+                description="Add dates to styles, samples, and POs to see them here."
+              />
+            </div>
           ) : (
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               <table className="data-table">

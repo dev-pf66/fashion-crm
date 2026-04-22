@@ -13,6 +13,7 @@ import StatusBadge from '../components/StatusBadge'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import usePagination, { PaginationBar } from '../lib/usePagination'
 import { KanbanSkeleton } from '../components/PageSkeleton'
+import EmptyState from '../components/EmptyState'
 import { Plus, CheckSquare, LayoutGrid, List, X, Clock, User, Timer } from 'lucide-react'
 
 export default function Tasks() {
@@ -231,27 +232,21 @@ export default function Tasks() {
 
       {tasks.length === 0 ? (
         <div className="card">
-          <div className="empty-state">
-            <CheckSquare size={48} />
-            <h3>No tasks yet</h3>
-            <p>{canEdit ? 'Create a task to get started.' : 'Nothing here yet.'}</p>
-            {canEdit && (
-              <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-                <Plus size={16} /> New Task
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={CheckSquare}
+            title="No tasks yet"
+            description={canEdit ? 'Create a task to get started.' : 'Nothing here yet.'}
+            cta={canEdit ? { label: 'New Task', onClick: () => setShowForm(true) } : undefined}
+          />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card">
-          <div className="empty-state">
-            <CheckSquare size={48} />
-            <h3>No tasks match your filters</h3>
-            <p>Try adjusting your filter criteria.</p>
-            <button className="btn btn-secondary" onClick={clearFilters}>
-              <X size={16} /> Clear Filters
-            </button>
-          </div>
+          <EmptyState
+            icon={CheckSquare}
+            title="No tasks match your filters"
+            description="Try adjusting your filter criteria."
+            cta={{ label: 'Clear Filters', onClick: clearFilters, variant: 'secondary' }}
+          />
         </div>
       ) : view === 'board' ? (
         <DragDropContext onDragEnd={handleDragEnd}>
