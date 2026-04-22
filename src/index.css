@@ -2616,6 +2616,27 @@ textarea {
     margin: 1rem;
   }
 
+  /* Prevent iOS zoom-on-focus by keeping form inputs at 16px */
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="password"],
+  input[type="search"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* Larger tap targets on touch devices */
+  .btn-sm,
+  .btn-ghost,
+  .btn {
+    min-height: 40px;
+  }
+
   .stats-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -2678,9 +2699,13 @@ textarea {
     font-size: 1.25rem;
   }
 
-  .btn {
-    padding: 0.4375rem 0.75rem;
-    font-size: 0.75rem;
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .modal {
+    margin: 0;
+    max-height: 92vh;
   }
 
   .page-container {
