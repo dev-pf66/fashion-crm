@@ -111,7 +111,7 @@ const TECH_FAMILIARITY = [
   { value: 'not_very', label: 'Not very comfortable', desc: 'This is mostly new to me — show extra tips' },
 ]
 
-export default function OnboardingWizard({ onClose }) {
+export default function OnboardingWizard() {
   const { currentPerson, refreshPeople } = useApp()
   const { role } = usePermissions()
   const { divisions, currentDivision, changeDivision } = useDivision()
@@ -167,7 +167,7 @@ export default function OnboardingWizard({ onClose }) {
       }
 
       toast.success(`All set — welcome aboard, ${firstName}.`)
-      onClose?.()
+      // Wizard unmounts automatically because the gate now sees onboarded_at set.
       if (prefs.home_page && prefs.home_page !== window.location.pathname) {
         navigate(prefs.home_page)
       }
@@ -179,21 +179,12 @@ export default function OnboardingWizard({ onClose }) {
     }
   }
 
-  function handleSkip() {
-    // Don't set onboarded_at — they see the wizard again next login.
-    onClose?.()
-  }
-
   // Only show division picker if user has access to more than one.
   const showDivisionPicker = (divisions?.length || 0) > 1
 
   return (
     <div className="onboarding-overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
       <div className="onboarding-modal">
-        <button className="onboarding-close" onClick={handleSkip} aria-label="Close">
-          <X size={18} />
-        </button>
-
         <div className="onboarding-progress">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div key={i} className={`onboarding-progress-dot ${i + 1 <= step ? 'active' : ''}`} />

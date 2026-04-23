@@ -167,9 +167,8 @@ function AppRoutes() {
 
 function OnboardingGate() {
   const { currentPerson } = useApp()
-  const [open, setOpen] = useState(true)
-  if (!currentPerson || currentPerson.onboarded_at || !open) return null
-  return <OnboardingWizard onClose={() => setOpen(false)} />
+  if (!currentPerson || currentPerson.onboarded_at) return null
+  return <OnboardingWizard />
 }
 
 export default function App() {
