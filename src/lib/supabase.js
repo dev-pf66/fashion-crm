@@ -89,6 +89,21 @@ export async function updateEmailNotifications(personId, enabled) {
   if (error) throw error
 }
 
+export async function getEmailLog({ days = 30, personId = null, status = null, limit = 500 } = {}) {
+  const since = new Date(Date.now() - days * 86400000).toISOString()
+  let query = supabase
+    .from('email_log')
+    .select('*, people:person_id(id, name)')
+    .gte('sent_at', since)
+    .order('sent_at', { ascending: false })
+    .limit(limit)
+  if (personId) query = query.eq('person_id', personId)
+  if (status) query = query.eq('status', status)
+  const { data, error } = await query
+  if (error) throw error
+  return data || []
+}
+
 // ============================================================
 // PEOPLE
 // ============================================================

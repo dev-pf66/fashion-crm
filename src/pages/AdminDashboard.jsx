@@ -115,6 +115,11 @@ export default function AdminDashboard() {
           </h1>
           <p className="subtitle">Range planning progress & task management overview</p>
         </div>
+        <div className="page-header-actions">
+          <button className="btn btn-secondary btn-sm" onClick={() => navigate('/admin/emails')}>
+            <Mail size={14} /> Email Log
+          </button>
+        </div>
       </div>
 
       <div className="tabs">

@@ -206,7 +206,7 @@ export default async function handler(req, res) {
       .select('id, name, email, email_notifications_enabled, is_active')
       .in('id', personIds)
 
-    const results = { allClear: 0, sassy: 0, verySassy: 0, skipped: 0 }
+    const results = { allClear: 0, sassy: 0, verySassy: 0, skipped: 0, failed: 0 }
 
     for (const person of (people || [])) {
       if (!person.email || person.is_active === false || person.email_notifications_enabled === false) {
@@ -217,20 +217,48 @@ export default async function handler(req, res) {
       const overdue = byPerson[person.id]?.overdue || []
       const count = overdue.length
 
-      let email
+      let email, template
       if (count === 0) {
         if (!sendAllClear) { results.skipped++; continue }
         email = allClearEmail(person)
+        template = 'all_clear'
         results.allClear++
       } else if (count < 10) {
         email = lowOverdueEmail(person, overdue)
+        template = 'low_overdue'
         results.sassy++
       } else {
         email = highOverdueEmail(person, overdue)
+        template = 'high_overdue'
         results.verySassy++
       }
 
-      await sendEmail({ to: person.email, ...email })
+      let resendId = null
+      let status = 'sent'
+      let errorMessage = null
+      try {
+        const sendRes = await sendEmail({ to: person.email, ...email })
+        resendId = sendRes?.id || null
+      } catch (err) {
+        status = 'failed'
+        errorMessage = err.message || String(err)
+        results.failed++
+      }
+
+      try {
+        await adminClient.from('email_log').insert([{
+          person_id: person.id,
+          to_email: person.email,
+          subject: email.subject,
+          template,
+          overdue_count: count,
+          status,
+          error_message: errorMessage,
+          resend_id: resendId,
+        }])
+      } catch (logErr) {
+        console.error('Failed to write email_log row:', logErr)
+      }
     }
 
     return res.status(200).json({ dayOfWeek, sendAllClear, ...results })
