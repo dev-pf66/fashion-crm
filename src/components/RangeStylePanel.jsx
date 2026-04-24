@@ -7,7 +7,7 @@ import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib
 import { useApp } from '../App'
 import CommentSection from './CommentSection'
 import Modal from './Modal'
-import { X, Upload, Trash2, Star, FileText, Image as ImageIcon, Loader, PackageCheck } from 'lucide-react'
+import { X, Upload, Trash2, Star, FileText, Image as ImageIcon, Loader, PackageCheck, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const FALLBACK_STATUSES = [
   { value: 'concept', label: 'Concept' },
@@ -38,6 +38,9 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
   const [priceBrackets, setPriceBrackets] = useState([])
   const [statuses, setStatuses] = useState(FALLBACK_STATUSES)
   const [showProductionModal, setShowProductionModal] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(null)
+
+  const imageFiles = files.filter(f => f.file_type && f.file_type.startsWith('image/'))
 
   useEffect(() => {
     getSuppliers().then(setSuppliers).catch(() => {})
@@ -61,10 +64,18 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
   }, [form.category])
 
   useEffect(() => {
-    function handleEsc(e) { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handleEsc)
-    return () => document.removeEventListener('keydown', handleEsc)
-  }, [onClose])
+    function handleKey(e) {
+      if (lightboxIndex !== null) {
+        if (e.key === 'Escape') setLightboxIndex(null)
+        else if (e.key === 'ArrowLeft') setLightboxIndex(i => (i > 0 ? i - 1 : imageFiles.length - 1))
+        else if (e.key === 'ArrowRight') setLightboxIndex(i => (i < imageFiles.length - 1 ? i + 1 : 0))
+        return
+      }
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose, lightboxIndex, imageFiles.length])
 
   async function loadStyle() {
     setLoading(true)
@@ -406,8 +417,21 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                 )
               ) : (
                 <div className="rp-file-grid">
-                  {files.map(file => (
-                    <div key={file.id} className={`rp-file-item ${style.thumbnail_url === file.file_url ? 'is-thumbnail' : ''}`}>
+                  {files.map(file => {
+                    const imgIndex = isImage(file.file_type)
+                      ? imageFiles.findIndex(f => f.id === file.id)
+                      : -1
+                    return (
+                    <div
+                      key={file.id}
+                      className={`rp-file-item ${style.thumbnail_url === file.file_url ? 'is-thumbnail' : ''}`}
+                      onClick={imgIndex >= 0 ? () => setLightboxIndex(imgIndex) : undefined}
+                      style={imgIndex >= 0 ? { cursor: 'zoom-in' } : undefined}
+                      role={imgIndex >= 0 ? 'button' : undefined}
+                      tabIndex={imgIndex >= 0 ? 0 : undefined}
+                      onKeyDown={imgIndex >= 0 ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLightboxIndex(imgIndex) } } : undefined}
+                      aria-label={imgIndex >= 0 ? `Open ${file.file_name}` : undefined}
+                    >
                       {isImage(file.file_type) ? (
                         <img src={file.file_url} alt={file.file_name} loading="lazy" />
                       ) : (
@@ -421,7 +445,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                           {isImage(file.file_type) && (
                             <button
                               className="rp-file-btn"
-                              onClick={() => handleSetThumbnail(file.file_url)}
+                              onClick={(e) => { e.stopPropagation(); handleSetThumbnail(file.file_url) }}
                               title="Set as thumbnail"
                             >
                               <Star size={12} fill={style.thumbnail_url === file.file_url ? 'currentColor' : 'none'} />
@@ -429,7 +453,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                           )}
                           <button
                             className="rp-file-btn danger"
-                            onClick={() => handleDeleteFile(file.id, file.file_url)}
+                            onClick={(e) => { e.stopPropagation(); handleDeleteFile(file.id, file.file_url) }}
                             title="Delete file"
                           >
                             <Trash2 size={12} />
@@ -440,7 +464,8 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                         <div className="rp-thumbnail-badge">Thumbnail</div>
                       )}
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -461,6 +486,47 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
           </div>
         )}
       </div>
+
+      {lightboxIndex !== null && imageFiles[lightboxIndex] && (
+        <div className="photo-lightbox" onClick={() => setLightboxIndex(null)}>
+          <button
+            className="photo-lightbox-close"
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex(null) }}
+            aria-label="Close"
+          >
+            <X size={24} />
+          </button>
+          {imageFiles.length > 1 && (
+            <>
+              <button
+                className="photo-lightbox-prev"
+                onClick={(e) => { e.stopPropagation(); setLightboxIndex(i => (i > 0 ? i - 1 : imageFiles.length - 1)) }}
+                aria-label="Previous image"
+              >
+                <ChevronLeft size={32} />
+              </button>
+              <button
+                className="photo-lightbox-next"
+                onClick={(e) => { e.stopPropagation(); setLightboxIndex(i => (i < imageFiles.length - 1 ? i + 1 : 0)) }}
+                aria-label="Next image"
+              >
+                <ChevronRight size={32} />
+              </button>
+            </>
+          )}
+          <img
+            src={imageFiles[lightboxIndex].file_url}
+            alt={imageFiles[lightboxIndex].file_name || ''}
+            className="photo-lightbox-image"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {imageFiles.length > 1 && (
+            <div className="photo-lightbox-counter">
+              {lightboxIndex + 1} / {imageFiles.length}
+            </div>
+          )}
+        </div>
+      )}
 
       {showProductionModal && (
         <PushToProductionModal
