@@ -50,6 +50,10 @@ export async function adminListAuthUsers() {
   return adminApiCall({ action: 'list_users' })
 }
 
+export async function adminDeleteUser(person_id) {
+  return adminApiCall({ action: 'delete_user', person_id })
+}
+
 // ============================================================
 // EMAIL NOTIFICATIONS
 // ============================================================

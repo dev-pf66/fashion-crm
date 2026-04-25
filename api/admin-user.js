@@ -146,6 +146,46 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true })
     }
 
+    if (action === 'delete_user') {
+      const { person_id } = req.body
+      if (!person_id) {
+        return res.status(400).json({ error: 'person_id is required' })
+      }
+
+      const { data: target, error: lookupError } = await adminClient
+        .from('people')
+        .select('id, user_id, email')
+        .eq('id', person_id)
+        .single()
+      if (lookupError) {
+        return res.status(404).json({ error: 'User not found' })
+      }
+
+      if (target.user_id && target.user_id === caller.id) {
+        return res.status(400).json({ error: 'You cannot delete your own account' })
+      }
+
+      if (target.user_id) {
+        const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(target.user_id)
+        if (authDeleteError && authDeleteError.status !== 404) {
+          return res.status(400).json({ error: `Failed to delete auth user: ${authDeleteError.message}` })
+        }
+      }
+
+      const { error: personDeleteError } = await adminClient
+        .from('people')
+        .delete()
+        .eq('id', person_id)
+
+      if (personDeleteError) {
+        return res.status(400).json({
+          error: `Auth account removed but person record could not be deleted (likely has assigned tasks/styles): ${personDeleteError.message}. Consider deactivating instead.`,
+        })
+      }
+
+      return res.status(200).json({ success: true })
+    }
+
     if (action === 'list_users') {
       const perPage = 1000
       const users = []

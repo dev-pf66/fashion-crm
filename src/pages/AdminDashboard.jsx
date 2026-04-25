@@ -9,7 +9,7 @@ import {
   Users, BarChart3, Target, Truck, ArrowRight, Timer, Bell,
   UserPlus, KeyRound, Eye, EyeOff, Settings, Plus, Pencil, Trash2, Mail, MailX, Activity as ActivityIcon, Filter, X as XIcon
 } from 'lucide-react'
-import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage, getStyleStatuses, createStyleStatus, updateStyleStatus, deleteStyleStatus, updateEmailNotifications, getAuditLog, getLastActivityPerPerson, getDivisions, updatePersonDivisions } from '../lib/supabase'
+import { adminCreateUser, adminResetPassword, adminListAuthUsers, adminDeleteUser, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage, getStyleStatuses, createStyleStatus, updateStyleStatus, deleteStyleStatus, updateEmailNotifications, getAuditLog, getLastActivityPerPerson, getDivisions, updatePersonDivisions } from '../lib/supabase'
 import Modal from '../components/Modal'
 import { DashboardSkeleton, ListSkeleton } from '../components/PageSkeleton'
 
@@ -182,7 +182,7 @@ export default function AdminDashboard() {
           toast={toast}
         />
       ) : activeTab === 'users' ? (
-        <UsersTab people={people} toast={toast} refreshPeople={refreshPeople} />
+        <UsersTab people={people} toast={toast} refreshPeople={refreshPeople} currentPerson={currentPerson} />
       ) : activeTab === 'config' ? (
         <ConfigTab toast={toast} />
       ) : (
@@ -564,7 +564,7 @@ function TaskTab({ metrics, activeTasks, workload, overdueTasks, staleTasks, pip
 
 // ── Users Tab ───────────────────────────────────────────────
 
-function UsersTab({ people, toast, refreshPeople }) {
+function UsersTab({ people, toast, refreshPeople, currentPerson }) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [resetModal, setResetModal] = useState(null)
   const [divisionsModal, setDivisionsModal] = useState(null)
@@ -705,15 +705,38 @@ function UsersTab({ people, toast, refreshPeople }) {
                   </button>
                 </td>
                 <td>
-                  {user.authId && (
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => setResetModal(user)}
-                      title="Reset password"
-                    >
-                      <KeyRound size={14} />
-                    </button>
-                  )}
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {user.authId && (
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => setResetModal(user)}
+                        title="Reset password"
+                      >
+                        <KeyRound size={14} />
+                      </button>
+                    )}
+                    {user.id !== currentPerson?.id && (
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={async () => {
+                          const ok = confirm(`Delete ${user.name}? This will remove their login and person record. Their assigned tasks/styles will block the delete — deactivate instead if so.`)
+                          if (!ok) return
+                          try {
+                            await adminDeleteUser(user.id)
+                            refreshPeople()
+                            loadAuthUsers()
+                            toast.success(`${user.name} deleted`)
+                          } catch (err) {
+                            toast.error(err.message || 'Failed to delete user')
+                          }
+                        }}
+                        title="Delete user"
+                        style={{ color: 'var(--danger)' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
