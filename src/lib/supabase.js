@@ -345,6 +345,13 @@ export async function updatePerson(id, updates) {
   return data
 }
 
+export async function updatePersonDivisions(personId, divisionIds) {
+  const value = Array.isArray(divisionIds) && divisionIds.length > 0 ? divisionIds : null
+  const { data, error } = await supabase.from('people').update({ division_ids: value }).eq('id', personId).select().single()
+  if (error) throw error
+  return data
+}
+
 // ============================================================
 // SEASONS
 // ============================================================

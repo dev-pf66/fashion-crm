@@ -19,16 +19,24 @@ export function DivisionProvider({ children }) {
   const switchTimerRef = useRef(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
+  const personDivisionIds = currentPerson?.division_ids && currentPerson.division_ids.length > 0
+    ? currentPerson.division_ids
+    : null
   const allowedCodes = currentPerson?.roles?.division_codes || null
+  const personDivisionKey = personDivisionIds ? personDivisionIds.join(',') : ''
 
   useEffect(() => {
     loadDivisions()
-  }, [currentPerson?.roles?.id])
+  }, [currentPerson?.roles?.id, personDivisionKey])
 
   async function loadDivisions() {
     try {
       const all = await getDivisions()
-      const data = allowedCodes ? all.filter(d => allowedCodes.includes(d.code)) : all
+      const data = personDivisionIds
+        ? all.filter(d => personDivisionIds.includes(d.id))
+        : allowedCodes
+          ? all.filter(d => allowedCodes.includes(d.code))
+          : all
       setDivisions(data)
 
       const divisionParam = searchParams.get('division')

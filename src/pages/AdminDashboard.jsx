@@ -9,7 +9,7 @@ import {
   Users, BarChart3, Target, Truck, ArrowRight, Timer, Bell,
   UserPlus, KeyRound, Eye, EyeOff, Settings, Plus, Pencil, Trash2, Mail, MailX, Activity as ActivityIcon, Filter, X as XIcon
 } from 'lucide-react'
-import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage, getStyleStatuses, createStyleStatus, updateStyleStatus, deleteStyleStatus, updateEmailNotifications, getAuditLog, getLastActivityPerPerson } from '../lib/supabase'
+import { adminCreateUser, adminResetPassword, adminListAuthUsers, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage, getStyleStatuses, createStyleStatus, updateStyleStatus, deleteStyleStatus, updateEmailNotifications, getAuditLog, getLastActivityPerPerson, getDivisions, updatePersonDivisions } from '../lib/supabase'
 import Modal from '../components/Modal'
 import { DashboardSkeleton, ListSkeleton } from '../components/PageSkeleton'
 
@@ -567,11 +567,14 @@ function TaskTab({ metrics, activeTasks, workload, overdueTasks, staleTasks, pip
 function UsersTab({ people, toast, refreshPeople }) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [resetModal, setResetModal] = useState(null)
+  const [divisionsModal, setDivisionsModal] = useState(null)
   const [authUsers, setAuthUsers] = useState([])
+  const [divisions, setDivisions] = useState([])
   const [loadingAuth, setLoadingAuth] = useState(true)
 
   useEffect(() => {
     loadAuthUsers()
+    getDivisions().then(setDivisions).catch(() => setDivisions([]))
   }, [])
 
   async function loadAuthUsers() {
@@ -615,6 +618,7 @@ function UsersTab({ people, toast, refreshPeople }) {
               <th>Name</th>
               <th>Email</th>
               <th>Role</th>
+              <th>Divisions</th>
               <th>Last Login</th>
               <th>Status</th>
               <th>Emails</th>
@@ -632,6 +636,38 @@ function UsersTab({ people, toast, refreshPeople }) {
                   ) : (
                     <span className="text-muted">No role</span>
                   )}
+                </td>
+                <td>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setDivisionsModal(user)}
+                    title="Edit divisions"
+                    style={{ padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}
+                  >
+                    {(() => {
+                      const ids = user.division_ids || []
+                      if (ids.length === 0) {
+                        const codes = user.roles?.division_codes
+                        if (!codes || codes.length === 0) {
+                          return <span className="text-muted text-sm">All</span>
+                        }
+                        return codes.map(code => (
+                          <span key={code} className="badge" style={{ background: 'var(--gray-100)', color: 'var(--gray-600)' }}>
+                            {divisions.find(d => d.code === code)?.name || code}
+                          </span>
+                        ))
+                      }
+                      return ids.map(id => {
+                        const d = divisions.find(dv => dv.id === id)
+                        return (
+                          <span key={id} className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                            {d?.name || `#${id}`}
+                          </span>
+                        )
+                      })
+                    })()}
+                    <Pencil size={12} style={{ opacity: 0.5 }} />
+                  </button>
                 </td>
                 <td className="text-muted text-sm">
                   {user.lastSignIn
@@ -705,7 +741,104 @@ function UsersTab({ people, toast, refreshPeople }) {
           toast={toast}
         />
       )}
+
+      {divisionsModal && (
+        <EditDivisionsModal
+          user={divisionsModal}
+          divisions={divisions}
+          onClose={() => setDivisionsModal(null)}
+          onSaved={() => {
+            setDivisionsModal(null)
+            refreshPeople()
+            toast.success('Divisions updated')
+          }}
+          toast={toast}
+        />
+      )}
     </>
+  )
+}
+
+function EditDivisionsModal({ user, divisions, onClose, onSaved, toast }) {
+  const [selected, setSelected] = useState(() => new Set(user.division_ids || []))
+  const [saving, setSaving] = useState(false)
+
+  function toggle(id) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updatePersonDivisions(user.id, [...selected])
+      onSaved()
+    } catch (err) {
+      toast.error('Failed to update divisions')
+      console.error(err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const activeDivisions = divisions.filter(d => d.is_active !== false)
+  const inactiveDivisions = divisions.filter(d => d.is_active === false)
+  const roleCodes = user.roles?.division_codes
+
+  return (
+    <Modal title={`Divisions for ${user.name}`} onClose={onClose}>
+      <p className="text-muted text-sm" style={{ marginBottom: '1rem' }}>
+        Tick the divisions this user should have access to. Leave everything unticked to fall back to their role default
+        {roleCodes && roleCodes.length > 0 ? ` (${roleCodes.join(', ')})` : ' (all divisions)'}.
+      </p>
+
+      <div className="form-group">
+        {activeDivisions.length === 0 ? (
+          <p className="text-muted">No divisions defined yet.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {activeDivisions.map(d => (
+              <label key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={selected.has(d.id)}
+                  onChange={() => toggle(d.id)}
+                />
+                <span>{d.name}</span>
+                {d.code && <span className="text-muted text-sm">({d.code})</span>}
+              </label>
+            ))}
+          </div>
+        )}
+        {inactiveDivisions.length > 0 && (
+          <details style={{ marginTop: '0.75rem' }}>
+            <summary className="text-muted text-sm" style={{ cursor: 'pointer' }}>
+              Inactive divisions ({inactiveDivisions.length})
+            </summary>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+              {inactiveDivisions.map(d => (
+                <label key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', opacity: 0.7 }}>
+                  <input type="checkbox" checked={selected.has(d.id)} onChange={() => toggle(d.id)} />
+                  <span>{d.name}</span>
+                  {d.code && <span className="text-muted text-sm">({d.code})</span>}
+                </label>
+              ))}
+            </div>
+          </details>
+        )}
+      </div>
+
+      <div className="form-actions">
+        <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+        <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
+    </Modal>
   )
 }
 
