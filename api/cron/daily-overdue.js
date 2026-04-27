@@ -259,6 +259,9 @@ export default async function handler(req, res) {
       } catch (logErr) {
         console.error('Failed to write email_log row:', logErr)
       }
+
+      // Resend free tier caps at 2 sends/sec. 600ms keeps us comfortably under.
+      await new Promise(r => setTimeout(r, 600))
     }
 
     return res.status(200).json({ dayOfWeek, sendAllClear, ...results })
