@@ -7,39 +7,9 @@ import { supabase, getProductionStages, updateRangeStyle, logProductionStatusCha
 import {
   PackageCheck, Search, User, Clock, GripVertical,
   Image as ImageIcon, X, ChevronLeft, ChevronRight, Maximize2,
-  LayoutGrid, List, SlidersHorizontal,
+  LayoutGrid, List,
 } from 'lucide-react'
 import { KanbanSkeleton } from '../components/PageSkeleton'
-import Modal from '../components/Modal'
-
-function unitStagesFor(item) {
-  if (Array.isArray(item.unit_stages) && item.unit_stages.length > 0) return item.unit_stages
-  const qty = item.production_qty || 0
-  const sid = item.production_stage_id || null
-  return qty > 0 && sid ? Array.from({ length: qty }, () => sid) : []
-}
-
-function stageCounts(unitStages) {
-  const counts = new Map()
-  for (const sid of unitStages) {
-    if (sid == null) continue
-    counts.set(sid, (counts.get(sid) || 0) + 1)
-  }
-  return counts
-}
-
-// Where the card lives on the kanban: the earliest (lowest sort_order) stage
-// that still has at least one unit. Falls back to production_stage_id when
-// unit_stages isn't populated.
-function placementStage(item, stages) {
-  const us = unitStagesFor(item)
-  if (us.length === 0) return item.production_stage_id || null
-  const present = new Set(us)
-  const ordered = stages
-    .filter(s => present.has(s.id))
-    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
-  return ordered[0]?.id || item.production_stage_id || null
-}
 
 function timeAgo(date) {
   if (!date) return ''
@@ -66,7 +36,6 @@ export default function ProductionBoard() {
   const [filterLead, setFilterLead] = useState('')
   const [filterRange, setFilterRange] = useState('')
   const [lightbox, setLightbox] = useState(null)
-  const [editUnitsItem, setEditUnitsItem] = useState(null)
 
   useEffect(() => { loadData() }, [currentDivision])
 
@@ -103,18 +72,15 @@ export default function ProductionBoard() {
     if (!item) return
     const oldStage = item.stage
     const newStage = stages.find(s => s.id === newStageId)
-    if (!newStage) return
-
-    const qty = item.production_qty || 0
-    const newUnitStages = qty > 0 ? Array.from({ length: qty }, () => newStageId) : null
+    if (!newStage || oldStage?.id === newStageId) return
 
     setItems(prev => prev.map(i => i.id === itemId
-      ? { ...i, production_stage_id: newStageId, stage: newStage, unit_stages: newUnitStages, status_updated_at: new Date().toISOString() }
+      ? { ...i, production_stage_id: newStageId, stage: newStage, status_updated_at: new Date().toISOString() }
       : i
     ))
 
     try {
-      await updateRangeStyle(itemId, { production_stage_id: newStageId, unit_stages: newUnitStages, status_updated_at: new Date().toISOString() })
+      await updateRangeStyle(itemId, { production_stage_id: newStageId, status_updated_at: new Date().toISOString() })
       await logProductionStatusChange({
         style_id: itemId,
         changed_by: currentPerson?.id || null,
@@ -125,43 +91,6 @@ export default function ProductionBoard() {
       })
     } catch (err) {
       toast.error('Failed to update stage')
-      loadData()
-    }
-  }
-
-  async function saveUnitStages(itemId, newUnitStages) {
-    const item = items.find(i => i.id === itemId)
-    if (!item) return
-    const cleaned = newUnitStages.filter(v => v != null)
-    // Keep production_stage_id pointing at the most-common (mode) stage so
-    // any other view that reads it keeps showing something sensible.
-    const counts = stageCounts(cleaned)
-    let primary = null
-    let max = 0
-    for (const [sid, n] of counts) {
-      if (n > max) { max = n; primary = sid }
-    }
-    const primaryStage = stages.find(s => s.id === primary) || null
-
-    setItems(prev => prev.map(i => i.id === itemId
-      ? {
-          ...i,
-          unit_stages: cleaned.length ? cleaned : null,
-          production_stage_id: primary || i.production_stage_id,
-          stage: primaryStage || i.stage,
-          status_updated_at: new Date().toISOString(),
-        }
-      : i
-    ))
-
-    try {
-      await updateRangeStyle(itemId, {
-        unit_stages: cleaned.length ? cleaned : null,
-        production_stage_id: primary,
-        status_updated_at: new Date().toISOString(),
-      })
-    } catch (err) {
-      toast.error('Failed to update units')
       loadData()
     }
   }
@@ -196,7 +125,7 @@ export default function ProductionBoard() {
   const kanbanColumns = useMemo(() => {
     return stages.map(stage => ({
       ...stage,
-      items: filtered.filter(i => placementStage(i, stages) === stage.id),
+      items: filtered.filter(i => (i.production_stage_id || i.stage?.id) === stage.id),
     }))
   }, [stages, filtered])
 
@@ -295,11 +224,7 @@ export default function ProductionBoard() {
                           {...provided.droppableProps}
                           className={`kanban-column-body ${snapshot.isDraggingOver ? 'drag-over' : ''}`}
                         >
-                          {col.items.map((item, index) => {
-                            const us = unitStagesFor(item)
-                            const counts = stageCounts(us)
-                            const isSplit = counts.size > 1
-                            return (
+                          {col.items.map((item, index) => (
                             <Draggable key={item.id} draggableId={item.id} index={index}>
                               {(dragProvided, dragSnapshot) => (
                                 <div
@@ -314,45 +239,11 @@ export default function ProductionBoard() {
                                     </div>
                                   )}
                                   <div className="kanban-card-body">
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6, alignItems: 'flex-start' }}>
-                                      <div className="kanban-card-name">{item.name}</div>
-                                      {(item.production_qty || 0) > 1 && (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => { e.stopPropagation(); setEditUnitsItem(item) }}
-                                          title="Edit per-unit stages"
-                                          style={{ background: 'transparent', border: 'none', color: 'var(--gray-400)', cursor: 'pointer', padding: 2, display: 'flex' }}
-                                        >
-                                          <SlidersHorizontal size={12} />
-                                        </button>
-                                      )}
-                                    </div>
+                                    <div className="kanban-card-name">{item.name}</div>
                                     <div className="kanban-card-meta">
                                       <span className="tag" style={{ fontSize: '0.625rem' }}>{(item.production_qty || 0).toLocaleString()} units</span>
                                       {item.production_client && <span className="tag" style={{ fontSize: '0.625rem', background: 'var(--gray-100)' }}>{item.production_client}</span>}
                                     </div>
-                                    {isSplit && (
-                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 4 }}>
-                                        {[...counts.entries()]
-                                          .sort((a, b) => {
-                                            const sa = stages.find(s => s.id === a[0])?.sort_order || 0
-                                            const sb = stages.find(s => s.id === b[0])?.sort_order || 0
-                                            return sa - sb
-                                          })
-                                          .map(([sid, n]) => {
-                                            const stage = stages.find(s => s.id === sid)
-                                            return (
-                                              <span
-                                                key={sid}
-                                                className="tag"
-                                                style={{ fontSize: '0.5625rem', background: stage?.color ? `${stage.color}20` : '#f3f4f6', color: stage?.color || '#4b5563' }}
-                                              >
-                                                {n} · {stage?.name || '?'}
-                                              </span>
-                                            )
-                                          })}
-                                      </div>
-                                    )}
                                     {item.production_lead && (
                                       <div style={{ fontSize: '0.6875rem', color: 'var(--gray-500)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                         <User size={11} /> {peopleMap[item.production_lead] || 'Unknown'}
@@ -367,8 +258,7 @@ export default function ProductionBoard() {
                                 </div>
                               )}
                             </Draggable>
-                            )
-                          })}
+                          ))}
                           {provided.placeholder}
                           {col.items.length === 0 && (
                             <div className="kanban-empty">No items</div>
@@ -438,38 +328,6 @@ export default function ProductionBoard() {
                               <span>{item.production_notes}</span>
                             </div>
                           )}
-                          {(() => {
-                            const us = unitStagesFor(item)
-                            const counts = stageCounts(us)
-                            if (counts.size > 1) {
-                              return (
-                                <div className="mywork-card-detail">
-                                  <span className="mywork-detail-label">Per unit</span>
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                                    {[...counts.entries()]
-                                      .sort((a, b) => {
-                                        const sa = stages.find(s => s.id === a[0])?.sort_order || 0
-                                        const sb = stages.find(s => s.id === b[0])?.sort_order || 0
-                                        return sa - sb
-                                      })
-                                      .map(([sid, n]) => {
-                                        const stage = stages.find(s => s.id === sid)
-                                        return (
-                                          <span
-                                            key={sid}
-                                            className="tag"
-                                            style={{ fontSize: '0.6875rem', background: stage?.color ? `${stage.color}20` : '#f3f4f6', color: stage?.color || '#4b5563' }}
-                                          >
-                                            {n} · {stage?.name || '?'}
-                                          </span>
-                                        )
-                                      })}
-                                  </div>
-                                </div>
-                              )
-                            }
-                            return null
-                          })()}
                           <div className="mywork-card-status">
                             <span className="mywork-detail-label">Stage</span>
                             <select
@@ -486,16 +344,6 @@ export default function ProductionBoard() {
                               {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
                           </div>
-                          {(item.production_qty || 0) > 1 && (
-                            <button
-                              type="button"
-                              className="btn btn-secondary btn-sm"
-                              style={{ marginTop: 6 }}
-                              onClick={() => setEditUnitsItem(item)}
-                            >
-                              <SlidersHorizontal size={12} /> Edit per unit
-                            </button>
-                          )}
                         </div>
                       </div>
                     ))}
@@ -534,84 +382,6 @@ export default function ProductionBoard() {
           )}
         </div>
       )}
-
-      {editUnitsItem && (
-        <PerUnitModal
-          item={editUnitsItem}
-          stages={stages}
-          onClose={() => setEditUnitsItem(null)}
-          onSave={async (newUnitStages) => {
-            await saveUnitStages(editUnitsItem.id, newUnitStages)
-            setEditUnitsItem(null)
-            toast.success('Units updated')
-          }}
-        />
-      )}
     </div>
-  )
-}
-
-function PerUnitModal({ item, stages, onClose, onSave }) {
-  const initial = useMemo(() => {
-    const arr = Array.isArray(item.unit_stages) && item.unit_stages.length > 0
-      ? [...item.unit_stages]
-      : Array.from({ length: item.production_qty || 0 }, () => item.production_stage_id || stages[0]?.id || null)
-    return arr
-  }, [item, stages])
-
-  const [draft, setDraft] = useState(initial)
-  const [saving, setSaving] = useState(false)
-
-  function setUnit(i, value) {
-    setDraft(prev => prev.map((v, idx) => idx === i ? value : v))
-  }
-
-  async function handleSave() {
-    setSaving(true)
-    try {
-      await onSave(draft)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <Modal title={`Per-unit progress: ${item.name}`} onClose={onClose}>
-      <p className="text-muted text-sm" style={{ marginBottom: '0.75rem' }}>
-        Each unit can sit at its own stage. Dragging the card on the board still moves all units together.
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '50vh', overflowY: 'auto' }}>
-        {draft.map((sid, i) => {
-          const stage = stages.find(s => s.id === sid)
-          return (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--gray-500)', minWidth: 60 }}>Unit {i + 1}</span>
-              <select
-                value={sid || ''}
-                onChange={e => setUnit(i, parseInt(e.target.value))}
-                style={{
-                  flex: 1,
-                  fontSize: '0.8125rem',
-                  background: stage?.color ? `${stage.color}20` : '#f3f4f6',
-                  color: stage?.color || '#4b5563',
-                  borderColor: stage?.color ? `${stage.color}40` : 'var(--gray-200)',
-                  border: '1px solid',
-                  borderRadius: 4,
-                  padding: '4px 8px',
-                }}
-              >
-                {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-          )
-        })}
-      </div>
-      <div className="form-actions">
-        <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-        <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving...' : 'Save'}
-        </button>
-      </div>
-    </Modal>
   )
 }
