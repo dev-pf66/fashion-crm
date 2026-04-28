@@ -85,7 +85,7 @@ function PersonForm({ person, onClose, onSave }) {
       await updatePerson(person.id, {
         name: form.name,
         email: form.email,
-        role: form.role,
+        role: form.role || null,
         role_id: form.role_id ? parseInt(form.role_id) : null,
         is_active: form.is_active,
       })
