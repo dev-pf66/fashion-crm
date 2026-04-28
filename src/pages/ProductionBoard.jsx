@@ -112,21 +112,32 @@ export default function ProductionBoard() {
     return [...new Set(items.map(i => i.ranges?.name).filter(Boolean))].sort()
   }, [items])
 
+  // Production Board only surfaces pieces that are actively in flight:
+  // anything still parked at "Not Started" hasn't actually begun and stays
+  // out of the board. They're still in My Work for whoever owns them.
+  const notStartedId = useMemo(
+    () => stages.find(s => s.name === 'Not Started')?.id || null,
+    [stages]
+  )
+
   const filtered = useMemo(() => {
     return items.filter(item => {
       if (search && !item.name?.toLowerCase().includes(search.toLowerCase()) &&
           !item.production_client?.toLowerCase().includes(search.toLowerCase())) return false
       if (filterLead && item.production_lead !== parseInt(filterLead)) return false
       if (filterRange && item.ranges?.name !== filterRange) return false
+      if (notStartedId != null && item.production_stage_id === notStartedId) return false
       return true
     })
-  }, [items, search, filterLead, filterRange])
+  }, [items, search, filterLead, filterRange, notStartedId])
 
   const kanbanColumns = useMemo(() => {
-    return stages.map(stage => ({
-      ...stage,
-      items: filtered.filter(i => (i.production_stage_id || i.stage?.id) === stage.id),
-    }))
+    return stages
+      .filter(stage => stage.name !== 'Not Started')
+      .map(stage => ({
+        ...stage,
+        items: filtered.filter(i => (i.production_stage_id || i.stage?.id) === stage.id),
+      }))
   }, [stages, filtered])
 
   const grouped = useMemo(() => {
