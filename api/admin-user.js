@@ -99,13 +99,55 @@ export default async function handler(req, res) {
       }
 
       // Create auth user
-      const { data: authData, error: createError } = await adminClient.auth.admin.createUser({
+      let authData
+      const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
       })
+
       if (createError) {
-        return res.status(400).json({ error: createError.message })
+        const isAlreadyRegistered = /already.*registered|already been registered|email_exists|user_exists/i.test(createError.message || '')
+        if (!isAlreadyRegistered) {
+          return res.status(400).json({ error: createError.message })
+        }
+
+        // Find the existing auth user with this email
+        const { data: usersPage, error: listError } = await adminClient.auth.admin.listUsers({ perPage: 1000 })
+        if (listError) {
+          return res.status(400).json({ error: listError.message })
+        }
+        const existing = usersPage?.users?.find(u => (u.email || '').toLowerCase() === email.toLowerCase())
+        if (!existing) {
+          return res.status(400).json({ error: createError.message })
+        }
+
+        // If the auth user is linked to a real person, this is a true duplicate
+        const { data: linkedPerson } = await adminClient
+          .from('people')
+          .select('id')
+          .eq('user_id', existing.id)
+          .maybeSingle()
+        if (linkedPerson) {
+          return res.status(400).json({ error: 'A user with this email already exists in the system.' })
+        }
+
+        // Orphan auth row (no linked person) — clean it up and retry once
+        const { error: orphanDeleteError } = await adminClient.auth.admin.deleteUser(existing.id)
+        if (orphanDeleteError) {
+          return res.status(400).json({ error: `Could not clean up stale auth account: ${orphanDeleteError.message}` })
+        }
+        const retry = await adminClient.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+        })
+        if (retry.error) {
+          return res.status(400).json({ error: retry.error.message })
+        }
+        authData = retry.data
+      } else {
+        authData = createData
       }
 
       // Create or update people record
