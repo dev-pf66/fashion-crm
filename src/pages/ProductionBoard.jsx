@@ -113,11 +113,31 @@ export default function ProductionBoard() {
   }, [items])
 
   // Production Board only surfaces pieces that are actively in flight:
-  // anything still parked at "Not Started" hasn't actually begun and stays
-  // out of the board. They're still in My Work for whoever owns them.
-  const notStartedId = useMemo(
-    () => stages.find(s => s.name === 'Not Started')?.id || null,
-    [stages]
+  // anything still parked at "Not Started" (or with no stage at all) hasn't
+  // begun production work and stays out of this board. They remain on My
+  // Work for whoever owns them.
+  //
+  // Match by name first, then a fuzzy/case-insensitive match, then fall
+  // back to whichever stage has the lowest sort_order — the seed data
+  // always puts "Not Started" at sort_order = 1 so this catches renames.
+  const notStartedId = useMemo(() => {
+    if (!stages.length) return null
+    const exact = stages.find(s => s.name === 'Not Started')
+    if (exact) return exact.id
+    const fuzzy = stages.find(s => (s.name || '').trim().toLowerCase() === 'not started')
+    if (fuzzy) return fuzzy.id
+    const earliest = [...stages].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))[0]
+    return earliest?.id ?? null
+  }, [stages])
+
+  // Visible stages = every stage except the Not Started one. We use this
+  // both for which kanban columns to render and for which pieces survive
+  // the filter (so the header count and the rendered cards stay in sync —
+  // a piece sitting on a hidden stage would otherwise be counted but
+  // invisible).
+  const visibleStageIds = useMemo(
+    () => new Set(stages.filter(s => s.id !== notStartedId).map(s => s.id)),
+    [stages, notStartedId]
   )
 
   const filtered = useMemo(() => {
@@ -126,19 +146,19 @@ export default function ProductionBoard() {
           !item.production_client?.toLowerCase().includes(search.toLowerCase())) return false
       if (filterLead && item.production_lead !== parseInt(filterLead)) return false
       if (filterRange && item.ranges?.name !== filterRange) return false
-      if (notStartedId != null && item.production_stage_id === notStartedId) return false
+      if (stages.length > 0 && !visibleStageIds.has(item.production_stage_id)) return false
       return true
     })
-  }, [items, search, filterLead, filterRange, notStartedId])
+  }, [items, search, filterLead, filterRange, stages.length, visibleStageIds])
 
   const kanbanColumns = useMemo(() => {
     return stages
-      .filter(stage => stage.name !== 'Not Started')
+      .filter(stage => stage.id !== notStartedId)
       .map(stage => ({
         ...stage,
         items: filtered.filter(i => (i.production_stage_id || i.stage?.id) === stage.id),
       }))
-  }, [stages, filtered])
+  }, [stages, filtered, notStartedId])
 
   const grouped = useMemo(() => {
     const byRange = {}
