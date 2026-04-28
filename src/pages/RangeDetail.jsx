@@ -408,6 +408,7 @@ export default function RangeDetail() {
   }
 
   async function handleQuickAdd(groupKey) {
+    if (!can('range_plan.edit')) return
     if (!quickAddName.trim()) return
     try {
       const isTopLevel = groupKey === '_top'
@@ -431,6 +432,7 @@ export default function RangeDetail() {
   }
 
   async function handleStatusChange(styleId, status) {
+    if (!can('range_plan.edit')) return
     try {
       await updateRangeStyle(styleId, { status })
       setStyles(prev => prev.map(s => s.id === styleId ? { ...s, status } : s))
@@ -440,6 +442,7 @@ export default function RangeDetail() {
   }
 
   async function handleInlineEdit(styleId, field, value) {
+    if (!can('range_plan.edit')) return
     try {
       const updates = {}
       if (field === 'colorways') {
@@ -467,12 +470,14 @@ export default function RangeDetail() {
 
   function triggerThumbUpload(styleId, e) {
     e.stopPropagation()
+    if (!can('range_plan.edit')) return
     setThumbUploadId(styleId)
     thumbInputRef.current.value = ''
     thumbInputRef.current.click()
   }
 
   async function handleThumbUpload(e) {
+    if (!can('range_plan.edit')) return
     const file = e.target.files?.[0]
     if (!file || !thumbUploadId) return
     const styleId = thumbUploadId
@@ -529,6 +534,7 @@ export default function RangeDetail() {
   }
 
   async function handleBulkStatusChange(status) {
+    if (!can('range_plan.edit')) return
     try {
       await Promise.all([...selectedIds].map(id => updateRangeStyle(id, { status })))
       setStyles(prev => prev.map(s => selectedIds.has(s.id) ? { ...s, status } : s))
@@ -540,6 +546,7 @@ export default function RangeDetail() {
   }
 
   async function handleBulkDelete() {
+    if (!can('range_plan.edit')) return
     if (!confirm(`Delete ${selectedIds.size} selected styles?`)) return
     try {
       await Promise.all([...selectedIds].map(id => deleteRangeStyle(id)))
@@ -552,6 +559,7 @@ export default function RangeDetail() {
   }
 
   async function handleBulkAssign(personId) {
+    if (!can('range_plan.edit')) return
     if (!personId) return
     try {
       await bulkAssignStyles([...selectedIds], parseInt(personId))
@@ -1128,6 +1136,7 @@ export default function RangeDetail() {
         <TableView
           styles={filtered}
           isMobile={isMobile}
+          canEdit={can('range_plan.edit')}
           onStatusChange={handleStatusChange}
           onInlineEdit={handleInlineEdit}
           onClickStyle={(id) => setPanelStyleId(id)}
@@ -1343,7 +1352,7 @@ function QuickAddInline({ groupKey, quickAddGroup, quickAddName, setQuickAddName
   )
 }
 
-function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyle, onOpenLightbox, onThumbUpload }) {
+function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyle, onOpenLightbox, onThumbUpload, canEdit = true }) {
   const [editCell, setEditCell] = useState(null)
   const [editValue, setEditValue] = useState('')
   const [sortField, setSortField] = useState('name')
@@ -1364,6 +1373,7 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
   }, [styles, sortField, sortDir])
 
   function startEdit(id, field, currentValue) {
+    if (!canEdit) return
     setEditCell({ id, field })
     setEditValue(field === 'colorways' ? (currentValue || []).join(', ') : (currentValue || ''))
   }
@@ -1473,21 +1483,21 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
                     {rangeCategories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 ) : (
-                  <span className="rp-table-editable" onClick={() => startEdit(style.id, 'category', style.category)}>{style.category}</span>
+                  <span className={canEdit ? 'rp-table-editable' : ''} onClick={canEdit ? () => startEdit(style.id, 'category', style.category) : undefined}>{style.category}</span>
                 )}
               </td>
               <td>
                 {editCell?.id === style.id && editCell.field === 'sub_category' ? (
                   <input type="text" value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(style.id, 'sub_category')} onKeyDown={e => e.key === 'Enter' && saveEdit(style.id, 'sub_category')} autoFocus style={{ fontSize: '0.8125rem', width: '100%' }} />
                 ) : (
-                  <span className="rp-table-editable" onClick={() => startEdit(style.id, 'sub_category', style.sub_category)}>{style.sub_category || '—'}</span>
+                  <span className={canEdit ? 'rp-table-editable' : ''} onClick={canEdit ? () => startEdit(style.id, 'sub_category', style.sub_category) : undefined}>{style.sub_category || '—'}</span>
                 )}
               </td>
               <td>
                 {editCell?.id === style.id && editCell.field === 'colorways' ? (
                   <input type="text" value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(style.id, 'colorways')} onKeyDown={e => e.key === 'Enter' && saveEdit(style.id, 'colorways')} autoFocus style={{ fontSize: '0.8125rem', width: '100%' }} />
                 ) : (
-                  <span className="rp-table-editable" onClick={() => startEdit(style.id, 'colorways', style.colorways)}>
+                  <span className={canEdit ? 'rp-table-editable' : ''} onClick={canEdit ? () => startEdit(style.id, 'colorways', style.colorways) : undefined}>
                     {(style.colorways || []).length > 0 ? (
                       <span style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         {style.colorways.map((c, i) => (
@@ -1504,7 +1514,7 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
                 {editCell?.id === style.id && editCell.field === 'delivery_drop' ? (
                   <input type="text" value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={() => saveEdit(style.id, 'delivery_drop')} onKeyDown={e => e.key === 'Enter' && saveEdit(style.id, 'delivery_drop')} autoFocus style={{ fontSize: '0.8125rem', width: '100%' }} />
                 ) : (
-                  <span className="rp-table-editable" onClick={() => startEdit(style.id, 'delivery_drop', style.delivery_drop)}>{style.delivery_drop || '—'}</span>
+                  <span className={canEdit ? 'rp-table-editable' : ''} onClick={canEdit ? () => startEdit(style.id, 'delivery_drop', style.delivery_drop) : undefined}>{style.delivery_drop || '—'}</span>
                 )}
               </td>
               <td style={{ fontSize: '0.8125rem', color: 'var(--gray-600)' }}>
@@ -1516,7 +1526,12 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
                   : '—'}
               </td>
               <td>
-                <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />
+                {canEdit
+                  ? <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />
+                  : (() => {
+                      const conf = RANGE_STYLE_STATUSES.find(s => s.value === style.status) || RANGE_STYLE_STATUSES[0]
+                      return <span className="badge" style={{ background: conf.bg, color: conf.color, fontSize: '0.6875rem' }}>{conf.label}</span>
+                    })()}
               </td>
             </tr>
           ))}

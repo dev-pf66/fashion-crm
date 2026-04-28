@@ -231,6 +231,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         ) : (
           <div className="rp-panel-body">
             {/* Form fields */}
+            <fieldset disabled={!canEdit} style={{ border: 'none', padding: 0, margin: 0, minWidth: 0 }}>
             <div className="form-group">
               <label>Style Name *</label>
               <input type="text" value={form.name} onChange={e => updateField('name', e.target.value)} />
@@ -377,6 +378,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                 )}
               </div>
             )}
+            </fieldset>
 
             {/* Files section */}
             <div className="rp-panel-section">
