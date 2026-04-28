@@ -19,12 +19,8 @@ CREATE INDEX IF NOT EXISTS idx_notifications_person ON notifications(person_id, 
 
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
-DO $do$
-BEGIN
-  CREATE POLICY "Enable all for authenticated" ON notifications FOR ALL USING (true) WITH CHECK (true);
-EXCEPTION WHEN duplicate_object THEN NULL;
-END
-$do$;
+DROP POLICY IF EXISTS "Enable all for authenticated" ON notifications;
+CREATE POLICY "Enable all for authenticated" ON notifications FOR ALL USING (true) WITH CHECK (true);
 
 CREATE OR REPLACE FUNCTION notify_on_range_style_assignment()
 RETURNS TRIGGER

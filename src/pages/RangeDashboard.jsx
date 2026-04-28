@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useApp } from '../App'
 import { usePermissions } from '../hooks/usePermissions'
 import { useToast } from '../contexts/ToastContext'
@@ -7,6 +7,8 @@ import {
   getMultiRangeDashboardData,
   getPriceBrackets,
   getSilhouettes,
+  getDivisionCellTargets,
+  upsertDivisionCellTarget,
 } from '../lib/supabase'
 import { useDivision } from '../contexts/DivisionContext'
 import { BarChart3, Target, Users, AlertTriangle, TrendingUp, ChevronDown } from 'lucide-react'
@@ -14,7 +16,7 @@ import { DashboardSkeleton } from '../components/PageSkeleton'
 
 export default function RangeDashboard() {
   const { currentPerson, people } = useApp()
-  const { role } = usePermissions()
+  const { role, isAdmin } = usePermissions()
   const { addToast } = useToast()
   const { currentDivision } = useDivision()
 
@@ -23,6 +25,7 @@ export default function RangeDashboard() {
   const [stages, setStages] = useState([])
   const [priceBrackets, setPriceBrackets] = useState([])
   const [silhouettes, setSilhouettes] = useState([])
+  const [cellTargets, setCellTargets] = useState([])
   const [loading, setLoading] = useState(true)
   const [expandedMerch, setExpandedMerch] = useState(null)
 
@@ -36,15 +39,17 @@ export default function RangeDashboard() {
       const rangeList = await getRanges(currentDivision?.id)
       setRanges(rangeList)
       const rangeIds = rangeList.map(r => r.id)
-      const [dashData, brackets, sils] = await Promise.all([
+      const [dashData, brackets, sils, targets] = await Promise.all([
         getMultiRangeDashboardData(rangeIds),
         getPriceBrackets(),
         getSilhouettes(),
+        getDivisionCellTargets(currentDivision?.id),
       ])
       setAllStyles(dashData.styles)
       setStages(dashData.stages)
       setPriceBrackets(brackets)
       setSilhouettes(sils)
+      setCellTargets(targets)
     } catch (err) {
       console.error('Failed to load dashboard:', err)
       addToast('Failed to load dashboard data', 'error')
@@ -158,6 +163,29 @@ export default function RangeDashboard() {
               styles={allStyles}
               silhouettes={silhouettes}
               priceBrackets={priceBrackets}
+              cellTargets={cellTargets}
+              canEdit={isAdmin}
+              onSaveTarget={async (silhouette, price_bracket, target_value) => {
+                if (!currentDivision?.id) return
+                try {
+                  const saved = await upsertDivisionCellTarget({
+                    division_id: currentDivision.id,
+                    silhouette,
+                    price_bracket,
+                    target_value,
+                    updated_by: currentPerson?.id,
+                  })
+                  setCellTargets(prev => {
+                    const others = prev.filter(t =>
+                      !(t.silhouette === silhouette && t.price_bracket === price_bracket)
+                    )
+                    return [...others, saved]
+                  })
+                } catch (err) {
+                  console.error('Failed to save target:', err)
+                  addToast('Failed to save target', 'error')
+                }
+              }}
             />
           </div>
 
@@ -201,7 +229,7 @@ export default function RangeDashboard() {
   )
 }
 
-function ConsolidatedMatrix({ styles, silhouettes, priceBrackets }) {
+function ConsolidatedMatrix({ styles, silhouettes, priceBrackets, cellTargets, canEdit, onSaveTarget }) {
   const norm = v => (v || '').trim().toLowerCase()
 
   const silByKey = new Map()
@@ -224,8 +252,19 @@ function ConsolidatedMatrix({ styles, silhouettes, priceBrackets }) {
     if (k && !bracketByKey.has(k)) bracketByKey.set(k, s.price_category)
   }
 
+  const targetByKey = useMemo(() => {
+    const m = new Map()
+    for (const t of cellTargets || []) {
+      m.set(`${norm(t.silhouette)}::${norm(t.price_bracket)}`, t.target_value)
+    }
+    return m
+  }, [cellTargets])
+
   function cellCount(silKey, bracketKey) {
     return styles.filter(s => norm(s.silhouette) === silKey && norm(s.price_category) === bracketKey).length
+  }
+  function cellTarget(silKey, bracketKey) {
+    return targetByKey.get(`${silKey}::${bracketKey}`) || 0
   }
   function rowTotal(silKey) {
     return styles.filter(s => norm(s.silhouette) === silKey).length
@@ -234,16 +273,26 @@ function ConsolidatedMatrix({ styles, silhouettes, priceBrackets }) {
     return styles.filter(s => norm(s.price_category) === bracketKey).length
   }
 
+  // Show every silhouette in the lookup so admins can set targets even for empty rows.
+  // For brackets, only show ones with pieces or a target — full bracket list would be too wide.
   const activeSilRows = [...silByKey.entries()]
-    .filter(([silKey]) => rowTotal(silKey) > 0)
     .map(([silKey, display]) => ({ silKey, display }))
+    .sort((a, b) => a.display.localeCompare(b.display))
 
   const activeBracketCols = [...bracketByKey.entries()]
-    .filter(([bracketKey]) => colTotal(bracketKey) > 0)
+    .filter(([bracketKey]) =>
+      colTotal(bracketKey) > 0 ||
+      activeSilRows.some(row => cellTarget(row.silKey, bracketKey) > 0)
+    )
     .map(([bracketKey, display]) => ({ bracketKey, display }))
 
   const matrixTotal = activeBracketCols.reduce((sum, col) => sum + colTotal(col.bracketKey), 0)
   const orphanCount = styles.length - matrixTotal
+
+  const grandTarget = activeSilRows.reduce(
+    (sum, row) => sum + activeBracketCols.reduce((s, col) => s + cellTarget(row.silKey, col.bracketKey), 0),
+    0
+  )
 
   const maxCellValue = Math.max(
     1,
@@ -262,6 +311,11 @@ function ConsolidatedMatrix({ styles, silhouettes, priceBrackets }) {
           {orphanCount} piece{orphanCount === 1 ? '' : 's'} missing silhouette or price bracket — not shown below.
         </div>
       )}
+      {canEdit && (
+        <div className="rd-matrix-note rd-matrix-hint">
+          Tap any cell to set or update its target.
+        </div>
+      )}
       <table className="rd-matrix">
         <thead>
           <tr>
@@ -273,30 +327,131 @@ function ConsolidatedMatrix({ styles, silhouettes, priceBrackets }) {
           </tr>
         </thead>
         <tbody>
-          {activeSilRows.map(row => (
-            <tr key={row.silKey}>
-              <th className="rd-matrix-rowlabel">{row.display}</th>
-              {activeBracketCols.map(col => {
-                const count = cellCount(row.silKey, col.bracketKey)
-                return (
-                  <td key={col.bracketKey} className="rd-matrix-cell" style={{ background: cellHeat(count) }}>
-                    <div className="rd-cell-count">{count}</div>
-                  </td>
-                )
-              })}
-              <td className="rd-matrix-cell rd-matrix-total"><strong>{rowTotal(row.silKey)}</strong></td>
-            </tr>
-          ))}
+          {activeSilRows.map(row => {
+            const rowTargetSum = activeBracketCols.reduce(
+              (s, col) => s + cellTarget(row.silKey, col.bracketKey),
+              0
+            )
+            return (
+              <tr key={row.silKey}>
+                <th className="rd-matrix-rowlabel">{row.display}</th>
+                {activeBracketCols.map(col => (
+                  <TargetCell
+                    key={col.bracketKey}
+                    count={cellCount(row.silKey, col.bracketKey)}
+                    target={cellTarget(row.silKey, col.bracketKey)}
+                    heatBg={cellHeat(cellCount(row.silKey, col.bracketKey))}
+                    canEdit={canEdit}
+                    onSave={value => onSaveTarget(row.display, col.display, value)}
+                  />
+                ))}
+                <td className="rd-matrix-cell rd-matrix-total">
+                  <strong>{rowTotal(row.silKey)}</strong>
+                  {rowTargetSum > 0 && <span className="rd-cell-target-label"> / {rowTargetSum}</span>}
+                </td>
+              </tr>
+            )
+          })}
           <tr className="rd-matrix-totalrow">
             <th className="rd-matrix-rowlabel">Total</th>
-            {activeBracketCols.map(col => (
-              <td key={col.bracketKey} className="rd-matrix-cell"><strong>{colTotal(col.bracketKey)}</strong></td>
-            ))}
-            <td className="rd-matrix-cell rd-matrix-grandtotal"><strong>{matrixTotal}</strong></td>
+            {activeBracketCols.map(col => {
+              const colTargetSum = activeSilRows.reduce(
+                (s, row) => s + cellTarget(row.silKey, col.bracketKey),
+                0
+              )
+              return (
+                <td key={col.bracketKey} className="rd-matrix-cell">
+                  <strong>{colTotal(col.bracketKey)}</strong>
+                  {colTargetSum > 0 && <span className="rd-cell-target-label"> / {colTargetSum}</span>}
+                </td>
+              )
+            })}
+            <td className="rd-matrix-cell rd-matrix-grandtotal">
+              <strong>{matrixTotal}</strong>
+              {grandTarget > 0 && <span className="rd-cell-target-label"> / {grandTarget}</span>}
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
+  )
+}
+
+function TargetCell({ count, target, heatBg, canEdit, onSave }) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal] = useState(String(target || ''))
+  const committedRef = useRef(false)
+
+  const pct = target > 0 ? Math.min(100, Math.round((count / target) * 100)) : 0
+  const fillColor = target === 0
+    ? '#cbd5e1'
+    : pct >= 100 ? '#22c55e' : pct >= 80 ? '#f59e0b' : '#ef4444'
+
+  function startEdit() {
+    setVal(String(target || ''))
+    committedRef.current = false
+    setEditing(true)
+  }
+
+  function commitSave() {
+    if (committedRef.current) return
+    committedRef.current = true
+    const n = parseInt(val, 10)
+    const next = Number.isFinite(n) && n >= 0 ? n : 0
+    if (next !== (target || 0)) onSave(next)
+    setEditing(false)
+  }
+
+  function commitCancel() {
+    if (committedRef.current) return
+    committedRef.current = true
+    setVal(String(target || ''))
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <td className="rd-matrix-cell rd-matrix-cell-editing" style={{ background: heatBg }}>
+        <input
+          type="number"
+          min="0"
+          autoFocus
+          className="rd-target-input-compact"
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onBlur={commitSave}
+          onKeyDown={e => {
+            if (e.key === 'Enter') { e.preventDefault(); commitSave() }
+            else if (e.key === 'Escape') { e.preventDefault(); commitCancel() }
+          }}
+        />
+      </td>
+    )
+  }
+
+  return (
+    <td
+      className={`rd-matrix-cell ${canEdit ? 'rd-matrix-cell-editable' : ''}`}
+      style={{ background: heatBg }}
+      onClick={canEdit ? startEdit : undefined}
+      role={canEdit ? 'button' : undefined}
+      tabIndex={canEdit ? 0 : undefined}
+      onKeyDown={canEdit ? e => { if (e.key === 'Enter') startEdit() } : undefined}
+    >
+      <div className="rd-cell-count">
+        {count}
+        {target > 0 && <span className="rd-cell-target-label"> / {target}</span>}
+        {canEdit && target === 0 && <span className="rd-cell-target-add">+</span>}
+      </div>
+      {target > 0 && (
+        <div className="rd-cell-progress">
+          <div
+            className="rd-cell-progress-fill"
+            style={{ width: `${pct}%`, background: fillColor }}
+          />
+        </div>
+      )}
+    </td>
   )
 }
 

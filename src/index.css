@@ -8392,6 +8392,14 @@ html, body {
 .rd-matrix-totalrow th,
 .rd-matrix-totalrow td { background: var(--gray-50); font-weight: 700; color: var(--gray-900); }
 .rd-matrix-grandtotal { background: var(--gray-100) !important; }
+.rd-matrix-hint { color: var(--primary); background: var(--primary-light); }
+.rd-matrix-cell-editable { cursor: pointer; transition: outline 120ms ease, background-color 120ms ease; }
+.rd-matrix-cell-editable:hover { outline: 2px solid var(--primary); outline-offset: -2px; }
+.rd-matrix-cell-editable:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.rd-matrix-cell-editing { outline: 2px solid var(--primary); outline-offset: -2px; }
+.rd-cell-target-label { font-size: 0.7rem; font-weight: 500; color: var(--gray-500); margin-left: 0.15rem; }
+.rd-cell-target-add { font-size: 0.7rem; color: var(--gray-300); margin-left: 0.25rem; font-weight: 400; }
+.rd-matrix-cell-editable:hover .rd-cell-target-add { color: var(--primary); }
 
 .division-switch-overlay {
   position: fixed;

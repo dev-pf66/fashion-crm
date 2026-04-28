@@ -297,6 +297,33 @@ export async function getRangeDashboardData(rangeId) {
   }
 }
 
+export async function getDivisionCellTargets(divisionId) {
+  if (!divisionId) return []
+  const { data, error } = await supabase
+    .from('division_cell_targets')
+    .select('*')
+    .eq('division_id', divisionId)
+  if (error) throw error
+  return data || []
+}
+
+export async function upsertDivisionCellTarget({ division_id, silhouette, price_bracket, target_value, updated_by }) {
+  const { data, error } = await supabase
+    .from('division_cell_targets')
+    .upsert({
+      division_id,
+      silhouette,
+      price_bracket,
+      target_value,
+      updated_by,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'division_id,silhouette,price_bracket' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 export async function getMultiRangeDashboardData(rangeIds) {
   if (!rangeIds || rangeIds.length === 0) {
     return { styles: [], targets: [], stages: [] }
