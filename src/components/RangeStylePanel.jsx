@@ -539,15 +539,19 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
           onClose={() => setShowProductionModal(false)}
           onSubmit={async (prodData) => {
             try {
+              const qty = prodData.quantity ? parseInt(prodData.quantity) : 0
+              const startStageId = style?.production_stage_id || null
+              const unitStages = qty > 0 && startStageId ? Array.from({ length: qty }, () => startStageId) : null
               await updateRangeStyle(styleId, {
                 status: 'production',
-                production_qty: prodData.quantity ? parseInt(prodData.quantity) : 0,
+                production_qty: qty,
                 production_status: 'pending',
                 production_client: prodData.client || null,
                 production_lead: prodData.lead || null,
                 production_collaborators: prodData.collaborators,
                 production_notes: prodData.notes || null,
                 pushed_to_production_at: new Date().toISOString(),
+                unit_stages: unitStages,
               })
               // Notify lead
               if (prodData.lead && prodData.lead !== currentPerson?.id) {
