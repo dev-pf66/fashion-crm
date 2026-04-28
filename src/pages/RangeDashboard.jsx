@@ -6,7 +6,6 @@ import {
   getRanges,
   getMultiRangeDashboardData,
   getPriceBrackets,
-  getSilhouettes,
   getDivisionCellTargets,
   upsertDivisionCellTarget,
 } from '../lib/supabase'
@@ -24,7 +23,6 @@ export default function RangeDashboard() {
   const [allStyles, setAllStyles] = useState([])
   const [stages, setStages] = useState([])
   const [priceBrackets, setPriceBrackets] = useState([])
-  const [silhouettes, setSilhouettes] = useState([])
   const [cellTargets, setCellTargets] = useState([])
   const [loading, setLoading] = useState(true)
   const [expandedMerch, setExpandedMerch] = useState(null)
@@ -39,16 +37,14 @@ export default function RangeDashboard() {
       const rangeList = await getRanges(currentDivision?.id)
       setRanges(rangeList)
       const rangeIds = rangeList.map(r => r.id)
-      const [dashData, brackets, sils, targets] = await Promise.all([
+      const [dashData, brackets, targets] = await Promise.all([
         getMultiRangeDashboardData(rangeIds),
         getPriceBrackets(),
-        getSilhouettes(),
         getDivisionCellTargets(currentDivision?.id),
       ])
       setAllStyles(dashData.styles)
       setStages(dashData.stages)
       setPriceBrackets(brackets)
-      setSilhouettes(sils)
       setCellTargets(targets)
     } catch (err) {
       console.error('Failed to load dashboard:', err)
@@ -97,6 +93,12 @@ export default function RangeDashboard() {
     ? merchPerformance.reduce((worst, m) => m.pct < worst.pct ? m : worst, merchPerformance[0])
     : null
 
+  const allCategories = useMemo(() => {
+    const set = new Set()
+    for (const r of ranges) for (const c of r.categories || []) set.add(c)
+    return [...set]
+  }, [ranges])
+
   const isMerchandiser = role?.name === 'merchandiser' && currentPerson
   const visibleMerchPerf = isMerchandiser
     ? merchPerformance.filter(m => m.personId === currentPerson.id)
@@ -116,7 +118,7 @@ export default function RangeDashboard() {
       <div className="page-header">
         <div>
           <h2>Range Dashboard</h2>
-          <p className="page-subtitle">All ranges in {currentDivision?.name || 'this division'} — pieces by silhouette × price</p>
+          <p className="page-subtitle">All ranges in {currentDivision?.name || 'this division'} — pieces by category × price</p>
         </div>
       </div>
 
@@ -156,28 +158,28 @@ export default function RangeDashboard() {
             </div>
           </div>
 
-          {/* Consolidated division-wide matrix: silhouette × price bracket */}
+          {/* Consolidated division-wide matrix: category × price bracket */}
           <div className="rd-section">
-            <h3><BarChart3 size={18} /> Pieces by Silhouette × Price</h3>
+            <h3><BarChart3 size={18} /> Pieces by Category × Price</h3>
             <ConsolidatedMatrix
               styles={allStyles}
-              silhouettes={silhouettes}
+              categories={allCategories}
               priceBrackets={priceBrackets}
               cellTargets={cellTargets}
               canEdit={isAdmin}
-              onSaveTarget={async (silhouette, price_bracket, target_value) => {
+              onSaveTarget={async (category, price_bracket, target_value) => {
                 if (!currentDivision?.id) return
                 try {
                   const saved = await upsertDivisionCellTarget({
                     division_id: currentDivision.id,
-                    silhouette,
+                    category,
                     price_bracket,
                     target_value,
                     updated_by: currentPerson?.id,
                   })
                   setCellTargets(prev => {
                     const others = prev.filter(t =>
-                      !(t.silhouette === silhouette && t.price_bracket === price_bracket)
+                      !(t.category === category && t.price_bracket === price_bracket)
                     )
                     return [...others, saved]
                   })
@@ -229,17 +231,21 @@ export default function RangeDashboard() {
   )
 }
 
-function ConsolidatedMatrix({ styles, silhouettes, priceBrackets, cellTargets, canEdit, onSaveTarget }) {
+function ConsolidatedMatrix({ styles, categories, priceBrackets, cellTargets, canEdit, onSaveTarget }) {
   const norm = v => (v || '').trim().toLowerCase()
 
-  const silByKey = new Map()
-  for (const s of silhouettes) {
-    const k = norm(s.name)
-    if (k && !silByKey.has(k)) silByKey.set(k, s.name)
+  const catByKey = new Map()
+  for (const c of categories || []) {
+    const k = norm(c)
+    if (k && !catByKey.has(k)) catByKey.set(k, c)
   }
   for (const s of styles) {
-    const k = norm(s.silhouette)
-    if (k && !silByKey.has(k)) silByKey.set(k, s.silhouette)
+    const k = norm(s.category)
+    if (k && !catByKey.has(k)) catByKey.set(k, s.category)
+  }
+  for (const t of cellTargets || []) {
+    const k = norm(t.category)
+    if (k && !catByKey.has(k)) catByKey.set(k, t.category)
   }
 
   const bracketByKey = new Map()
@@ -255,60 +261,62 @@ function ConsolidatedMatrix({ styles, silhouettes, priceBrackets, cellTargets, c
   const targetByKey = useMemo(() => {
     const m = new Map()
     for (const t of cellTargets || []) {
-      m.set(`${norm(t.silhouette)}::${norm(t.price_bracket)}`, t.target_value)
+      m.set(`${norm(t.category)}::${norm(t.price_bracket)}`, t.target_value)
     }
     return m
   }, [cellTargets])
 
-  function cellCount(silKey, bracketKey) {
-    return styles.filter(s => norm(s.silhouette) === silKey && norm(s.price_category) === bracketKey).length
+  function cellCount(catKey, bracketKey) {
+    return styles.filter(s => norm(s.category) === catKey && norm(s.price_category) === bracketKey).length
   }
-  function cellTarget(silKey, bracketKey) {
-    return targetByKey.get(`${silKey}::${bracketKey}`) || 0
+  function cellTarget(catKey, bracketKey) {
+    return targetByKey.get(`${catKey}::${bracketKey}`) || 0
   }
-  function rowTotal(silKey) {
-    return styles.filter(s => norm(s.silhouette) === silKey).length
+  function rowTotal(catKey) {
+    return styles.filter(s => norm(s.category) === catKey).length
   }
   function colTotal(bracketKey) {
     return styles.filter(s => norm(s.price_category) === bracketKey).length
   }
 
-  // Show every silhouette in the lookup so admins can set targets even for empty rows.
-  // For brackets, only show ones with pieces or a target — full bracket list would be too wide.
-  const activeSilRows = [...silByKey.entries()]
-    .map(([silKey, display]) => ({ silKey, display }))
+  // Show every category that's defined on a range, used by a piece, or has a
+  // target — so admins can set targets even when no pieces are punched yet.
+  // For brackets, only show ones with pieces or a target — full bracket list
+  // would be too wide.
+  const activeCatRows = [...catByKey.entries()]
+    .map(([catKey, display]) => ({ catKey, display }))
     .sort((a, b) => a.display.localeCompare(b.display))
 
   const activeBracketCols = [...bracketByKey.entries()]
     .filter(([bracketKey]) =>
       colTotal(bracketKey) > 0 ||
-      activeSilRows.some(row => cellTarget(row.silKey, bracketKey) > 0)
+      activeCatRows.some(row => cellTarget(row.catKey, bracketKey) > 0)
     )
     .map(([bracketKey, display]) => ({ bracketKey, display }))
 
   const matrixTotal = activeBracketCols.reduce((sum, col) => sum + colTotal(col.bracketKey), 0)
   const orphanCount = styles.length - matrixTotal
 
-  const grandTarget = activeSilRows.reduce(
-    (sum, row) => sum + activeBracketCols.reduce((s, col) => s + cellTarget(row.silKey, col.bracketKey), 0),
+  const grandTarget = activeCatRows.reduce(
+    (sum, row) => sum + activeBracketCols.reduce((s, col) => s + cellTarget(row.catKey, col.bracketKey), 0),
     0
   )
 
   const maxCellValue = Math.max(
     1,
-    ...activeSilRows.flatMap(row => activeBracketCols.map(col => cellCount(row.silKey, col.bracketKey)))
+    ...activeCatRows.flatMap(row => activeBracketCols.map(col => cellCount(row.catKey, col.bracketKey)))
   )
   const cellHeat = count => count > 0 ? `rgba(99, 102, 241, ${0.06 + (count / maxCellValue) * 0.34})` : undefined
 
-  if (activeSilRows.length === 0 && activeBracketCols.length === 0) {
-    return <p className="empty-state" style={{ fontSize: '0.85rem' }}>No pieces with silhouette or price bracket yet.</p>
+  if (activeCatRows.length === 0 && activeBracketCols.length === 0) {
+    return <p className="empty-state" style={{ fontSize: '0.85rem' }}>No pieces with category or price bracket yet.</p>
   }
 
   return (
     <div className="rd-matrix-wrap">
       {orphanCount > 0 && (
         <div className="rd-matrix-note">
-          {orphanCount} piece{orphanCount === 1 ? '' : 's'} missing silhouette or price bracket — not shown below.
+          {orphanCount} piece{orphanCount === 1 ? '' : 's'} missing category or price bracket — not shown below.
         </div>
       )}
       {canEdit && (
@@ -319,7 +327,7 @@ function ConsolidatedMatrix({ styles, silhouettes, priceBrackets, cellTargets, c
       <table className="rd-matrix">
         <thead>
           <tr>
-            <th className="rd-matrix-corner">Silhouette \ Price</th>
+            <th className="rd-matrix-corner">Category \ Price</th>
             {activeBracketCols.map(b => (
               <th key={b.bracketKey}>{b.display}</th>
             ))}
@@ -327,26 +335,26 @@ function ConsolidatedMatrix({ styles, silhouettes, priceBrackets, cellTargets, c
           </tr>
         </thead>
         <tbody>
-          {activeSilRows.map(row => {
+          {activeCatRows.map(row => {
             const rowTargetSum = activeBracketCols.reduce(
-              (s, col) => s + cellTarget(row.silKey, col.bracketKey),
+              (s, col) => s + cellTarget(row.catKey, col.bracketKey),
               0
             )
             return (
-              <tr key={row.silKey}>
+              <tr key={row.catKey}>
                 <th className="rd-matrix-rowlabel">{row.display}</th>
                 {activeBracketCols.map(col => (
                   <TargetCell
                     key={col.bracketKey}
-                    count={cellCount(row.silKey, col.bracketKey)}
-                    target={cellTarget(row.silKey, col.bracketKey)}
-                    heatBg={cellHeat(cellCount(row.silKey, col.bracketKey))}
+                    count={cellCount(row.catKey, col.bracketKey)}
+                    target={cellTarget(row.catKey, col.bracketKey)}
+                    heatBg={cellHeat(cellCount(row.catKey, col.bracketKey))}
                     canEdit={canEdit}
                     onSave={value => onSaveTarget(row.display, col.display, value)}
                   />
                 ))}
                 <td className="rd-matrix-cell rd-matrix-total">
-                  <strong>{rowTotal(row.silKey)}</strong>
+                  <strong>{rowTotal(row.catKey)}</strong>
                   {rowTargetSum > 0 && <span className="rd-cell-target-label"> / {rowTargetSum}</span>}
                 </td>
               </tr>
@@ -355,8 +363,8 @@ function ConsolidatedMatrix({ styles, silhouettes, priceBrackets, cellTargets, c
           <tr className="rd-matrix-totalrow">
             <th className="rd-matrix-rowlabel">Total</th>
             {activeBracketCols.map(col => {
-              const colTargetSum = activeSilRows.reduce(
-                (s, row) => s + cellTarget(row.silKey, col.bracketKey),
+              const colTargetSum = activeCatRows.reduce(
+                (s, row) => s + cellTarget(row.catKey, col.bracketKey),
                 0
               )
               return (
