@@ -207,6 +207,39 @@ export async function getProductionStages() {
   return data
 }
 
+// Production Units (per-unit tracking on the Production Board)
+export async function getProductionUnitsForRanges(rangeStyleIds) {
+  if (!rangeStyleIds || rangeStyleIds.length === 0) return []
+  const { data, error } = await supabase
+    .from('production_units')
+    .select('*, assignee:assigned_to(id, name), stage:production_floor_stage_id(id, name, color, sort_order)')
+    .in('range_style_id', rangeStyleIds)
+    .order('range_style_id')
+    .order('unit_number')
+  if (error) throw error
+  return data || []
+}
+
+export async function createProductionUnits(units) {
+  const { data, error } = await supabase
+    .from('production_units')
+    .insert(units)
+    .select('*, assignee:assigned_to(id, name), stage:production_floor_stage_id(id, name, color, sort_order)')
+  if (error) throw error
+  return data || []
+}
+
+export async function updateProductionUnit(id, updates) {
+  const { data, error } = await supabase
+    .from('production_units')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*, assignee:assigned_to(id, name), stage:production_floor_stage_id(id, name, color, sort_order)')
+    .single()
+  if (error) throw error
+  return data
+}
+
 export async function createProductionStage(stage) {
   const { data, error } = await supabase.from('production_stages').insert([stage]).select().single()
   if (error) throw error

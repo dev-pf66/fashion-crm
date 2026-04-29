@@ -3,13 +3,20 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useApp } from '../App'
 import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
-import { supabase, getProductionStages, updateRangeStyle } from '../lib/supabase'
 import {
-  PackageCheck, Search, User, Clock, GripVertical,
+  supabase, getProductionStages,
+  getProductionUnitsForRanges, createProductionUnits, updateProductionUnit,
+} from '../lib/supabase'
+import {
+  PackageCheck, Search, User, Clock,
   Image as ImageIcon, X, ChevronLeft, ChevronRight, Maximize2,
-  LayoutGrid, List,
+  LayoutGrid, List, UserPlus, Pencil,
 } from 'lucide-react'
 import { KanbanSkeleton } from '../components/PageSkeleton'
+import Modal from '../components/Modal'
+
+const RS_PREFIX = 'rs:'
+const UN_PREFIX = 'u:'
 
 function timeAgo(date) {
   if (!date) return ''
@@ -29,6 +36,7 @@ export default function ProductionBoard() {
   const { currentDivision } = useDivision()
   const toast = useToast()
   const [items, setItems] = useState([])
+  const [units, setUnits] = useState([])
   const [stages, setStages] = useState([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('kanban')
@@ -36,6 +44,8 @@ export default function ProductionBoard() {
   const [filterLead, setFilterLead] = useState('')
   const [filterRange, setFilterRange] = useState('')
   const [lightbox, setLightbox] = useState(null)
+  const [splitModal, setSplitModal] = useState(null)
+  const [assigneeModal, setAssigneeModal] = useState(null)
 
   useEffect(() => { loadData() }, [currentDivision])
 
@@ -57,8 +67,16 @@ export default function ProductionBoard() {
         getProductionStages(),
       ])
       if (error) throw error
-      setItems(data || [])
+      const rangeStyles = data || []
+      setItems(rangeStyles)
       setStages(stageData || [])
+
+      if (rangeStyles.length > 0) {
+        const unitsData = await getProductionUnitsForRanges(rangeStyles.map(r => r.id))
+        setUnits(unitsData)
+      } else {
+        setUnits([])
+      }
     } catch (err) {
       console.error('Failed to load production items:', err)
       toast.error('Failed to load production board')
@@ -67,31 +85,96 @@ export default function ProductionBoard() {
     }
   }
 
-  async function handleStageChange(itemId, newStageId) {
-    const item = items.find(i => i.id === itemId)
-    if (!item) return
-    const oldStage = item.stage
-    const newStage = stages.find(s => s.id === newStageId)
-    if (!newStage || oldStage?.id === newStageId) return
+  // Map of range_style_id -> units, used to hide range_styles that have been split.
+  const unitsByRangeId = useMemo(() => {
+    const m = new Map()
+    for (const u of units) {
+      const arr = m.get(u.range_style_id) || []
+      arr.push(u)
+      m.set(u.range_style_id, arr)
+    }
+    return m
+  }, [units])
 
-    setItems(prev => prev.map(i => i.id === itemId
-      ? { ...i, production_floor_stage_id: newStageId, stage: newStage, status_updated_at: new Date().toISOString() }
-      : i
-    ))
-
+  async function splitIntoUnits(rangeStyleId, stageId, assignments) {
+    const rows = assignments.map((a, i) => ({
+      range_style_id: rangeStyleId,
+      unit_number: i + 1,
+      assigned_to: a.assignee || null,
+      production_floor_stage_id: stageId,
+    }))
     try {
-      await updateRangeStyle(itemId, { production_floor_stage_id: newStageId, status_updated_at: new Date().toISOString() })
+      const created = await createProductionUnits(rows)
+      setUnits(prev => [...prev, ...created])
+      toast.success(`${rows.length} unit${rows.length > 1 ? 's' : ''} started`)
     } catch (err) {
-      toast.error('Failed to update stage')
+      console.error(err)
+      toast.error('Failed to start production')
+    }
+  }
+
+  function handleRangeStyleDrop(rangeStyleId, newStageId) {
+    const rs = items.find(i => i.id === rangeStyleId)
+    if (!rs) return
+    if (unitsByRangeId.has(rangeStyleId)) {
+      // Already split — shouldn't be draggable as a range_style anymore. Ignore.
+      return
+    }
+    const qty = rs.production_qty || 0
+    if (qty <= 0) {
+      toast.error('Set a production quantity before starting production')
+      return
+    }
+    if (qty === 1) {
+      // Skip the modal for single-unit pieces.
+      splitIntoUnits(rangeStyleId, newStageId, [{ assignee: null }])
+      return
+    }
+    setSplitModal({ rangeStyle: rs, destStageId: newStageId })
+  }
+
+  async function updateUnitStage(unitId, newStageId) {
+    const newStage = stages.find(s => s.id === newStageId)
+    if (!newStage) return
+    setUnits(prev => prev.map(u => u.id === unitId
+      ? { ...u, production_floor_stage_id: newStageId, stage: newStage, updated_at: new Date().toISOString() }
+      : u
+    ))
+    try {
+      await updateProductionUnit(unitId, { production_floor_stage_id: newStageId })
+    } catch (err) {
+      toast.error('Failed to update unit stage')
+      loadData()
+    }
+  }
+
+  async function updateUnitAssignee(unitId, personId) {
+    const person = people.find(p => p.id === personId) || null
+    setUnits(prev => prev.map(u => u.id === unitId
+      ? { ...u, assigned_to: personId, assignee: person ? { id: person.id, name: person.name } : null }
+      : u
+    ))
+    try {
+      await updateProductionUnit(unitId, { assigned_to: personId })
+    } catch (err) {
+      toast.error('Failed to update unit assignee')
       loadData()
     }
   }
 
   function handleDragEnd(result) {
     if (!result.destination) return
-    const itemId = result.draggableId
+    const draggableId = result.draggableId
     const newStageId = parseInt(result.destination.droppableId)
-    handleStageChange(itemId, newStageId)
+    if (!Number.isFinite(newStageId)) return
+
+    if (draggableId.startsWith(RS_PREFIX)) {
+      const rangeStyleId = draggableId.slice(RS_PREFIX.length)
+      handleRangeStyleDrop(rangeStyleId, newStageId)
+    } else if (draggableId.startsWith(UN_PREFIX)) {
+      const unitId = parseInt(draggableId.slice(UN_PREFIX.length))
+      updateUnitStage(unitId, newStageId)
+    }
   }
 
   const peopleMap = useMemo(() => {
@@ -104,36 +187,67 @@ export default function ProductionBoard() {
     return [...new Set(items.map(i => i.ranges?.name).filter(Boolean))].sort()
   }, [items])
 
-  const filtered = useMemo(() => {
+  // Range styles still shown as cards: anything that hasn't been split into units yet.
+  const visibleRangeStyles = useMemo(() => {
     return items.filter(item => {
+      if (unitsByRangeId.has(item.id)) return false
       if (search && !item.name?.toLowerCase().includes(search.toLowerCase()) &&
           !item.production_client?.toLowerCase().includes(search.toLowerCase())) return false
       if (filterLead && item.production_lead !== parseInt(filterLead)) return false
       if (filterRange && item.ranges?.name !== filterRange) return false
       return true
     })
-  }, [items, search, filterLead, filterRange])
+  }, [items, search, filterLead, filterRange, unitsByRangeId])
+
+  // Joined: each unit augmented with its parent range_style for display.
+  const itemsById = useMemo(() => {
+    const m = new Map()
+    for (const i of items) m.set(i.id, i)
+    return m
+  }, [items])
+
+  const visibleUnits = useMemo(() => {
+    return units
+      .map(u => ({ ...u, parent: itemsById.get(u.range_style_id) || null }))
+      .filter(u => {
+        if (!u.parent) return false
+        if (search && !u.parent.name?.toLowerCase().includes(search.toLowerCase()) &&
+            !u.parent.production_client?.toLowerCase().includes(search.toLowerCase())) return false
+        if (filterLead && u.assigned_to !== parseInt(filterLead) && u.parent.production_lead !== parseInt(filterLead)) return false
+        if (filterRange && u.parent.ranges?.name !== filterRange) return false
+        return true
+      })
+  }, [units, itemsById, search, filterLead, filterRange])
 
   const kanbanColumns = useMemo(() => {
-    return stages.map(stage => ({
-      ...stage,
-      items: filtered.filter(i => (i.production_floor_stage_id || i.stage?.id) === stage.id),
-    }))
-  }, [stages, filtered])
+    return stages.map(stage => {
+      const rangeStylesHere = visibleRangeStyles.filter(i =>
+        (i.production_floor_stage_id || i.stage?.id) === stage.id
+      )
+      const unitsHere = visibleUnits.filter(u =>
+        (u.production_floor_stage_id || u.stage?.id) === stage.id
+      )
+      return { ...stage, rangeStyles: rangeStylesHere, units: unitsHere }
+    })
+  }, [stages, visibleRangeStyles, visibleUnits])
 
   const grouped = useMemo(() => {
     const byRange = {}
-    filtered.forEach(i => {
+    visibleRangeStyles.forEach(i => {
       const rangeName = i.ranges?.name || 'Unknown Range'
       if (!byRange[rangeName]) byRange[rangeName] = []
       byRange[rangeName].push(i)
     })
     return Object.entries(byRange).sort(([a], [b]) => a.localeCompare(b))
-  }, [filtered])
+  }, [visibleRangeStyles])
 
-  const totalQty = filtered.reduce((sum, i) => sum + (i.production_qty || 0), 0)
+  const totalCardCount = visibleRangeStyles.length + visibleUnits.length
+  const totalQty = visibleRangeStyles.reduce((sum, i) => sum + (i.production_qty || 0), 0) + visibleUnits.length
 
-  const thumbItems = useMemo(() => filtered.filter(i => i.thumbnail_url), [filtered])
+  const thumbItems = useMemo(
+    () => visibleRangeStyles.filter(i => i.thumbnail_url),
+    [visibleRangeStyles]
+  )
   function lightboxNav(dir) {
     if (!lightbox) return
     const idx = thumbItems.findIndex(i => i.id === lightbox.itemId)
@@ -154,7 +268,7 @@ export default function ProductionBoard() {
             <PackageCheck size={24} /> Production Board
           </h1>
           <p className="page-subtitle">
-            {filtered.length} item{filtered.length !== 1 ? 's' : ''} &middot; {totalQty.toLocaleString()} total units
+            {totalCardCount} card{totalCardCount !== 1 ? 's' : ''} &middot; {totalQty.toLocaleString()} total units
           </p>
         </div>
       </div>
@@ -194,7 +308,7 @@ export default function ProductionBoard() {
               </select>
             )}
             <select value={filterLead} onChange={e => setFilterLead(e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem' }}>
-              <option value="">All Leads</option>
+              <option value="">All Assignees</option>
               {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
@@ -202,64 +316,106 @@ export default function ProductionBoard() {
           {view === 'kanban' && (
             <DragDropContext onDragEnd={handleDragEnd}>
               <div className="kanban-board">
-                {kanbanColumns.map(col => (
-                  <div key={col.id} className="kanban-column">
-                    <div className="kanban-column-header" style={{ borderTopColor: col.color }}>
-                      <span className="kanban-column-dot" style={{ background: col.color }} />
-                      <span className="kanban-column-title">{col.name}</span>
-                      <span className="kanban-column-count">{col.items.length}</span>
-                    </div>
-                    <Droppable droppableId={String(col.id)}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          className={`kanban-column-body ${snapshot.isDraggingOver ? 'drag-over' : ''}`}
-                        >
-                          {col.items.map((item, index) => (
-                            <Draggable key={item.id} draggableId={item.id} index={index}>
-                              {(dragProvided, dragSnapshot) => (
-                                <div
-                                  ref={dragProvided.innerRef}
-                                  {...dragProvided.draggableProps}
-                                  {...dragProvided.dragHandleProps}
-                                  className={`kanban-card ${dragSnapshot.isDragging ? 'dragging' : ''}`}
+                {kanbanColumns.map(col => {
+                  const cardCount = col.rangeStyles.length + col.units.length
+                  return (
+                    <div key={col.id} className="kanban-column">
+                      <div className="kanban-column-header" style={{ borderTopColor: col.color }}>
+                        <span className="kanban-column-dot" style={{ background: col.color }} />
+                        <span className="kanban-column-title">{col.name}</span>
+                        <span className="kanban-column-count">{cardCount}</span>
+                      </div>
+                      <Droppable droppableId={String(col.id)}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            className={`kanban-column-body ${snapshot.isDraggingOver ? 'drag-over' : ''}`}
+                          >
+                            {col.rangeStyles.map((item, index) => (
+                              <Draggable key={`rs-${item.id}`} draggableId={`${RS_PREFIX}${item.id}`} index={index}>
+                                {(dragProvided, dragSnapshot) => (
+                                  <div
+                                    ref={dragProvided.innerRef}
+                                    {...dragProvided.draggableProps}
+                                    {...dragProvided.dragHandleProps}
+                                    className={`kanban-card ${dragSnapshot.isDragging ? 'dragging' : ''}`}
+                                  >
+                                    {item.thumbnail_url && (
+                                      <div className="kanban-card-thumb" onClick={() => setLightbox({ url: item.thumbnail_url, itemId: item.id, name: item.name })}>
+                                        <img src={item.thumbnail_url} alt={item.name} loading="lazy" />
+                                      </div>
+                                    )}
+                                    <div className="kanban-card-body">
+                                      <div className="kanban-card-name">{item.name}</div>
+                                      <div className="kanban-card-meta">
+                                        <span className="tag" style={{ fontSize: '0.625rem' }}>{(item.production_qty || 0).toLocaleString()} units</span>
+                                        {item.production_client && <span className="tag" style={{ fontSize: '0.625rem', background: 'var(--gray-100)' }}>{item.production_client}</span>}
+                                      </div>
+                                      {item.production_lead && (
+                                        <div style={{ fontSize: '0.6875rem', color: 'var(--gray-500)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                          <User size={11} /> {peopleMap[item.production_lead] || 'Unknown'}
+                                        </div>
+                                      )}
+                                      {item.pushed_to_production_at && (
+                                        <div style={{ fontSize: '0.6875rem', color: 'var(--gray-400)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                          <Clock size={10} /> {timeAgo(item.pushed_to_production_at)}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                            {col.units.map((unit, index) => {
+                              const total = unit.parent?.production_qty || 0
+                              return (
+                                <Draggable
+                                  key={`u-${unit.id}`}
+                                  draggableId={`${UN_PREFIX}${unit.id}`}
+                                  index={col.rangeStyles.length + index}
                                 >
-                                  {item.thumbnail_url && (
-                                    <div className="kanban-card-thumb" onClick={() => setLightbox({ url: item.thumbnail_url, itemId: item.id, name: item.name })}>
-                                      <img src={item.thumbnail_url} alt={item.name} loading="lazy" />
+                                  {(dragProvided, dragSnapshot) => (
+                                    <div
+                                      ref={dragProvided.innerRef}
+                                      {...dragProvided.draggableProps}
+                                      {...dragProvided.dragHandleProps}
+                                      className={`kanban-card ${dragSnapshot.isDragging ? 'dragging' : ''}`}
+                                    >
+                                      <div className="kanban-card-body">
+                                        <div className="kanban-card-name">
+                                          {unit.parent?.name || 'Unit'}
+                                        </div>
+                                        <div className="kanban-card-meta">
+                                          <span className="tag" style={{ fontSize: '0.625rem' }}>Unit {unit.unit_number} of {total}</span>
+                                          {unit.parent?.production_client && <span className="tag" style={{ fontSize: '0.625rem', background: 'var(--gray-100)' }}>{unit.parent.production_client}</span>}
+                                        </div>
+                                        <div
+                                          style={{ fontSize: '0.6875rem', color: 'var(--gray-500)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}
+                                          onClick={(e) => { e.stopPropagation(); setAssigneeModal(unit) }}
+                                          onMouseDown={(e) => e.stopPropagation()}
+                                          title="Click to change assignee"
+                                        >
+                                          <User size={11} />
+                                          <span>{unit.assignee?.name || 'Unassigned'}</span>
+                                          <Pencil size={10} style={{ opacity: 0.5, marginLeft: 2 }} />
+                                        </div>
+                                      </div>
                                     </div>
                                   )}
-                                  <div className="kanban-card-body">
-                                    <div className="kanban-card-name">{item.name}</div>
-                                    <div className="kanban-card-meta">
-                                      <span className="tag" style={{ fontSize: '0.625rem' }}>{(item.production_qty || 0).toLocaleString()} units</span>
-                                      {item.production_client && <span className="tag" style={{ fontSize: '0.625rem', background: 'var(--gray-100)' }}>{item.production_client}</span>}
-                                    </div>
-                                    {item.production_lead && (
-                                      <div style={{ fontSize: '0.6875rem', color: 'var(--gray-500)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                        <User size={11} /> {peopleMap[item.production_lead] || 'Unknown'}
-                                      </div>
-                                    )}
-                                    {item.pushed_to_production_at && (
-                                      <div style={{ fontSize: '0.6875rem', color: 'var(--gray-400)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                        <Clock size={10} /> {timeAgo(item.pushed_to_production_at)}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                          {col.items.length === 0 && (
-                            <div className="kanban-empty">No items</div>
-                          )}
-                        </div>
-                      )}
-                    </Droppable>
-                  </div>
-                ))}
+                                </Draggable>
+                              )
+                            })}
+                            {provided.placeholder}
+                            {cardCount === 0 && (
+                              <div className="kanban-empty">No items</div>
+                            )}
+                          </div>
+                        )}
+                      </Droppable>
+                    </div>
+                  )
+                })}
               </div>
             </DragDropContext>
           )}
@@ -324,7 +480,7 @@ export default function ProductionBoard() {
                             <span className="mywork-detail-label">Stage</span>
                             <select
                               value={item.production_floor_stage_id || stages[0]?.id || ''}
-                              onChange={e => handleStageChange(item.id, parseInt(e.target.value))}
+                              onChange={e => handleRangeStyleDrop(item.id, parseInt(e.target.value))}
                               className="mywork-status-select"
                               style={{
                                 background: item.stage?.color ? `${item.stage.color}20` : '#f3f4f6',
@@ -347,6 +503,7 @@ export default function ProductionBoard() {
                   <div className="empty-state">
                     <PackageCheck size={48} />
                     <h3>No items match your filters</h3>
+                    <p className="text-muted text-sm">Pieces split into units only show on the Kanban view.</p>
                   </div>
                 </div>
               )}
@@ -374,6 +531,140 @@ export default function ProductionBoard() {
           )}
         </div>
       )}
+
+      {splitModal && (
+        <SplitUnitsModal
+          rangeStyle={splitModal.rangeStyle}
+          destStage={stages.find(s => s.id === splitModal.destStageId)}
+          people={people}
+          onClose={() => setSplitModal(null)}
+          onSubmit={async (assignments) => {
+            await splitIntoUnits(splitModal.rangeStyle.id, splitModal.destStageId, assignments)
+            setSplitModal(null)
+          }}
+        />
+      )}
+
+      {assigneeModal && (
+        <ChangeAssigneeModal
+          unit={assigneeModal}
+          parent={itemsById.get(assigneeModal.range_style_id)}
+          people={people}
+          onClose={() => setAssigneeModal(null)}
+          onSave={async (personId) => {
+            await updateUnitAssignee(assigneeModal.id, personId)
+            setAssigneeModal(null)
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+function SplitUnitsModal({ rangeStyle, destStage, people, onClose, onSubmit }) {
+  const qty = rangeStyle.production_qty || 0
+  const [assignments, setAssignments] = useState(() => Array.from({ length: qty }, () => ({ assignee: null })))
+  const [bulkAssignee, setBulkAssignee] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  function setRow(i, value) {
+    setAssignments(prev => prev.map((row, idx) => idx === i ? { assignee: value || null } : row))
+  }
+
+  function applyBulk() {
+    const id = bulkAssignee ? parseInt(bulkAssignee) : null
+    setAssignments(prev => prev.map(() => ({ assignee: id })))
+  }
+
+  async function handleSubmit() {
+    setSubmitting(true)
+    try {
+      await onSubmit(assignments)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal title={`Start production: ${rangeStyle.name}`} onClose={onClose}>
+      <p className="text-muted text-sm" style={{ marginBottom: '0.75rem' }}>
+        Splitting {qty} unit{qty === 1 ? '' : 's'} into <strong>{destStage?.name || 'next stage'}</strong>. Pick who is making each one. You can leave any blank for now.
+      </p>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+        <span style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>Assign all to:</span>
+        <select
+          value={bulkAssignee}
+          onChange={e => setBulkAssignee(e.target.value)}
+          style={{ fontSize: '0.8125rem', flex: 1 }}
+        >
+          <option value="">— pick someone —</option>
+          {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <button type="button" className="btn btn-sm btn-secondary" onClick={applyBulk} disabled={!bulkAssignee}>
+          <UserPlus size={12} /> Apply
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '50vh', overflowY: 'auto' }}>
+        {assignments.map((row, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.8125rem', color: 'var(--gray-500)', minWidth: 70 }}>Unit {i + 1}</span>
+            <select
+              value={row.assignee || ''}
+              onChange={e => setRow(i, e.target.value ? parseInt(e.target.value) : null)}
+              style={{ flex: 1, fontSize: '0.8125rem' }}
+            >
+              <option value="">Unassigned</option>
+              {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+        ))}
+      </div>
+
+      <div className="form-actions">
+        <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+        <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={submitting}>
+          {submitting ? 'Starting...' : 'Start production'}
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
+function ChangeAssigneeModal({ unit, parent, people, onClose, onSave }) {
+  const total = parent?.production_qty || 0
+  const [picked, setPicked] = useState(unit.assigned_to || '')
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await onSave(picked ? parseInt(picked) : null)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal title={`Reassign Unit ${unit.unit_number} of ${total}`} onClose={onClose}>
+      <p className="text-muted text-sm" style={{ marginBottom: '0.75rem' }}>
+        {parent?.name ? <><strong>{parent.name}</strong> · </> : null}
+        Pick who's making this unit.
+      </p>
+      <div className="form-group">
+        <label>Assignee</label>
+        <select value={picked} onChange={e => setPicked(e.target.value)} style={{ width: '100%' }}>
+          <option value="">Unassigned</option>
+          {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+      </div>
+      <div className="form-actions">
+        <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+        <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
+    </Modal>
   )
 }
