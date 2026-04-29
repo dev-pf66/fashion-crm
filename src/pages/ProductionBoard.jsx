@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useApp } from '../App'
 import { useDivision } from '../contexts/DivisionContext'
 import { useToast } from '../contexts/ToastContext'
-import { supabase, getProductionStages, updateRangeStyle, logProductionStatusChange } from '../lib/supabase'
+import { supabase, getProductionStages, updateRangeStyle } from '../lib/supabase'
 import {
   PackageCheck, Search, User, Clock, GripVertical,
   Image as ImageIcon, X, ChevronLeft, ChevronRight, Maximize2,
@@ -25,7 +25,7 @@ function timeAgo(date) {
 }
 
 export default function ProductionBoard() {
-  const { currentPerson, people } = useApp()
+  const { people } = useApp()
   const { currentDivision } = useDivision()
   const toast = useToast()
   const [items, setItems] = useState([])
@@ -44,7 +44,7 @@ export default function ProductionBoard() {
     try {
       let query = supabase
         .from('range_styles')
-        .select('*, ranges!inner(id, name, division_id), stage:production_stage_id(id, name, color, sort_order)')
+        .select('*, ranges!inner(id, name, division_id), stage:production_floor_stage_id(id, name, color, sort_order)')
         .eq('status', 'production')
         .order('pushed_to_production_at', { ascending: false })
 
@@ -75,20 +75,12 @@ export default function ProductionBoard() {
     if (!newStage || oldStage?.id === newStageId) return
 
     setItems(prev => prev.map(i => i.id === itemId
-      ? { ...i, production_stage_id: newStageId, stage: newStage, status_updated_at: new Date().toISOString() }
+      ? { ...i, production_floor_stage_id: newStageId, stage: newStage, status_updated_at: new Date().toISOString() }
       : i
     ))
 
     try {
-      await updateRangeStyle(itemId, { production_stage_id: newStageId, status_updated_at: new Date().toISOString() })
-      await logProductionStatusChange({
-        style_id: itemId,
-        changed_by: currentPerson?.id || null,
-        old_stage_id: oldStage?.id || null,
-        new_stage_id: newStageId,
-        old_stage_name: oldStage?.name || 'None',
-        new_stage_name: newStage.name,
-      })
+      await updateRangeStyle(itemId, { production_floor_stage_id: newStageId, status_updated_at: new Date().toISOString() })
     } catch (err) {
       toast.error('Failed to update stage')
       loadData()
@@ -125,7 +117,7 @@ export default function ProductionBoard() {
   const kanbanColumns = useMemo(() => {
     return stages.map(stage => ({
       ...stage,
-      items: filtered.filter(i => (i.production_stage_id || i.stage?.id) === stage.id),
+      items: filtered.filter(i => (i.production_floor_stage_id || i.stage?.id) === stage.id),
     }))
   }, [stages, filtered])
 
@@ -331,7 +323,7 @@ export default function ProductionBoard() {
                           <div className="mywork-card-status">
                             <span className="mywork-detail-label">Stage</span>
                             <select
-                              value={item.production_stage_id || stages[0]?.id || ''}
+                              value={item.production_floor_stage_id || stages[0]?.id || ''}
                               onChange={e => handleStageChange(item.id, parseInt(e.target.value))}
                               className="mywork-status-select"
                               style={{
