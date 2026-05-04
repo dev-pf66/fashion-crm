@@ -4,6 +4,7 @@ import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, 
 import { usePermissions } from '../hooks/usePermissions'
 import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
+import { thumbUrl } from '../lib/imgUrl'
 import { useApp } from '../App'
 import CommentSection from './CommentSection'
 import Modal from './Modal'
@@ -435,7 +436,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                       aria-label={imgIndex >= 0 ? `Open ${file.file_name}` : undefined}
                     >
                       {isImage(file.file_type) ? (
-                        <img src={file.file_url} alt={file.file_name} loading="lazy" />
+                        <img src={thumbUrl(file.file_url, { w: 240 })} alt={file.file_name} loading="lazy" />
                       ) : (
                         <div className="rp-file-placeholder">
                           <FileText size={28} />

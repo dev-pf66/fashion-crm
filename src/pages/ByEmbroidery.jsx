@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { ChevronDown, ChevronRight, Layers, Image as ImageIcon } from 'lucide-react'
 import StatusBadge from '../components/StatusBadge'
 import { GridSkeleton } from '../components/PageSkeleton'
+import { thumbUrl } from '../lib/imgUrl'
 
 export default function ByEmbroidery() {
   const { currentPerson } = useApp()
@@ -120,7 +121,7 @@ export default function ByEmbroidery() {
                       >
                         <div className="emb-card-thumb">
                           {s.thumbnail_url ? (
-                            <img src={s.thumbnail_url} alt={s.name} loading="lazy" />
+                            <img src={thumbUrl(s.thumbnail_url, { w: 200 })} alt={s.name} loading="lazy" />
                           ) : (
                             <div className="emb-card-placeholder">
                               <ImageIcon size={24} />

@@ -14,6 +14,7 @@ import {
 import { usePermissions } from '../hooks/usePermissions'
 import { uploadRangeStyleFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
+import { thumbUrl } from '../lib/imgUrl'
 import Modal from '../components/Modal'
 import Breadcrumbs from '../components/Breadcrumbs'
 import RangeStylePanel from '../components/RangeStylePanel'
@@ -1060,7 +1061,7 @@ export default function RangeDetail() {
                                           <div className="rp-card-thumb" {...provided.dragHandleProps}>
                                             {style.thumbnail_url ? (
                                               <>
-                                                <img src={style.thumbnail_url} alt={style.name} loading="lazy" />
+                                                <img src={thumbUrl(style.thumbnail_url, { w: 240 })} alt={style.name} loading="lazy" />
                                                 <button className="rp-thumb-zoom" onClick={(e) => openLightbox(style, e)} title="View full image">
                                                   <Maximize2 size={12} />
                                                 </button>
@@ -1279,7 +1280,7 @@ function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, o
       <div className="rp-card-thumb">
         {style.thumbnail_url ? (
           <>
-            <img src={style.thumbnail_url} alt={style.name} loading="lazy" />
+            <img src={thumbUrl(style.thumbnail_url, { w: 240 })} alt={style.name} loading="lazy" />
             <button className="rp-thumb-zoom" onClick={(e) => onOpenLightbox(style, e)} title="View full image">
               <Maximize2 size={12} />
             </button>
@@ -1397,7 +1398,7 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
           <div key={style.id} className="rp-mobile-card" onClick={() => onClickStyle(style.id)}>
             <div className="rp-mobile-card-left">
               {style.thumbnail_url ? (
-                <img src={style.thumbnail_url} alt="" className="rp-mobile-card-thumb" onClick={(e) => { e.stopPropagation(); onThumbUpload(style.id, e) }} />
+                <img src={thumbUrl(style.thumbnail_url, { w: 200 })} alt="" className="rp-mobile-card-thumb" onClick={(e) => { e.stopPropagation(); onThumbUpload(style.id, e) }} />
               ) : (
                 <div className="rp-mobile-card-thumb rp-mobile-card-thumb-empty" onClick={(e) => { e.stopPropagation(); onThumbUpload(style.id, e) }} title="Add thumbnail">
                   <ImageIcon size={16} />
@@ -1449,7 +1450,7 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
                 {style.thumbnail_url ? (
                   <div style={{ position: 'relative', width: 36, height: 36 }}>
                     <img
-                      src={style.thumbnail_url}
+                      src={thumbUrl(style.thumbnail_url, { w: 80 })}
                       alt=""
                       style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
                       onClick={() => onOpenLightbox(style)}

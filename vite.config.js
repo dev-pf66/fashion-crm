@@ -45,7 +45,7 @@ export default defineConfig({
             options: {
               cacheName: 'supabase-api',
               expiration: {
-                maxEntries: 100,
+                maxEntries: 200,
                 maxAgeSeconds: 60 * 5, // 5 minutes
               },
               networkTimeoutSeconds: 10,
@@ -57,7 +57,21 @@ export default defineConfig({
             options: {
               cacheName: 'supabase-storage',
               expiration: {
-                maxEntries: 200,
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
+            // Proxied/resized images go through Vercel's edge cache; the
+            // service worker layers on top so each device avoids re-fetching
+            // the same thumbnail across sessions.
+            urlPattern: /\/api\/img-proxy\?.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'img-proxy',
+              expiration: {
+                maxEntries: 1000,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               },
             },

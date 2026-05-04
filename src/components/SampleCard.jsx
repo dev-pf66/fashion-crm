@@ -1,5 +1,6 @@
 import { SAMPLE_ROUNDS, maskSupplierName } from '../lib/constants'
 import { useApp } from '../App'
+import { thumbUrl } from '../lib/imgUrl'
 import { ImageOff, Clock } from 'lucide-react'
 
 export default function SampleCard({ sample, onClick }) {
@@ -19,7 +20,7 @@ export default function SampleCard({ sample, onClick }) {
       <div className="sample-card-header">
         <div className="sample-card-thumbnail">
           {sample.styles?.thumbnail_url
-            ? <img src={sample.styles.thumbnail_url} alt="" loading="lazy" />
+            ? <img src={thumbUrl(sample.styles.thumbnail_url, { w: 120 })} alt="" loading="lazy" />
             : <ImageOff size={16} />
           }
         </div>

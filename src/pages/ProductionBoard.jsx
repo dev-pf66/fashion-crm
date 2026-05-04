@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { KanbanSkeleton } from '../components/PageSkeleton'
 import Modal from '../components/Modal'
+import { thumbUrl } from '../lib/imgUrl'
 
 const RS_PREFIX = 'rs:'
 const UN_PREFIX = 'u:'
@@ -54,7 +55,7 @@ export default function ProductionBoard() {
     try {
       let query = supabase
         .from('range_styles')
-        .select('*, ranges!inner(id, name, division_id), stage:production_floor_stage_id(id, name, color, sort_order)')
+        .select('id, name, status, production_qty, production_client, production_lead, production_collaborators, production_notes, production_floor_stage_id, pushed_to_production_at, status_updated_at, thumbnail_url, ranges!inner(id, name, division_id), stage:production_floor_stage_id(id, name, color, sort_order)')
         .eq('status', 'production')
         .order('pushed_to_production_at', { ascending: false })
 
@@ -343,7 +344,7 @@ export default function ProductionBoard() {
                                   >
                                     {item.thumbnail_url && (
                                       <div className="kanban-card-thumb" onClick={() => setLightbox({ url: item.thumbnail_url, itemId: item.id, name: item.name })}>
-                                        <img src={item.thumbnail_url} alt={item.name} loading="lazy" />
+                                        <img src={thumbUrl(item.thumbnail_url, { w: 240 })} alt={item.name} loading="lazy" />
                                       </div>
                                     )}
                                     <div className="kanban-card-body">

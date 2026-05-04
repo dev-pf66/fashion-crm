@@ -8,6 +8,7 @@ import {
   Search, Filter, Calendar, Clock, ChevronDown, ChevronRight, Sparkles
 } from 'lucide-react'
 import { GridSkeleton } from '../components/PageSkeleton'
+import { thumbUrl } from '../lib/imgUrl'
 
 const CONTENT_STATUSES = [
   { value: 'needs_shoot', label: 'Needs Shoot', icon: Camera, bg: '#fef3c7', color: '#b45309' },
@@ -236,7 +237,7 @@ export default function ContentCalendar() {
                 <tr key={item.id}>
                   <td>
                     <div className="content-list-name">
-                      {item.thumbnail_url && <img src={item.thumbnail_url} alt="" />}
+                      {item.thumbnail_url && <img src={thumbUrl(item.thumbnail_url, { w: 120 })} alt="" />}
                       {item.name}
                     </div>
                   </td>
@@ -279,7 +280,7 @@ function ContentCard({ item, onStatusChange }) {
     <div className="content-card">
       {item.thumbnail_url && (
         <div className="content-card-thumb">
-          <img src={item.thumbnail_url} alt={item.name} />
+          <img src={thumbUrl(item.thumbnail_url, { w: 320 })} alt={item.name} />
         </div>
       )}
       <div className="content-card-body">

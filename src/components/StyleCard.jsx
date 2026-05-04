@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../App'
 import { maskSupplierName } from '../lib/constants'
+import { thumbUrl } from '../lib/imgUrl'
 import StatusBadge from './StatusBadge'
 import { ImageOff } from 'lucide-react'
 
@@ -13,7 +14,7 @@ export default function StyleCard({ style }) {
     <div className="style-card" onClick={() => navigate(`/styles/${style.id}`)}>
       <div className="style-card-image">
         {style.thumbnail_url ? (
-          <img src={style.thumbnail_url} alt={style.name} loading="lazy" />
+          <img src={thumbUrl(style.thumbnail_url, { w: 320 })} alt={style.name} loading="lazy" />
         ) : (
           <ImageOff size={32} />
         )}

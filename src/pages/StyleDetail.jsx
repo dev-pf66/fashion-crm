@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getStyle, updateStyle, createStyle } from '../lib/supabase'
 import { STYLE_STATUSES, maskSupplierName } from '../lib/constants'
+import { thumbUrl } from '../lib/imgUrl'
 import { useApp } from '../App'
 import { useToast } from '../contexts/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
@@ -85,7 +86,7 @@ export default function StyleDetail() {
 
       <div className="style-header">
         <div className="style-header-image">
-          {style.thumbnail_url ? <img src={style.thumbnail_url} alt={style.name} loading="lazy" /> : <ImageOff size={48} />}
+          {style.thumbnail_url ? <img src={thumbUrl(style.thumbnail_url, { w: 600 })} alt={style.name} loading="lazy" /> : <ImageOff size={48} />}
         </div>
         <div className="style-header-info">
           <div className="style-header-top">

@@ -4,6 +4,7 @@ import { useApp } from '../App'
 import { useToast } from '../contexts/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
 import { getMyAssignedStyles, getAllAssignedStyles, getProductionStages, updateRangeStyle, logProductionStatusChange } from '../lib/supabase'
+import { thumbUrl } from '../lib/imgUrl'
 import {
   Briefcase, Image as ImageIcon, X, ChevronLeft, ChevronRight,
   Maximize2, Search, LayoutGrid, List, Clock, Users,
@@ -222,7 +223,7 @@ export default function MyWork() {
                                 >
                                   {style.thumbnail_url && (
                                     <div className="kanban-card-thumb" onClick={() => setLightbox({ url: style.thumbnail_url, styleId: style.id, name: style.name })}>
-                                      <img src={style.thumbnail_url} alt={style.name} loading="lazy" />
+                                      <img src={thumbUrl(style.thumbnail_url, { w: 240 })} alt={style.name} loading="lazy" />
                                     </div>
                                   )}
                                   <div className="kanban-card-body">
@@ -277,7 +278,7 @@ export default function MyWork() {
                         }}>
                           {style.thumbnail_url ? (
                             <>
-                              <img src={style.thumbnail_url} alt={style.name} loading="lazy" />
+                              <img src={thumbUrl(style.thumbnail_url, { w: 320 })} alt={style.name} loading="lazy" />
                               <button className="rp-thumb-zoom" onClick={(e) => {
                                 e.stopPropagation()
                                 setLightbox({ url: style.thumbnail_url, styleId: style.id, name: style.name })

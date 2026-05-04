@@ -12,6 +12,7 @@ import {
 import { useDivision } from '../contexts/DivisionContext'
 import { BarChart3, Target, Users, AlertTriangle, TrendingUp, ChevronDown } from 'lucide-react'
 import { DashboardSkeleton } from '../components/PageSkeleton'
+import { thumbUrl } from '../lib/imgUrl'
 
 export default function RangeDashboard() {
   const { currentPerson, people } = useApp()
@@ -493,7 +494,7 @@ function MerchRow({ m, expanded, onToggle, stages }) {
             <div className="rd-merch-pieces">
               {m.styles.map(s => (
                 <div key={s.id} className="rd-merch-piece">
-                  {s.thumbnail_url && <img src={s.thumbnail_url} alt="" className="rd-piece-thumb" />}
+                  {s.thumbnail_url && <img src={thumbUrl(s.thumbnail_url, { w: 120 })} alt="" className="rd-piece-thumb" />}
                   <div className="rd-piece-info">
                     <span className="rd-piece-name">{s.name || s.category}</span>
                     {s.stage && (
