@@ -5,7 +5,7 @@ import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
 import {
   Camera, Image as ImageIcon, Edit3, CheckCircle, Send, Eye,
-  Search, Filter, Calendar, Clock, ChevronDown, ChevronRight, Sparkles
+  Search, Filter, Calendar, Clock, ChevronDown, ChevronRight, Sparkles, X, User
 } from 'lucide-react'
 import { GridSkeleton } from '../components/PageSkeleton'
 import { thumbUrl } from '../lib/imgUrl'
@@ -33,6 +33,7 @@ export default function ContentCalendar() {
   const [filterRange, setFilterRange] = useState('')
   const [ranges, setRanges] = useState([])
   const [collapsedCols, setCollapsedCols] = useState(new Set())
+  const [lightbox, setLightbox] = useState(null)
 
   useEffect(() => {
     loadData()
@@ -50,7 +51,7 @@ export default function ContentCalendar() {
 
       const { data: styleData } = await supabase
         .from('range_styles')
-        .select('*, ranges!inner(id, name, divisions(name))')
+        .select('*, ranges!inner(id, name, divisions(name)), assignee:assigned_to(id, name)')
         .order('name')
       setStyles(styleData || [])
     } catch (err) {
@@ -210,6 +211,7 @@ export default function ContentCalendar() {
                           key={item.id}
                           item={item}
                           onStatusChange={updateContentStatus}
+                          onImageClick={item => setLightbox({ url: item.thumbnail_url, name: item.name })}
                         />
                       ))
                     )}
@@ -228,6 +230,7 @@ export default function ContentCalendar() {
                 <th>Range</th>
                 <th>Division</th>
                 <th>Category</th>
+                <th>Assigned To</th>
                 <th>Design Status</th>
                 <th>Content Status</th>
               </tr>
@@ -237,13 +240,14 @@ export default function ContentCalendar() {
                 <tr key={item.id}>
                   <td>
                     <div className="content-list-name">
-                      {item.thumbnail_url && <img src={thumbUrl(item.thumbnail_url, { w: 120 })} alt="" />}
+                      {item.thumbnail_url && <img src={thumbUrl(item.thumbnail_url, { w: 120 })} alt="" style={{ cursor: 'pointer' }} onClick={() => setLightbox({ url: item.thumbnail_url, name: item.name })} />}
                       {item.name}
                     </div>
                   </td>
                   <td>{item.ranges?.name}</td>
                   <td>{item.ranges?.divisions?.name || '-'}</td>
                   <td>{item.category || '-'}</td>
+                  <td>{item.assignee?.name || '-'}</td>
                   <td>
                     <span className="tag">{item.status || 'concept'}</span>
                   </td>
@@ -268,24 +272,39 @@ export default function ContentCalendar() {
           </table>
         </div>
       )}
+
+      {lightbox && (
+        <div className="rp-lightbox" onClick={() => setLightbox(null)}>
+          <button className="rp-lightbox-close" onClick={() => setLightbox(null)}><X size={24} /></button>
+          <div className="rp-lightbox-content" onClick={e => e.stopPropagation()}>
+            <img src={lightbox.url} alt={lightbox.name || ''} />
+            {lightbox.name && <div className="rp-lightbox-caption">{lightbox.name}</div>}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-function ContentCard({ item, onStatusChange }) {
+function ContentCard({ item, onStatusChange, onImageClick }) {
   const [showMenu, setShowMenu] = useState(false)
   const statusObj = CONTENT_STATUSES.find(s => s.value === item.content_status) || NO_STATUS
 
   return (
     <div className="content-card">
       {item.thumbnail_url && (
-        <div className="content-card-thumb">
+        <div className="content-card-thumb" style={{ cursor: 'pointer' }} onClick={() => onImageClick(item)}>
           <img src={thumbUrl(item.thumbnail_url, { w: 320 })} alt={item.name} />
         </div>
       )}
       <div className="content-card-body">
         <div className="content-card-name">{item.name}</div>
         <div className="content-card-range">{item.ranges?.name} {item.ranges?.divisions?.name ? `· ${item.ranges.divisions.name}` : ''}</div>
+        {item.assignee && (
+          <div style={{ fontSize: '0.6875rem', color: 'var(--gray-500)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <User size={11} /> {item.assignee.name}
+          </div>
+        )}
         {item.category && <span className="tag" style={{ fontSize: '0.625rem' }}>{item.category}</span>}
       </div>
       <div className="content-card-status" style={{ position: 'relative' }}>
