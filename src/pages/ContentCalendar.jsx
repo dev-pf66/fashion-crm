@@ -230,7 +230,6 @@ export default function ContentCalendar() {
                 <th>Range</th>
                 <th>Division</th>
                 <th>Category</th>
-                <th>Assigned To</th>
                 <th>Design Status</th>
                 <th>Content Status</th>
               </tr>
@@ -241,13 +240,15 @@ export default function ContentCalendar() {
                   <td>
                     <div className="content-list-name">
                       {item.thumbnail_url && <img src={thumbUrl(item.thumbnail_url, { w: 120 })} alt="" style={{ cursor: 'pointer' }} onClick={() => setLightbox({ url: item.thumbnail_url, name: item.name })} />}
-                      {item.name}
+                      <div>
+                        <div>{item.name}</div>
+                        {item.assignee && <div style={{ fontSize: '0.6875rem', color: 'var(--gray-500)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.2rem' }}><User size={11} />{item.assignee.name}</div>}
+                      </div>
                     </div>
                   </td>
                   <td>{item.ranges?.name}</td>
                   <td>{item.ranges?.divisions?.name || '-'}</td>
                   <td>{item.category || '-'}</td>
-                  <td>{item.assignee?.name || '-'}</td>
                   <td>
                     <span className="tag">{item.status || 'concept'}</span>
                   </td>
