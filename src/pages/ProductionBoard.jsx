@@ -244,6 +244,9 @@ export default function ProductionBoard() {
 
   const totalCardCount = visibleRangeStyles.length + visibleUnits.length
   const totalQty = visibleRangeStyles.reduce((sum, i) => sum + (i.production_qty || 0), 0) + visibleUnits.length
+  const assignedPiecesCount =
+    visibleRangeStyles.filter(i => i.production_lead != null).length +
+    visibleUnits.filter(u => u.assigned_to != null).length
 
   const thumbItems = useMemo(
     () => visibleRangeStyles.filter(i => i.thumbnail_url),
@@ -269,7 +272,7 @@ export default function ProductionBoard() {
             <PackageCheck size={24} /> Production Board
           </h1>
           <p className="page-subtitle">
-            {totalCardCount} card{totalCardCount !== 1 ? 's' : ''} &middot; {totalQty.toLocaleString()} total units
+            {assignedPiecesCount} assigned piece{assignedPiecesCount !== 1 ? 's' : ''} &middot; {totalCardCount} card{totalCardCount !== 1 ? 's' : ''}
           </p>
         </div>
       </div>
