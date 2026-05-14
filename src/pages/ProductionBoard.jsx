@@ -386,6 +386,11 @@ export default function ProductionBoard() {
                                       {...dragProvided.dragHandleProps}
                                       className={`kanban-card ${dragSnapshot.isDragging ? 'dragging' : ''}`}
                                     >
+                                      {unit.parent?.thumbnail_url && (
+                                        <div className="kanban-card-thumb" onClick={() => setLightbox({ url: unit.parent.thumbnail_url, itemId: unit.parent.id, name: unit.parent.name })}>
+                                          <img src={thumbUrl(unit.parent.thumbnail_url, { w: 240 })} alt={unit.parent.name} loading="lazy" />
+                                        </div>
+                                      )}
                                       <div className="kanban-card-body">
                                         <div className="kanban-card-name">
                                           {unit.parent?.name || 'Unit'}
