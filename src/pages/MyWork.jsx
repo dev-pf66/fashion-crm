@@ -23,6 +23,7 @@ export default function MyWork() {
   const [lightbox, setLightbox] = useState(null)
   const [filterSearch, setFilterSearch] = useState('')
   const [filterRange, setFilterRange] = useState('')
+  const [filterDivision, setFilterDivision] = useState('')
   const [selectedPerson, setSelectedPerson] = useState('')
 
   useEffect(() => {
@@ -92,13 +93,18 @@ export default function MyWork() {
     return [...new Set(styles.map(s => s.ranges?.name).filter(Boolean))].sort()
   }, [styles])
 
+  const divisions = useMemo(() => {
+    return [...new Set(styles.map(s => s.ranges?.division).filter(Boolean))].sort()
+  }, [styles])
+
   const filtered = useMemo(() => {
     return styles.filter(s => {
       if (filterSearch && !s.name.toLowerCase().includes(filterSearch.toLowerCase())) return false
       if (filterRange && s.ranges?.name !== filterRange) return false
+      if (filterDivision && s.ranges?.division !== filterDivision) return false
       return true
     })
-  }, [styles, filterSearch, filterRange])
+  }, [styles, filterSearch, filterRange, filterDivision])
 
   // Group by stage for Kanban
   const kanbanColumns = useMemo(() => {
@@ -184,6 +190,12 @@ export default function MyWork() {
               <select value={filterRange} onChange={e => setFilterRange(e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem' }}>
                 <option value="">All Ranges</option>
                 {ranges.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            )}
+            {divisions.length > 1 && (
+              <select value={filterDivision} onChange={e => setFilterDivision(e.target.value)} style={{ width: 'auto', fontSize: '0.8125rem' }}>
+                <option value="">All Divisions</option>
+                {divisions.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             )}
             {isAllAccess && assignees.length > 0 && (
