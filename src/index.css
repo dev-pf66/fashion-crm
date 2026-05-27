@@ -4716,6 +4716,34 @@ tr:hover .quick-view-btn {
   gap: 0.25rem;
   flex-wrap: wrap;
 }
+.kanban-card-assignee {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+}
+.kanban-card-assignee-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-size: 0.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+.kanban-card-assignee-name {
+  font-size: 0.7rem;
+  color: var(--gray-600);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .kanban-card-overdue {
   display: flex;
   align-items: center;

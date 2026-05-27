@@ -284,10 +284,10 @@ export default function MyWork() {
                                       {style.silhouette && <span className="tag" style={{ fontSize: '0.625rem' }}>{style.silhouette}</span>}
                                       {style.price_category && <span className="tag" style={{ fontSize: '0.625rem', background: 'var(--gray-100)' }}>{style.price_category}</span>}
                                     </div>
-                                    {isAllAccess && style.assignee?.name && (
-                                      <div style={{ fontSize: '0.6875rem', color: 'var(--gray-500)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                        <span className="rp-assignee-avatar" style={{ width: 14, height: 14, fontSize: '0.4rem' }}>{style.assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</span>
-                                        {style.assignee.name.split(' ')[0]}
+                                    {style.assignee?.name && (
+                                      <div className="kanban-card-assignee">
+                                        <span className="kanban-card-assignee-avatar">{style.assignee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}</span>
+                                        <span className="kanban-card-assignee-name">{style.assignee.name}</span>
                                       </div>
                                     )}
                                     {style.due_date && new Date(style.due_date) < new Date() && (
