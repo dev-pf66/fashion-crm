@@ -1684,37 +1684,8 @@ textarea {
    ============================================================ */
 
 /* ============================================================
-   KANBAN BOARD
+   KANBAN BOARD — see full rules further down in this file
    ============================================================ */
-
-.kanban-board {
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  padding-bottom: 1rem;
-  min-height: 400px;
-}
-
-.kanban-column {
-  min-width: 280px;
-  max-width: 300px;
-  flex-shrink: 0;
-  background: var(--gray-100);
-  border-radius: var(--radius-lg);
-  display: flex;
-  flex-direction: column;
-}
-
-.kanban-column-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  font-weight: 600;
-  font-size: 0.8125rem;
-  color: var(--gray-700);
-  border-bottom: 1px solid var(--gray-200);
-}
 
 .kanban-count {
   display: inline-flex;
@@ -1728,16 +1699,6 @@ textarea {
   background: var(--gray-200);
   color: var(--gray-600);
   border-radius: 9999px;
-}
-
-.kanban-column-body {
-  flex: 1;
-  padding: 0.5rem;
-  overflow-y: auto;
-  max-height: calc(100vh - 280px);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
 }
 
 /* ============================================================
@@ -4654,8 +4615,6 @@ tr:hover .quick-view-btn {
   gap: 0.75rem;
   overflow-x: auto;
   padding-bottom: 1rem;
-  height: calc(100vh - 220px);
-  min-height: 400px;
   align-items: flex-start;
 }
 .kanban-column {
@@ -4666,7 +4625,7 @@ tr:hover .quick-view-btn {
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
-  height: 100%;
+  max-height: calc(100vh - 220px);
 }
 .kanban-column-header {
   display: flex;
@@ -4822,14 +4781,13 @@ tr:hover .quick-view-btn {
 @media (max-width: 768px) {
   .kanban-board {
     flex-direction: column;
-    height: auto;
   }
   .kanban-column {
     max-width: 100%;
-    height: auto;
+    max-height: 70vh;
   }
   .kanban-column-body {
-    max-height: 60vh;
+    max-height: none;
   }
 }
 
