@@ -4494,6 +4494,68 @@ tr:hover .quick-view-btn {
   border-radius: 999px;
 }
 
+/* Group target — count / target in range group headers */
+.rp-group-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.rp-group-target .rp-group-count {
+  /* inherited style — no change needed */
+}
+.rp-group-target-sep {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  font-weight: 500;
+  line-height: 1;
+}
+.rp-group-target-val {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-light, #e0e7ff);
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+}
+.rp-group-target-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px dashed var(--gray-300);
+  background: transparent;
+  color: var(--gray-400);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.rp-group-target-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light, #e0e7ff);
+  border-style: solid;
+}
+.rp-group-target.editing {
+  gap: 0.25rem;
+}
+.rp-group-target-input {
+  width: 56px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border: 1.5px solid var(--primary);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--gray-800);
+  outline: none;
+  font-family: inherit;
+}
+.rp-group-target-input::-webkit-inner-spin-button { opacity: 0 }
+
 /* Assignee Badge on Cards */
 .rp-card-assignee {
   display: flex;

@@ -1348,6 +1348,29 @@ export async function deleteRangeStyle(id) {
   if (error) throw error
 }
 
+// Range group targets — per-group target counts set by admins
+export async function getRangeGroupTargets(rangeId) {
+  const { data, error } = await supabase
+    .from('range_group_targets')
+    .select('*')
+    .eq('range_id', rangeId)
+  if (error) throw error
+  return data || []
+}
+
+export async function upsertRangeGroupTarget({ range_id, group_by, group_key, target_value, updated_by }) {
+  const { data, error } = await supabase
+    .from('range_group_targets')
+    .upsert(
+      { range_id, group_by, group_key, target_value, updated_by, updated_at: new Date().toISOString() },
+      { onConflict: 'range_id,group_by,group_key' }
+    )
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 export async function updateRangeStyleOrder(items) {
   const promises = items.map(({ id, sort_order }) =>
     supabase.from('range_styles').update({ sort_order }).eq('id', id)
