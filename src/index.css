@@ -4613,13 +4613,13 @@ tr:hover .quick-view-btn {
 .kanban-board {
   display: flex;
   gap: 0.75rem;
-  overflow-x: auto;
+  width: 100%;
   padding-bottom: 1rem;
   align-items: flex-start;
 }
 .kanban-column {
-  flex-shrink: 0;
-  width: 220px;
+  flex: 1;
+  min-width: 0;
   height: calc(100vh - 210px);
   background: var(--gray-50);
   border-radius: var(--radius-lg);
@@ -4814,6 +4814,7 @@ tr:hover .quick-view-btn {
     flex-direction: column;
   }
   .kanban-column {
+    flex: none;
     width: 100%;
     height: auto;
     max-height: 70vh;
