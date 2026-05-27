@@ -4615,7 +4615,8 @@ tr:hover .quick-view-btn {
   gap: 0.75rem;
   overflow-x: auto;
   padding-bottom: 1rem;
-  align-items: flex-start;
+  height: calc(100vh - 210px);
+  align-items: stretch;
 }
 .kanban-column {
   flex: 1;
@@ -4625,6 +4626,8 @@ tr:hover .quick-view-btn {
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 .kanban-column-header {
   display: flex;
@@ -4653,12 +4656,13 @@ tr:hover .quick-view-btn {
   border-radius: 999px;
 }
 .kanban-column-body {
+  flex: 1;
+  min-height: 0;
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.375rem;
   overflow-y: auto;
-  max-height: calc(100vh - 260px);
   transition: background 0.15s;
   scrollbar-width: thin;
   scrollbar-color: var(--gray-300) transparent;
@@ -4683,7 +4687,7 @@ tr:hover .quick-view-btn {
   opacity: 0.9;
 }
 .kanban-card-thumb {
-  height: 140px;
+  height: 75px;
   overflow: hidden;
   cursor: pointer;
   position: relative;
@@ -4698,13 +4702,16 @@ tr:hover .quick-view-btn {
   transform: scale(1.04);
 }
 .kanban-card-body {
-  padding: 0.5rem 0.625rem;
+  padding: 0.375rem 0.5rem;
 }
 .kanban-card-name {
   font-weight: 600;
-  font-size: 0.8125rem;
-  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  margin-bottom: 0.125rem;
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .kanban-card-meta {
   display: flex;
@@ -4723,18 +4730,17 @@ tr:hover .quick-view-btn {
 /* Remarks box — Kanban cards */
 .kanban-card-remarks {
   position: relative;
-  padding: 0 0.5rem 0.5rem;
+  padding: 0 0.375rem 0.375rem;
   border-top: 1px solid var(--gray-100);
-  margin-top: 0.25rem;
 }
 .kanban-card-remarks-input {
   width: 100%;
   box-sizing: border-box;
   resize: none;
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-family: inherit;
-  line-height: 1.4;
-  padding: 0.3rem 0.4rem;
+  line-height: 1.3;
+  padding: 0.2rem 0.35rem;
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-sm, 4px);
   background: var(--gray-50);
@@ -4779,12 +4785,16 @@ tr:hover .quick-view-btn {
 @media (max-width: 768px) {
   .kanban-board {
     flex-direction: column;
+    height: auto;
   }
   .kanban-column {
     max-width: 100%;
+    height: auto;
+    max-height: 70vh;
   }
   .kanban-column-body {
-    max-height: 60vh;
+    flex: 1;
+    min-height: 0;
   }
 }
 
