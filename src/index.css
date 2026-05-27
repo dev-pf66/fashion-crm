@@ -4654,7 +4654,9 @@ tr:hover .quick-view-btn {
   gap: 0.75rem;
   overflow-x: auto;
   padding-bottom: 1rem;
+  height: calc(100vh - 220px);
   min-height: 400px;
+  align-items: flex-start;
 }
 .kanban-column {
   flex: 1;
@@ -4664,6 +4666,7 @@ tr:hover .quick-view-btn {
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 .kanban-column-header {
   display: flex;
@@ -4693,12 +4696,15 @@ tr:hover .quick-view-btn {
 }
 .kanban-column-body {
   flex: 1;
+  min-height: 0;
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  min-height: 100px;
+  overflow-y: auto;
   transition: background 0.15s;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-300) transparent;
 }
 .kanban-column-body.drag-over {
   background: var(--gray-100);
@@ -4720,14 +4726,19 @@ tr:hover .quick-view-btn {
   opacity: 0.9;
 }
 .kanban-card-thumb {
-  height: 80px;
+  height: 140px;
   overflow: hidden;
   cursor: pointer;
+  position: relative;
 }
 .kanban-card-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.2s;
+}
+.kanban-card-thumb:hover img {
+  transform: scale(1.04);
 }
 .kanban-card-body {
   padding: 0.5rem 0.625rem;
@@ -4761,9 +4772,14 @@ tr:hover .quick-view-btn {
 @media (max-width: 768px) {
   .kanban-board {
     flex-direction: column;
+    height: auto;
   }
   .kanban-column {
     max-width: 100%;
+    height: auto;
+  }
+  .kanban-column-body {
+    max-height: 60vh;
   }
 }
 
