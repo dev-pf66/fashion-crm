@@ -4625,7 +4625,6 @@ tr:hover .quick-view-btn {
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 220px);
 }
 .kanban-column-header {
   display: flex;
@@ -4654,13 +4653,12 @@ tr:hover .quick-view-btn {
   border-radius: 999px;
 }
 .kanban-column-body {
-  flex: 1;
-  min-height: 0;
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   overflow-y: auto;
+  max-height: calc(100vh - 260px);
   transition: background 0.15s;
   scrollbar-width: thin;
   scrollbar-color: var(--gray-300) transparent;
@@ -4784,10 +4782,9 @@ tr:hover .quick-view-btn {
   }
   .kanban-column {
     max-width: 100%;
-    max-height: 70vh;
   }
   .kanban-column-body {
-    max-height: none;
+    max-height: 60vh;
   }
 }
 
