@@ -10,7 +10,6 @@ import {
   createRangeStyleFile,
   getTasksForRange, getTaskSubtaskCounts,
   getPriceBrackets, bulkAssignStyles, sendAssignmentEmail,
-  getRangeGroupTargets, upsertRangeGroupTarget,
 } from '../lib/supabase'
 import { usePermissions } from '../hooks/usePermissions'
 import { uploadRangeStyleFile } from '../lib/storage'
@@ -116,7 +115,6 @@ export default function RangeDetail() {
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [priceBrackets, setPriceBrackets] = useState([])
   const [collapsedSilhouettes, setCollapsedSilhouettes] = useState(new Set())
-  const [groupTargets, setGroupTargets] = useState([]) // { group_by, group_key, target_value }
 
   useEffect(() => {
     getPriceBrackets().then(setPriceBrackets).catch(() => {})
@@ -163,7 +161,7 @@ export default function RangeDetail() {
   async function loadData() {
     setLoading(true)
     try {
-      const [rangeData, stylesData, tasksData, targetsData] = await Promise.all([
+      const [rangeData, stylesData, tasksData] = await Promise.all([
         getRange(id),
         getRangeStyles(id).catch(err => {
           console.error('Failed to load styles:', err)
@@ -174,12 +172,10 @@ export default function RangeDetail() {
           console.error('Failed to load tasks:', err)
           return []
         }),
-        getRangeGroupTargets(id).catch(() => []),
       ])
       setRange(rangeData)
       setStyles(stylesData || [])
       setTasks(tasksData || [])
-      setGroupTargets(targetsData || [])
       const taskIds = (tasksData || []).map(t => t.id)
       const subtaskCountsData = await getTaskSubtaskCounts(taskIds).catch(() => ({}))
       setSubtaskCounts(subtaskCountsData || {})
@@ -578,29 +574,6 @@ export default function RangeDetail() {
       setSelectedIds(new Set())
     } catch (err) {
       toast.error('Failed to assign styles')
-    }
-  }
-
-  function getGroupTarget(groupKey) {
-    return groupTargets.find(t => t.group_by === groupBy && t.group_key === groupKey)?.target_value || 0
-  }
-
-  async function handleSaveGroupTarget(groupKey, targetValue) {
-    if (!can('range_plan.edit')) return
-    try {
-      const saved = await upsertRangeGroupTarget({
-        range_id: id,
-        group_by: groupBy,
-        group_key: groupKey,
-        target_value: targetValue,
-        updated_by: currentPerson?.id,
-      })
-      setGroupTargets(prev => {
-        const others = prev.filter(t => !(t.group_by === groupBy && t.group_key === groupKey))
-        return [...others, saved]
-      })
-    } catch (err) {
-      toast.error('Failed to save target')
     }
   }
 
@@ -1028,12 +1001,7 @@ export default function RangeDetail() {
                 <div key={group.key} className="rp-group">
                   <div className="rp-group-header">
                     <h3>{group.label}</h3>
-                    <GroupTarget
-                      count={group.styles.length}
-                      target={getGroupTarget(group.key)}
-                      canEdit={can('range_plan.edit')}
-                      onSave={val => handleSaveGroupTarget(group.key, val)}
-                    />
+                    <span className="rp-group-count">{group.styles.length}</span>
                     <button className="btn btn-ghost btn-sm" onClick={() => { setQuickAddGroup(group.key); setQuickAddName('') }}>
                       <Plus size={14} />
                     </button>
@@ -1068,12 +1036,7 @@ export default function RangeDetail() {
                                 <GripVertical size={14} />
                               </span>
                               <h3>{group.label}</h3>
-                              <GroupTarget
-                                count={group.styles.length}
-                                target={getGroupTarget(group.key)}
-                                canEdit={can('range_plan.edit')}
-                                onSave={val => handleSaveGroupTarget(group.key, val)}
-                              />
+                              <span className="rp-group-count">{group.styles.length}</span>
                               <button className="btn btn-ghost btn-sm" onClick={() => { setQuickAddGroup(group.key); setQuickAddName('') }}>
                                 <Plus size={14} />
                               </button>
@@ -1387,72 +1350,6 @@ function QuickAddInline({ groupKey, quickAddGroup, quickAddName, setQuickAddName
       <button className="btn btn-primary btn-sm" onClick={() => handleQuickAdd(groupKey)}>Add</button>
       <button className="btn btn-ghost btn-sm" onClick={() => { setQuickAddGroup(null); setQuickAddName('') }}>Cancel</button>
     </div>
-  )
-}
-
-// GroupTarget — shown in every group header; admins can click to set/edit target
-function GroupTarget({ count, target, canEdit, onSave }) {
-  const [editing, setEditing] = useState(false)
-  const [val, setVal] = useState('')
-
-  function startEdit(e) {
-    e.stopPropagation()
-    setVal(target > 0 ? String(target) : '')
-    setEditing(true)
-  }
-
-  function commit(e) {
-    e?.stopPropagation()
-    const n = parseInt(val, 10)
-    const next = Number.isFinite(n) && n > 0 ? n : 0
-    onSave(next)
-    setEditing(false)
-  }
-
-  function handleKey(e) {
-    if (e.key === 'Enter') { e.preventDefault(); commit(e) }
-    if (e.key === 'Escape') { e.stopPropagation(); setEditing(false) }
-  }
-
-  if (editing) {
-    return (
-      <span className="rp-group-target editing" onClick={e => e.stopPropagation()}>
-        <span className="rp-group-count">{count}</span>
-        <span className="rp-group-target-sep">/</span>
-        <input
-          className="rp-group-target-input"
-          type="number"
-          min="1"
-          autoFocus
-          value={val}
-          onChange={e => setVal(e.target.value)}
-          onBlur={commit}
-          onKeyDown={handleKey}
-          placeholder="target"
-        />
-      </span>
-    )
-  }
-
-  return (
-    <span className="rp-group-target" title={canEdit ? 'Click to set target' : undefined}>
-      <span className="rp-group-count">{count}</span>
-      {target > 0 && (
-        <>
-          <span className="rp-group-target-sep">/</span>
-          <span className="rp-group-target-val">{target}</span>
-        </>
-      )}
-      {canEdit && (
-        <button
-          className="rp-group-target-btn"
-          onClick={startEdit}
-          title={target > 0 ? 'Edit target' : 'Set target'}
-        >
-          {target > 0 ? '✎' : '+'}
-        </button>
-      )}
-    </span>
   )
 }
 
