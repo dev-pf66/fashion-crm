@@ -9,7 +9,7 @@ import { STYLE_CATEGORIES } from '../lib/constants'
 import Modal from '../components/Modal'
 import StatusBadge from '../components/StatusBadge'
 import { GridSkeleton } from '../components/PageSkeleton'
-import { Plus, Layers, Trash2, X, Calendar, FolderOpen, Folder, ChevronDown, ChevronRight, Edit2, Check } from 'lucide-react'
+import { Plus, Layers, Trash2, X, Calendar, FolderOpen, Folder, ChevronDown, ChevronRight, Edit2, Check, ChevronUp } from 'lucide-react'
 
 const RANGE_STATUSES = [
   { value: 'planning', label: 'Planning' },
@@ -26,7 +26,9 @@ export default function RangePlanning() {
   const [ranges, setRanges] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [collapsedFolders, setCollapsedFolders] = useState({})
+  const [selectedSeason, setSelectedSeason] = useState('__all__')
+  const [showNewSeason, setShowNewSeason] = useState(false)
+  const [newSeasonName, setNewSeasonName] = useState('')
 
   useEffect(() => { loadData() }, [currentDivision])
 
@@ -35,6 +37,11 @@ export default function RangePlanning() {
     try {
       const data = await getRanges(currentDivision?.id)
       setRanges(data || [])
+      // Auto-select the first season if none selected
+      if (selectedSeason === '__all__') {
+        const firstFolder = data?.find(r => r.folder)?.folder
+        if (firstFolder) setSelectedSeason(firstFolder)
+      }
     } catch (err) {
       console.error('Failed to load ranges:', err)
     } finally {
@@ -42,38 +49,38 @@ export default function RangePlanning() {
     }
   }
 
-  // Group ranges by folder
-  const { folders, ungrouped } = useMemo(() => {
-    const folderMap = {}
-    const ungrouped = []
-    for (const range of ranges) {
-      if (range.folder) {
-        if (!folderMap[range.folder]) folderMap[range.folder] = []
-        folderMap[range.folder].push(range)
-      } else {
-        ungrouped.push(range)
-      }
-    }
-    // Sort folder names alphabetically
-    const folders = Object.entries(folderMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([name, items]) => ({ name, ranges: items }))
-    return { folders, ungrouped }
-  }, [ranges])
-
-  // Get unique folder names for the form dropdown
-  const folderNames = useMemo(() => {
+  const seasonNames = useMemo(() => {
     return [...new Set(ranges.map(r => r.folder).filter(Boolean))].sort()
   }, [ranges])
 
-  function toggleFolder(folderName) {
-    setCollapsedFolders(prev => ({ ...prev, [folderName]: !prev[folderName] }))
+  const visibleRanges = useMemo(() => {
+    if (selectedSeason === '__all__') return ranges
+    if (selectedSeason === '__none__') return ranges.filter(r => !r.folder)
+    return ranges.filter(r => r.folder === selectedSeason)
+  }, [ranges, selectedSeason])
+
+  const folderNames = seasonNames
+
+  async function handleAddSeason(e) {
+    e.preventDefault()
+    const name = newSeasonName.trim()
+    if (!name) return
+    if (seasonNames.includes(name)) {
+      setSelectedSeason(name)
+      setShowNewSeason(false)
+      setNewSeasonName('')
+      return
+    }
+    setSelectedSeason(name)
+    setShowNewSeason(false)
+    setNewSeasonName('')
+    toast.success(`Season "${name}" created — add ranges to it now`)
   }
 
   async function handleMoveToFolder(rangeId, folderName) {
     try {
       await updateRange(rangeId, { folder: folderName || null })
-      toast.success(folderName ? `Moved to "${folderName}"` : 'Removed from folder')
+      toast.success(folderName ? `Moved to "${folderName}"` : 'Removed from season')
       loadData()
     } catch (err) {
       toast.error('Failed to move range')
@@ -99,14 +106,21 @@ export default function RangePlanning() {
 
   if (loading) return <GridSkeleton />
 
+  const seasonRangeCount = visibleRanges.length
+  const seasonStyleCount = visibleRanges.reduce((sum, r) => sum + (r.range_styles?.length || 0), 0)
+
   return (
     <div>
       <div className="page-header">
         <div>
           <h1>Range Planning</h1>
           <p className="subtitle">
-            {ranges.length} range{ranges.length !== 1 ? 's' : ''}
-            {folders.length > 0 && ` in ${folders.length} folder${folders.length !== 1 ? 's' : ''}`}
+            {selectedSeason === '__all__'
+              ? `${ranges.length} range${ranges.length !== 1 ? 's' : ''} across all seasons`
+              : selectedSeason === '__none__'
+              ? `${seasonRangeCount} unseasoned range${seasonRangeCount !== 1 ? 's' : ''}`
+              : `${seasonRangeCount} range${seasonRangeCount !== 1 ? 's' : ''} · ${seasonStyleCount} style${seasonStyleCount !== 1 ? 's' : ''} — ${selectedSeason}`
+            }
           </p>
         </div>
         {canEdit && (
@@ -116,12 +130,65 @@ export default function RangePlanning() {
         )}
       </div>
 
-      {ranges.length === 0 ? (
+      {/* Season Selector */}
+      <div className="rp-season-bar">
+        <button
+          className={`rp-season-tab ${selectedSeason === '__all__' ? 'active' : ''}`}
+          onClick={() => setSelectedSeason('__all__')}
+        >
+          All Seasons
+        </button>
+        {seasonNames.map(season => (
+          <button
+            key={season}
+            className={`rp-season-tab ${selectedSeason === season ? 'active' : ''}`}
+            onClick={() => setSelectedSeason(season)}
+          >
+            {season}
+          </button>
+        ))}
+        {ranges.some(r => !r.folder) && (
+          <button
+            className={`rp-season-tab ${selectedSeason === '__none__' ? 'active' : ''}`}
+            onClick={() => setSelectedSeason('__none__')}
+          >
+            Unseasoned
+          </button>
+        )}
+        {canEdit && (
+          showNewSeason ? (
+            <form className="rp-season-new-form" onSubmit={handleAddSeason}>
+              <input
+                autoFocus
+                type="text"
+                placeholder="e.g. Summer 27"
+                value={newSeasonName}
+                onChange={e => setNewSeasonName(e.target.value)}
+                className="rp-season-input"
+                onKeyDown={e => e.key === 'Escape' && setShowNewSeason(false)}
+              />
+              <button type="submit" className="btn btn-primary btn-sm" disabled={!newSeasonName.trim()}>
+                <Check size={14} /> Add
+              </button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowNewSeason(false)}>
+                <X size={14} />
+              </button>
+            </form>
+          ) : (
+            <button className="rp-season-tab rp-season-add" onClick={() => setShowNewSeason(true)}>
+              <Plus size={14} /> New Season
+            </button>
+          )
+        )}
+      </div>
+
+      {/* Ranges Grid */}
+      {visibleRanges.length === 0 ? (
         <div className="card">
           <div className="empty-state">
             <Layers size={48} />
-            <h3>No ranges yet</h3>
-            <p>{canEdit ? 'Create your first range to start planning a collection.' : 'Nothing here yet.'}</p>
+            <h3>No ranges {selectedSeason !== '__all__' && selectedSeason !== '__none__' ? `in ${selectedSeason}` : 'yet'}</h3>
+            <p>{canEdit ? 'Create a new range to start planning this season.' : 'Nothing here yet.'}</p>
             {canEdit && (
               <button className="btn btn-primary" onClick={() => setShowForm(true)}>
                 <Plus size={16} /> New Range
@@ -130,55 +197,17 @@ export default function RangePlanning() {
           </div>
         </div>
       ) : (
-        <div className="rp-folders-container">
-          {/* Folders */}
-          {folders.map(folder => {
-            const isCollapsed = collapsedFolders[folder.name]
-            const totalStyles = folder.ranges.reduce((sum, r) => sum + (r.range_styles?.length || 0), 0)
-            return (
-              <div key={folder.name} className="rp-folder">
-                <button
-                  className="rp-folder-header"
-                  onClick={() => toggleFolder(folder.name)}
-                  aria-expanded={!isCollapsed}
-                  aria-label={`${folder.name} folder, ${folder.ranges.length} ranges`}
-                >
-                  <div className="rp-folder-header-left">
-                    {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
-                    {isCollapsed ? <Folder size={18} /> : <FolderOpen size={18} />}
-                    <span className="rp-folder-name">{folder.name}</span>
-                  </div>
-                  <div className="rp-folder-meta">
-                    <span className="rp-folder-count">{folder.ranges.length} range{folder.ranges.length !== 1 ? 's' : ''}</span>
-                    {totalStyles > 0 && (
-                      <span className="rp-folder-styles">{totalStyles} style{totalStyles !== 1 ? 's' : ''}</span>
-                    )}
-                  </div>
-                </button>
-                {!isCollapsed && (
-                  <div className="rp-range-list">
-                    {folder.ranges.map(range => (
-                      <RangeCard key={range.id} range={range} onDelete={handleDelete} folderNames={folderNames} onMoveToFolder={handleMoveToFolder} canEdit={canEdit} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-
-          {/* Ungrouped ranges */}
-          {ungrouped.length > 0 && (
-            <>
-              {folders.length > 0 && (
-                <div className="rp-ungrouped-label">Other Ranges</div>
-              )}
-              <div className="rp-range-list">
-                {ungrouped.map(range => (
-                  <RangeCard key={range.id} range={range} onDelete={handleDelete} folderNames={folderNames} onMoveToFolder={handleMoveToFolder} canEdit={canEdit} />
-                ))}
-              </div>
-            </>
-          )}
+        <div className="rp-range-list">
+          {visibleRanges.map(range => (
+            <RangeCard
+              key={range.id}
+              range={range}
+              onDelete={handleDelete}
+              folderNames={folderNames}
+              onMoveToFolder={handleMoveToFolder}
+              canEdit={canEdit}
+            />
+          ))}
         </div>
       )}
 
@@ -188,6 +217,7 @@ export default function RangePlanning() {
           divisionId={currentDivision?.id}
           divisions={divisions}
           folderNames={folderNames}
+          defaultFolder={selectedSeason !== '__all__' && selectedSeason !== '__none__' ? selectedSeason : ''}
           onClose={() => setShowForm(false)}
           onSave={() => { setShowForm(false); loadData() }}
         />
@@ -329,14 +359,14 @@ function RangeCard({ range, onDelete, folderNames, onMoveToFolder, canEdit = tru
   )
 }
 
-function NewRangeForm({ personId, divisionId, divisions, folderNames, onClose, onSave }) {
+function NewRangeForm({ personId, divisionId, divisions, folderNames, defaultFolder = '', onClose, onSave }) {
   const toast = useToast()
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState('')
   const [selectedDivisionId, setSelectedDivisionId] = useState(divisionId || '')
   const [targetStyles, setTargetStyles] = useState('')
   const [deadline, setDeadline] = useState('')
-  const [folder, setFolder] = useState('')
+  const [folder, setFolder] = useState(defaultFolder)
   const [newFolder, setNewFolder] = useState('')
   const [categories, setCategories] = useState([...STYLE_CATEGORIES])
   const [newCat, setNewCat] = useState('')
