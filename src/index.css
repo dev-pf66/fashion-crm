@@ -4674,6 +4674,7 @@ tr:hover .quick-view-btn {
   border-radius: var(--radius);
   overflow: hidden;
   cursor: grab;
+  flex-shrink: 0;
   transition: box-shadow 0.15s, transform 0.1s;
 }
 .kanban-card:hover {
