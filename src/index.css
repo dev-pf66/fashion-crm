@@ -4006,67 +4006,6 @@ tr:hover .quick-view-btn {
 /* ===== Range Planning ===== */
 
 /* Folders */
-/* Season selector bar */
-.rp-season-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--gray-100);
-}
-.rp-season-tab {
-  padding: 0.375rem 0.875rem;
-  border-radius: 999px;
-  border: 1.5px solid var(--gray-200);
-  background: transparent;
-  color: var(--gray-600);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
-  white-space: nowrap;
-}
-.rp-season-tab:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: var(--primary-light, #e0e7ff);
-}
-.rp-season-tab.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: white;
-  font-weight: 600;
-}
-.rp-season-add {
-  border-style: dashed;
-  color: var(--gray-400);
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-.rp-season-add:hover {
-  border-style: solid;
-}
-.rp-season-new-form {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-}
-.rp-season-input {
-  padding: 0.3rem 0.625rem;
-  border: 1.5px solid var(--primary);
-  border-radius: 999px;
-  font-size: 0.8125rem;
-  font-family: inherit;
-  background: var(--card-bg);
-  color: var(--gray-800);
-  outline: none;
-  width: 140px;
-}
-
 .rp-folders-container {
   display: flex;
   flex-direction: column;
