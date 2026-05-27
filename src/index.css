@@ -4006,6 +4006,57 @@ tr:hover .quick-view-btn {
 /* ===== Range Planning ===== */
 
 /* Folders */
+/* Season dropdown row */
+.rp-season-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.rp-season-dropdown-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.rp-season-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  white-space: nowrap;
+}
+.rp-season-select {
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  color: var(--gray-800);
+  cursor: pointer;
+  min-width: 160px;
+}
+.rp-season-select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.rp-season-add-form {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.rp-season-add-input {
+  padding: 0.375rem 0.75rem;
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-family: inherit;
+  background: var(--card-bg);
+  color: var(--gray-800);
+  outline: none;
+  width: 150px;
+}
+
 .rp-folders-container {
   display: flex;
   flex-direction: column;
