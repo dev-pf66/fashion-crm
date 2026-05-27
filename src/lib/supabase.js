@@ -1285,7 +1285,7 @@ export async function getRangeStyles(rangeId) {
 export async function getMyAssignedStyles(personId) {
   const { data, error } = await supabase
     .from('range_styles')
-    .select('*, ranges!range_id(id, name, division), assignee:assigned_to(id, name), stage:production_stage_id(id, name, color, sort_order)')
+    .select('*, production_notes, ranges!range_id(id, name, division), assignee:assigned_to(id, name), stage:production_stage_id(id, name, color, sort_order)')
     .eq('assigned_to', personId)
     .order('range_id')
   if (error) throw error
@@ -1295,7 +1295,7 @@ export async function getMyAssignedStyles(personId) {
 export async function getAllAssignedStyles() {
   const { data, error } = await supabase
     .from('range_styles')
-    .select('*, ranges!range_id(id, name, division), assignee:assigned_to(id, name), stage:production_stage_id(id, name, color, sort_order)')
+    .select('*, production_notes, ranges!range_id(id, name, division), assignee:assigned_to(id, name), stage:production_stage_id(id, name, color, sort_order)')
     .not('assigned_to', 'is', null)
     .order('assigned_to')
   if (error) throw error

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useApp } from '../App'
 import { useToast } from '../contexts/ToastContext'
@@ -7,9 +7,44 @@ import { getMyAssignedStyles, getAllAssignedStyles, getProductionStages, updateR
 import { thumbUrl } from '../lib/imgUrl'
 import {
   Briefcase, Image as ImageIcon, X, ChevronLeft, ChevronRight,
-  Maximize2, Search, LayoutGrid, List, Clock, Users,
+  Maximize2, Search, LayoutGrid, List, Clock, Users, MessageSquare,
 } from 'lucide-react'
 import { KanbanSkeleton } from '../components/PageSkeleton'
+
+// Self-contained remarks textarea — saves on blur, shows brief "Saved ✓" flash
+function RemarksInput({ styleId, initialValue, onSave }) {
+  const [value, setValue] = useState(initialValue || '')
+  const [status, setStatus] = useState(null) // null | 'saving' | 'saved'
+
+  async function handleBlur() {
+    if (value === (initialValue || '')) return
+    setStatus('saving')
+    try {
+      await onSave(styleId, value)
+      setStatus('saved')
+      setTimeout(() => setStatus(null), 1800)
+    } catch {
+      setStatus(null)
+    }
+  }
+
+  return (
+    <div className="kanban-card-remarks">
+      <textarea
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onBlur={handleBlur}
+        onMouseDown={e => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
+        placeholder="Add remark…"
+        rows={2}
+        className="kanban-card-remarks-input"
+      />
+      {status === 'saving' && <span className="kanban-card-remarks-status saving">Saving…</span>}
+      {status === 'saved'  && <span className="kanban-card-remarks-status saved">Saved ✓</span>}
+    </div>
+  )
+}
 
 export default function MyWork() {
   const { currentPerson, people } = useApp()
@@ -51,6 +86,11 @@ export default function MyWork() {
       setLoading(false)
     }
   }
+
+  const handleRemarkSave = useCallback(async (styleId, value) => {
+    await updateRangeStyle(styleId, { production_notes: value })
+    setStyles(prev => prev.map(s => s.id === styleId ? { ...s, production_notes: value } : s))
+  }, [])
 
   async function handleStageChange(styleId, newStageId) {
     const style = styles.find(s => s.id === styleId)
@@ -256,6 +296,12 @@ export default function MyWork() {
                                       </div>
                                     )}
                                   </div>
+                                  <RemarksInput
+                                    key={style.id}
+                                    styleId={style.id}
+                                    initialValue={style.production_notes}
+                                    onSave={handleRemarkSave}
+                                  />
                                 </div>
                               )}
                             </Draggable>
@@ -355,6 +401,17 @@ export default function MyWork() {
                               <Clock size={11} /> Overdue — due {new Date(style.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             </div>
                           )}
+                          <div className="mywork-card-remarks-wrap">
+                            <div className="mywork-detail-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                              <MessageSquare size={11} /> Remarks
+                            </div>
+                            <RemarksInput
+                              key={style.id}
+                              styleId={style.id}
+                              initialValue={style.production_notes}
+                              onSave={handleRemarkSave}
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}

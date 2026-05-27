@@ -4763,6 +4763,56 @@ tr:hover .quick-view-btn {
   color: var(--danger);
   margin-top: 0.25rem;
 }
+/* Remarks box — Kanban cards */
+.kanban-card-remarks {
+  position: relative;
+  padding: 0 0.5rem 0.5rem;
+  border-top: 1px solid var(--gray-100);
+  margin-top: 0.25rem;
+}
+.kanban-card-remarks-input {
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  font-size: 0.6875rem;
+  font-family: inherit;
+  line-height: 1.4;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--gray-50);
+  color: var(--gray-700);
+  transition: border-color 0.15s, background 0.15s;
+  outline: none;
+}
+.kanban-card-remarks-input:focus {
+  border-color: var(--primary);
+  background: var(--card-bg);
+}
+.kanban-card-remarks-input::placeholder {
+  color: var(--gray-400);
+  font-style: italic;
+}
+.kanban-card-remarks-status {
+  display: block;
+  font-size: 0.6rem;
+  margin-top: 0.15rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.kanban-card-remarks-status.saving { color: var(--gray-400); }
+.kanban-card-remarks-status.saved  { color: var(--success, #16a34a); }
+
+/* Remarks box — List view cards */
+.mywork-card-remarks-wrap {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--gray-100);
+}
+.mywork-card-remarks-wrap .kanban-card-remarks-input {
+  background: var(--gray-50);
+}
+
 .kanban-empty {
   text-align: center;
   padding: 1.5rem 0.5rem;
@@ -7433,6 +7483,22 @@ html, body {
   :root:not([data-theme="light"]) .kanban-column {
     background: #1e1e33;
     border-color: #2a2a40;
+  }
+
+  :root:not([data-theme="light"]) .kanban-card-remarks {
+    border-top-color: #2a2a40;
+  }
+  :root:not([data-theme="light"]) .kanban-card-remarks-input {
+    background: #16162a;
+    border-color: #2a2a40;
+    color: #d1d5db;
+  }
+  :root:not([data-theme="light"]) .kanban-card-remarks-input:focus {
+    border-color: #818cf8;
+    background: #1e1e33;
+  }
+  :root:not([data-theme="light"]) .mywork-card-remarks-wrap {
+    border-top-color: #2a2a40;
   }
 
   :root:not([data-theme="light"]) .sidebar {
