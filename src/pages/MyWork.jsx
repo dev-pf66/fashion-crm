@@ -7,9 +7,10 @@ import { getMyAssignedStyles, getAllAssignedStyles, getProductionStages, updateR
 import { thumbUrl } from '../lib/imgUrl'
 import {
   Briefcase, Image as ImageIcon, X, ChevronLeft, ChevronRight,
-  Maximize2, Search, LayoutGrid, List, Clock, Users, MessageSquare,
+  Maximize2, Search, LayoutGrid, List, Clock, Users, MessageSquare, PackageCheck,
 } from 'lucide-react'
 import { KanbanSkeleton } from '../components/PageSkeleton'
+import Modal from '../components/Modal'
 
 // Self-contained remarks textarea — saves on blur, shows brief "Saved ✓" flash
 function RemarksInput({ styleId, initialValue, onSave }) {
@@ -56,6 +57,8 @@ export default function MyWork() {
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('kanban')
   const [lightbox, setLightbox] = useState(null)
+  const [confirmPush, setConfirmPush] = useState(null)
+  const [pushing, setPushing] = useState(false)
   const [filterSearch, setFilterSearch] = useState('')
   const [filterRange, setFilterRange] = useState('')
   const [filterDivision, setFilterDivision] = useState('')
@@ -91,6 +94,27 @@ export default function MyWork() {
     await updateRangeStyle(styleId, { production_notes: value })
     setStyles(prev => prev.map(s => s.id === styleId ? { ...s, production_notes: value } : s))
   }, [])
+
+  async function handlePushToProduction() {
+    if (!confirmPush) return
+    setPushing(true)
+    try {
+      const now = new Date().toISOString()
+      await updateRangeStyle(confirmPush.id, {
+        status: 'production',
+        pushed_to_production_at: now,
+      })
+      setStyles(prev => prev.map(s =>
+        s.id === confirmPush.id ? { ...s, status: 'production', pushed_to_production_at: now } : s
+      ))
+      toast.success(`${confirmPush.name} pushed to Production Board`)
+      setConfirmPush(null)
+    } catch (err) {
+      toast.error('Failed to push to production')
+    } finally {
+      setPushing(false)
+    }
+  }
 
   async function handleStageChange(styleId, newStageId) {
     const style = styles.find(s => s.id === styleId)
@@ -302,6 +326,23 @@ export default function MyWork() {
                                     initialValue={style.production_notes}
                                     onSave={handleRemarkSave}
                                   />
+                                  {isAllAccess && (
+                                    <div className="kanban-card-push-row">
+                                      {style.status === 'production' ? (
+                                        <span className="kanban-card-pushed-badge">
+                                          <PackageCheck size={10} /> In Production
+                                        </span>
+                                      ) : (
+                                        <button
+                                          className="kanban-card-push-btn"
+                                          onMouseDown={e => e.stopPropagation()}
+                                          onClick={e => { e.stopPropagation(); setConfirmPush(style) }}
+                                        >
+                                          <PackageCheck size={10} /> Push to Production
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </Draggable>
@@ -429,6 +470,33 @@ export default function MyWork() {
             </>
           )}
         </>
+      )}
+
+      {/* Push to Production confirm dialog */}
+      {confirmPush && (
+        <Modal title="Push to Production Board?" onClose={() => setConfirmPush(null)}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            {confirmPush.thumbnail_url && (
+              <img src={thumbUrl(confirmPush.thumbnail_url, { w: 80 })} alt={confirmPush.name}
+                style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
+            )}
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.9375rem' }}>{confirmPush.name}</div>
+              {confirmPush.ranges?.name && (
+                <div style={{ fontSize: '0.8125rem', color: 'var(--gray-500)' }}>{confirmPush.ranges.name}</div>
+              )}
+            </div>
+          </div>
+          <p style={{ fontSize: '0.875rem', color: 'var(--gray-600)', marginBottom: '1.25rem' }}>
+            This will mark the piece as <strong>In Production</strong> and make it visible on the Production Board. The piece will stay visible here with a badge.
+          </p>
+          <div className="form-actions">
+            <button className="btn btn-secondary" onClick={() => setConfirmPush(null)}>Cancel</button>
+            <button className="btn btn-primary" onClick={handlePushToProduction} disabled={pushing}>
+              <PackageCheck size={14} /> {pushing ? 'Pushing…' : 'Push to Production'}
+            </button>
+          </div>
+        </Modal>
       )}
 
       {/* Lightbox */}
