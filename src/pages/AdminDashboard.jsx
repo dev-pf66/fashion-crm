@@ -1002,7 +1002,7 @@ function ExitProcedureModal({ people, onClose, onDone, toast }) {
                           <td style={{ width: 32 }}>
                             <input type="checkbox" style={{ width: 'auto' }} checked={selected.has(key)} onChange={() => toggleItem(key)} />
                           </td>
-                          <td style={{ fontWeight: 500 }}>{piece.name || piece.style_number || `#${piece.id}`}</td>
+                          <td style={{ fontWeight: 500 }}>{piece.name || `#${piece.id}`}</td>
                           <td className="text-muted text-sm">{piece.ranges?.name}</td>
                           <td style={{ textAlign: 'right' }}>
                             {assignedTo ? (

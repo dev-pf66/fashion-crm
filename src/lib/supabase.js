@@ -1321,7 +1321,7 @@ export async function getPersonAssignments(personId) {
   const [stylesRes, tasksRes] = await Promise.all([
     supabase
       .from('range_styles')
-      .select('id, name, style_number, ranges!range_id(id, name)')
+      .select('id, name, ranges!range_id(id, name)')
       .eq('assigned_to', personId)
       .order('range_id'),
     supabase
