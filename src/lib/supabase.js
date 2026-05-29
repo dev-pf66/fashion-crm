@@ -330,6 +330,11 @@ export async function getRangeDashboardData(rangeId) {
   }
 }
 
+// NOTE: the production division_cell_targets table column is still named
+// `silhouette` — migration 032 (rename silhouette -> category) was never
+// applied to the live DB. The app keys cells off `category`, so we read/write
+// the physical `silhouette` column and alias it to `category` here. If 032 is
+// ever applied, drop the aliasing and use `category` directly.
 export async function getDivisionCellTargets(divisionId) {
   if (!divisionId) return []
   const { data, error } = await supabase
@@ -337,7 +342,7 @@ export async function getDivisionCellTargets(divisionId) {
     .select('*')
     .eq('division_id', divisionId)
   if (error) throw error
-  return data || []
+  return (data || []).map(r => ({ ...r, category: r.silhouette }))
 }
 
 export async function upsertDivisionCellTarget({ division_id, category, price_bracket, target_value, updated_by }) {
@@ -345,16 +350,16 @@ export async function upsertDivisionCellTarget({ division_id, category, price_br
     .from('division_cell_targets')
     .upsert({
       division_id,
-      category,
+      silhouette: category,
       price_bracket,
       target_value,
       updated_by,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'division_id,category,price_bracket' })
+    }, { onConflict: 'division_id,silhouette,price_bracket' })
     .select()
     .single()
   if (error) throw error
-  return data
+  return { ...data, category: data.silhouette }
 }
 
 export async function getMultiRangeDashboardData(rangeIds) {
