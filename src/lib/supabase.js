@@ -1801,17 +1801,30 @@ export async function upsertPersonTarget(personId, metric, weeklyTarget, monthly
 }
 
 export async function getPersonActuals(weekStart, monthStart) {
-  const [piecesRes, tasksWeekRes, tasksMonthRes, actWeekRes, actMonthRes] = await Promise.all([
-    // Pieces assigned — snapshot per person
+  const prevWeekStart = new Date(weekStart)
+  prevWeekStart.setDate(prevWeekStart.getDate() - 7)
+  const prevWeekStartStr = prevWeekStart.toISOString()
+
+  const prevMonthStart = new Date(monthStart)
+  prevMonthStart.setMonth(prevMonthStart.getMonth() - 1)
+  const prevMonthStartStr = prevMonthStart.toISOString()
+
+  const [
+    piecesRes,
+    tasksWeekRes, tasksMonthRes,
+    tasksPrevWeekRes, tasksPrevMonthRes,
+    actWeekRes, actMonthRes,
+    actPrevWeekRes, actPrevMonthRes,
+  ] = await Promise.all([
     supabase.from('range_styles').select('assigned_to').not('assigned_to', 'is', null),
-    // Tasks completed this week
     supabase.from('tasks').select('assigned_to').eq('status', 'done').gte('updated_at', weekStart),
-    // Tasks completed this month
     supabase.from('tasks').select('assigned_to').eq('status', 'done').gte('updated_at', monthStart),
-    // Activity log this week (styles created, samples reviewed, orders processed)
+    supabase.from('tasks').select('assigned_to').eq('status', 'done').gte('updated_at', prevWeekStartStr).lt('updated_at', weekStart),
+    supabase.from('tasks').select('assigned_to').eq('status', 'done').gte('updated_at', prevMonthStartStr).lt('updated_at', monthStart),
     supabase.from('activity_log').select('person_id, entity_type, action').gte('created_at', weekStart),
-    // Activity log this month
     supabase.from('activity_log').select('person_id, entity_type, action').gte('created_at', monthStart),
+    supabase.from('activity_log').select('person_id, entity_type, action').gte('created_at', prevWeekStartStr).lt('created_at', weekStart),
+    supabase.from('activity_log').select('person_id, entity_type, action').gte('created_at', prevMonthStartStr).lt('created_at', monthStart),
   ])
 
   function countBy(rows, key) {
@@ -1833,15 +1846,85 @@ export async function getPersonActuals(weekStart, monthStart) {
     return map
   }
 
-  const pieces = countBy(piecesRes.data, 'assigned_to')
-  const tasksWeek = countBy(tasksWeekRes.data, 'assigned_to')
-  const tasksMonth = countBy(tasksMonthRes.data, 'assigned_to')
-  const stylesWeek = countActivity(actWeekRes.data, 'styles', 'created')
-  const stylesMonth = countActivity(actMonthRes.data, 'styles', 'created')
-  const samplesWeek = countActivity(actWeekRes.data, 'samples', 'updated')
-  const samplesMonth = countActivity(actMonthRes.data, 'samples', 'updated')
-  const ordersWeek = countActivity(actWeekRes.data, 'purchase_orders', 'created')
-  const ordersMonth = countActivity(actMonthRes.data, 'purchase_orders', 'created')
+  return {
+    pieces: countBy(piecesRes.data, 'assigned_to'),
+    tasksWeek: countBy(tasksWeekRes.data, 'assigned_to'),
+    tasksMonth: countBy(tasksMonthRes.data, 'assigned_to'),
+    tasksPrevWeek: countBy(tasksPrevWeekRes.data, 'assigned_to'),
+    tasksPrevMonth: countBy(tasksPrevMonthRes.data, 'assigned_to'),
+    stylesWeek: countActivity(actWeekRes.data, 'styles', 'created'),
+    stylesMonth: countActivity(actMonthRes.data, 'styles', 'created'),
+    stylesPrevWeek: countActivity(actPrevWeekRes.data, 'styles', 'created'),
+    stylesPrevMonth: countActivity(actPrevMonthRes.data, 'styles', 'created'),
+    samplesWeek: countActivity(actWeekRes.data, 'samples', 'updated'),
+    samplesMonth: countActivity(actMonthRes.data, 'samples', 'updated'),
+    samplesPrevWeek: countActivity(actPrevWeekRes.data, 'samples', 'updated'),
+    samplesPrevMonth: countActivity(actPrevMonthRes.data, 'samples', 'updated'),
+    ordersWeek: countActivity(actWeekRes.data, 'purchase_orders', 'created'),
+    ordersMonth: countActivity(actMonthRes.data, 'purchase_orders', 'created'),
+    ordersPrevWeek: countActivity(actPrevWeekRes.data, 'purchase_orders', 'created'),
+    ordersPrevMonth: countActivity(actPrevMonthRes.data, 'purchase_orders', 'created'),
+  }
+}
 
-  return { pieces, tasksWeek, tasksMonth, stylesWeek, stylesMonth, samplesWeek, samplesMonth, ordersWeek, ordersMonth }
+export async function getPersonDrilldown(personId, metric, periodStart) {
+  switch (metric) {
+    case 'pieces_assigned': {
+      const { data, error } = await supabase
+        .from('range_styles')
+        .select('id, name, status, ranges!range_id(name)')
+        .eq('assigned_to', personId)
+        .order('range_id')
+      if (error) throw error
+      return (data || []).map(r => ({ id: r.id, label: r.name || `#${r.id}`, sub: r.ranges?.name || '', status: r.status }))
+    }
+    case 'tasks_completed': {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('id, title, updated_at, priority')
+        .eq('assigned_to', personId)
+        .eq('status', 'done')
+        .gte('updated_at', periodStart)
+        .order('updated_at', { ascending: false })
+      if (error) throw error
+      return (data || []).map(r => ({ id: r.id, label: r.title, sub: new Date(r.updated_at).toLocaleDateString(), status: r.priority }))
+    }
+    case 'styles_created': {
+      const { data, error } = await supabase
+        .from('activity_log')
+        .select('entity_id, details, created_at')
+        .eq('person_id', personId)
+        .eq('entity_type', 'styles')
+        .eq('action', 'created')
+        .gte('created_at', periodStart)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return (data || []).map(r => ({ id: r.entity_id, label: r.details || `Style #${r.entity_id}`, sub: new Date(r.created_at).toLocaleDateString() }))
+    }
+    case 'samples_reviewed': {
+      const { data, error } = await supabase
+        .from('activity_log')
+        .select('entity_id, details, created_at')
+        .eq('person_id', personId)
+        .eq('entity_type', 'samples')
+        .eq('action', 'updated')
+        .gte('created_at', periodStart)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return (data || []).map(r => ({ id: r.entity_id, label: r.details || `Sample #${r.entity_id}`, sub: new Date(r.created_at).toLocaleDateString() }))
+    }
+    case 'orders_processed': {
+      const { data, error } = await supabase
+        .from('activity_log')
+        .select('entity_id, details, created_at')
+        .eq('person_id', personId)
+        .eq('entity_type', 'purchase_orders')
+        .eq('action', 'created')
+        .gte('created_at', periodStart)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return (data || []).map(r => ({ id: r.entity_id, label: r.details || `PO #${r.entity_id}`, sub: new Date(r.created_at).toLocaleDateString() }))
+    }
+    default: return []
+  }
 }
