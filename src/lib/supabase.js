@@ -1773,3 +1773,75 @@ export async function getOverdueItems(divisionId) {
     total: (samples.data?.length || 0) + (pos.data?.length || 0),
   }
 }
+
+// ============================================================
+// PERSON TARGETS
+// ============================================================
+
+export async function getPersonTargets() {
+  const { data, error } = await supabase
+    .from('person_targets')
+    .select('*, people:person_id(id, name, role, is_active)')
+  if (error) throw error
+  return data || []
+}
+
+export async function upsertPersonTarget(personId, metric, weeklyTarget, monthlyTarget, updatedBy) {
+  const { error } = await supabase
+    .from('person_targets')
+    .upsert({
+      person_id: personId,
+      metric,
+      weekly_target: weeklyTarget,
+      monthly_target: monthlyTarget,
+      updated_by: updatedBy,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'person_id' })
+  if (error) throw error
+}
+
+export async function getPersonActuals(weekStart, monthStart) {
+  const [piecesRes, tasksWeekRes, tasksMonthRes, actWeekRes, actMonthRes] = await Promise.all([
+    // Pieces assigned — snapshot per person
+    supabase.from('range_styles').select('assigned_to').not('assigned_to', 'is', null),
+    // Tasks completed this week
+    supabase.from('tasks').select('assigned_to').eq('status', 'done').gte('updated_at', weekStart),
+    // Tasks completed this month
+    supabase.from('tasks').select('assigned_to').eq('status', 'done').gte('updated_at', monthStart),
+    // Activity log this week (styles created, samples reviewed, orders processed)
+    supabase.from('activity_log').select('person_id, entity_type, action').gte('created_at', weekStart),
+    // Activity log this month
+    supabase.from('activity_log').select('person_id, entity_type, action').gte('created_at', monthStart),
+  ])
+
+  function countBy(rows, key) {
+    const map = {}
+    for (const r of rows || []) {
+      const id = r[key]
+      if (id) map[id] = (map[id] || 0) + 1
+    }
+    return map
+  }
+
+  function countActivity(rows, entityType, action) {
+    const map = {}
+    for (const r of rows || []) {
+      if (r.entity_type === entityType && r.action === action && r.person_id) {
+        map[r.person_id] = (map[r.person_id] || 0) + 1
+      }
+    }
+    return map
+  }
+
+  const pieces = countBy(piecesRes.data, 'assigned_to')
+  const tasksWeek = countBy(tasksWeekRes.data, 'assigned_to')
+  const tasksMonth = countBy(tasksMonthRes.data, 'assigned_to')
+  const stylesWeek = countActivity(actWeekRes.data, 'styles', 'created')
+  const stylesMonth = countActivity(actMonthRes.data, 'styles', 'created')
+  const samplesWeek = countActivity(actWeekRes.data, 'samples', 'updated')
+  const samplesMonth = countActivity(actMonthRes.data, 'samples', 'updated')
+  const ordersWeek = countActivity(actWeekRes.data, 'purchase_orders', 'created')
+  const ordersMonth = countActivity(actMonthRes.data, 'purchase_orders', 'created')
+
+  return { pieces, tasksWeek, tasksMonth, stylesWeek, stylesMonth, samplesWeek, samplesMonth, ordersWeek, ordersMonth }
+}
