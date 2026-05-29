@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
 import { getRangeProgress, getTeamTaskWorkload, getOverdueTasks, getStaleTasks, flagStaleTasks, getTaskMetrics, getTasks } from '../lib/supabase'
 import { useApp } from '../App'
+import { usePermissions } from '../hooks/usePermissions'
 import StatusBadge from '../components/StatusBadge'
 import {
   Shield, Layers, CheckSquare, AlertTriangle, Clock,
@@ -565,6 +566,7 @@ function TaskTab({ metrics, activeTasks, workload, overdueTasks, staleTasks, pip
 // ── Users Tab ───────────────────────────────────────────────
 
 function UsersTab({ people, toast, refreshPeople, currentPerson }) {
+  const { isAdmin } = usePermissions()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [resetModal, setResetModal] = useState(null)
   const [divisionsModal, setDivisionsModal] = useState(null)
@@ -608,9 +610,11 @@ function UsersTab({ people, toast, refreshPeople, currentPerson }) {
           <span className="text-muted text-sm">{people.length} team members</span>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-secondary" onClick={() => setExitModal(true)}>
-            <LogOut size={16} /> Exit Procedure
-          </button>
+          {isAdmin && (
+            <button className="btn btn-secondary" onClick={() => setExitModal(true)}>
+              <LogOut size={16} /> Exit Procedure
+            </button>
+          )}
           <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
             <UserPlus size={16} /> Add User
           </button>
