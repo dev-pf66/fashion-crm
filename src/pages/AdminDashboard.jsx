@@ -7,9 +7,9 @@ import StatusBadge from '../components/StatusBadge'
 import {
   Shield, Layers, CheckSquare, AlertTriangle, Clock,
   Users, BarChart3, Target, Truck, ArrowRight, Timer, Bell,
-  UserPlus, KeyRound, Eye, EyeOff, Settings, Plus, Pencil, Trash2, Mail, MailX, Activity as ActivityIcon, Filter, X as XIcon
+  UserPlus, KeyRound, Eye, EyeOff, Settings, Plus, Pencil, Trash2, Mail, MailX, Activity as ActivityIcon, Filter, X as XIcon, LogOut
 } from 'lucide-react'
-import { adminCreateUser, adminResetPassword, adminListAuthUsers, adminDeleteUser, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage, getStyleStatuses, createStyleStatus, updateStyleStatus, deleteStyleStatus, updateEmailNotifications, getAuditLog, getLastActivityPerPerson, getDivisions, updatePersonDivisions } from '../lib/supabase'
+import { adminCreateUser, adminResetPassword, adminListAuthUsers, adminDeleteUser, getRoles, getSilhouettes, createSilhouette, updateSilhouette, deleteSilhouette, getPriceBrackets, createPriceBracket, updatePriceBracket, deletePriceBracket, getProductionStages, createProductionStage, updateProductionStage, deleteProductionStage, getStyleStatuses, createStyleStatus, updateStyleStatus, deleteStyleStatus, updateEmailNotifications, getAuditLog, getLastActivityPerPerson, getDivisions, updatePersonDivisions, getPersonAssignments, bulkAssignStyles, bulkReassignTasks, updatePerson } from '../lib/supabase'
 import Modal from '../components/Modal'
 import { DashboardSkeleton, ListSkeleton } from '../components/PageSkeleton'
 
@@ -568,6 +568,7 @@ function UsersTab({ people, toast, refreshPeople, currentPerson }) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [resetModal, setResetModal] = useState(null)
   const [divisionsModal, setDivisionsModal] = useState(null)
+  const [exitModal, setExitModal] = useState(false)
   const [authUsers, setAuthUsers] = useState([])
   const [divisions, setDivisions] = useState([])
   const [loadingAuth, setLoadingAuth] = useState(true)
@@ -606,9 +607,14 @@ function UsersTab({ people, toast, refreshPeople, currentPerson }) {
         <div>
           <span className="text-muted text-sm">{people.length} team members</span>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
-          <UserPlus size={16} /> Add User
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn btn-secondary" onClick={() => setExitModal(true)}>
+            <LogOut size={16} /> Exit Procedure
+          </button>
+          <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+            <UserPlus size={16} /> Add User
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -778,7 +784,298 @@ function UsersTab({ people, toast, refreshPeople, currentPerson }) {
           toast={toast}
         />
       )}
+
+      {exitModal && (
+        <ExitProcedureModal
+          people={people.filter(p => p.is_active && p.id !== currentPerson?.id)}
+          onClose={() => setExitModal(false)}
+          onDone={() => {
+            setExitModal(false)
+            refreshPeople()
+            toast.success('Exit procedure completed')
+          }}
+          toast={toast}
+        />
+      )}
     </>
+  )
+}
+
+function ExitProcedureModal({ people, onClose, onDone, toast }) {
+  const [step, setStep] = useState(1)
+  const [leavingPerson, setLeavingPerson] = useState(null)
+  const [assignments, setAssignments] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [selected, setSelected] = useState(new Set())
+  const [transferTo, setTransferTo] = useState('')
+  // { pieceId -> personId, taskId -> personId }
+  const [pieceMap, setPieceMap] = useState({})
+  const [taskMap, setTaskMap] = useState({})
+  const [saving, setSaving] = useState(false)
+  const [deactivate, setDeactivate] = useState(true)
+
+  async function handleSelectPerson(personId) {
+    const person = people.find(p => p.id === parseInt(personId))
+    setLeavingPerson(person || null)
+    setAssignments(null)
+    setPieceMap({})
+    setTaskMap({})
+    setSelected(new Set())
+    if (!person) return
+    setLoading(true)
+    try {
+      const data = await getPersonAssignments(person.id)
+      setAssignments(data)
+    } catch (err) {
+      toast.error('Failed to load assignments')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function toggleItem(key) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  function toggleAll(keys) {
+    const allSelected = keys.every(k => selected.has(k))
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (allSelected) keys.forEach(k => next.delete(k))
+      else keys.forEach(k => next.add(k))
+      return next
+    })
+  }
+
+  function assignSelected() {
+    if (!transferTo) return
+    const newPieceMap = { ...pieceMap }
+    const newTaskMap = { ...taskMap }
+    selected.forEach(key => {
+      if (key.startsWith('p-')) newPieceMap[key] = parseInt(transferTo)
+      if (key.startsWith('t-')) newTaskMap[key] = parseInt(transferTo)
+    })
+    setPieceMap(newPieceMap)
+    setTaskMap(newTaskMap)
+    setSelected(new Set())
+    setTransferTo('')
+  }
+
+  function getAssigneeName(personId) {
+    return people.find(p => p.id === personId)?.name || ''
+  }
+
+  const totalPieces = assignments?.pieces.length || 0
+  const totalTasks = assignments?.tasks.length || 0
+  const assignedPieces = Object.keys(pieceMap).length
+  const assignedTasks = Object.keys(taskMap).length
+  const allAssigned = totalPieces + totalTasks > 0 && assignedPieces + assignedTasks === totalPieces + totalTasks
+
+  async function handleExecute() {
+    setSaving(true)
+    try {
+      const pieceGroups = {}
+      Object.entries(pieceMap).forEach(([key, pid]) => {
+        const id = parseInt(key.replace('p-', ''))
+        if (!pieceGroups[pid]) pieceGroups[pid] = []
+        pieceGroups[pid].push(id)
+      })
+      const taskGroups = {}
+      Object.entries(taskMap).forEach(([key, pid]) => {
+        const id = parseInt(key.replace('t-', ''))
+        if (!taskGroups[pid]) taskGroups[pid] = []
+        taskGroups[pid].push(id)
+      })
+      await Promise.all([
+        ...Object.entries(pieceGroups).map(([pid, ids]) => bulkAssignStyles(ids, parseInt(pid))),
+        ...Object.entries(taskGroups).map(([pid, ids]) => bulkReassignTasks(ids, parseInt(pid))),
+        deactivate ? updatePerson(leavingPerson.id, { is_active: false }) : Promise.resolve(),
+      ])
+      onDone()
+    } catch (err) {
+      toast.error('Failed to complete exit procedure')
+      console.error(err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const recipients = people.filter(p => p.id !== leavingPerson?.id)
+
+  return (
+    <Modal title="Exit Procedure" onClose={onClose} large>
+      {step === 1 && (
+        <>
+          <p className="text-muted text-sm" style={{ marginBottom: '1.25rem' }}>
+            Select the employee who is leaving. Their assigned pieces and open tasks will be loaded for redistribution.
+          </p>
+          <div className="form-group">
+            <label>Leaving Employee</label>
+            <select value={leavingPerson?.id || ''} onChange={e => handleSelectPerson(e.target.value)}>
+              <option value="">Select employee...</option>
+              {people.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+
+          {loading && <p className="text-muted text-sm">Loading assignments...</p>}
+
+          {assignments && (
+            <div style={{ marginTop: '1rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="card" style={{ flex: 1, padding: '0.75rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{totalPieces}</div>
+                  <div className="text-muted text-sm">Pieces</div>
+                </div>
+                <div className="card" style={{ flex: 1, padding: '0.75rem', textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{totalTasks}</div>
+                  <div className="text-muted text-sm">Open Tasks</div>
+                </div>
+              </div>
+              {totalPieces + totalTasks === 0 ? (
+                <p className="text-muted text-sm">No assignments found — nothing to transfer.</p>
+              ) : null}
+            </div>
+          )}
+
+          <div className="form-actions">
+            <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button
+              className="btn btn-primary"
+              disabled={!assignments || (totalPieces + totalTasks === 0 ? false : false)}
+              onClick={() => setStep(2)}
+            >
+              Continue
+            </button>
+          </div>
+        </>
+      )}
+
+      {step === 2 && assignments && (
+        <>
+          <p className="text-muted text-sm" style={{ marginBottom: '1rem' }}>
+            Select items then choose who to transfer them to. Repeat until all are assigned.
+          </p>
+
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1.25rem', padding: '0.75rem', background: 'var(--gray-50)', borderRadius: 'var(--radius)' }}>
+            <span className="text-sm" style={{ fontWeight: 500, flexShrink: 0 }}>Transfer selected to:</span>
+            <select value={transferTo} onChange={e => setTransferTo(e.target.value)} style={{ flex: 1 }}>
+              <option value="">Select recipient...</option>
+              {recipients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <button
+              className="btn btn-primary btn-sm"
+              disabled={!transferTo || selected.size === 0}
+              onClick={assignSelected}
+            >
+              Assign {selected.size > 0 ? `(${selected.size})` : ''}
+            </button>
+          </div>
+
+          {totalPieces > 0 && (
+            <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  style={{ width: 'auto' }}
+                  checked={assignments.pieces.every(p => selected.has(`p-${p.id}`))}
+                  onChange={() => toggleAll(assignments.pieces.map(p => `p-${p.id}`))}
+                />
+                <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Pieces ({totalPieces})</span>
+              </div>
+              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <table className="data-table">
+                  <tbody>
+                    {assignments.pieces.map(piece => {
+                      const key = `p-${piece.id}`
+                      const assignedTo = pieceMap[key]
+                      return (
+                        <tr key={piece.id} style={assignedTo ? { opacity: 0.5 } : {}}>
+                          <td style={{ width: 32 }}>
+                            <input type="checkbox" style={{ width: 'auto' }} checked={selected.has(key)} onChange={() => toggleItem(key)} />
+                          </td>
+                          <td style={{ fontWeight: 500 }}>{piece.name || piece.style_number || `#${piece.id}`}</td>
+                          <td className="text-muted text-sm">{piece.ranges?.name}</td>
+                          <td style={{ textAlign: 'right' }}>
+                            {assignedTo ? (
+                              <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                                → {getAssigneeName(assignedTo)}
+                              </span>
+                            ) : null}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {totalTasks > 0 && (
+            <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  style={{ width: 'auto' }}
+                  checked={assignments.tasks.every(t => selected.has(`t-${t.id}`))}
+                  onChange={() => toggleAll(assignments.tasks.map(t => `t-${t.id}`))}
+                />
+                <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Open Tasks ({totalTasks})</span>
+              </div>
+              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <table className="data-table">
+                  <tbody>
+                    {assignments.tasks.map(task => {
+                      const key = `t-${task.id}`
+                      const assignedTo = taskMap[key]
+                      return (
+                        <tr key={task.id} style={assignedTo ? { opacity: 0.5 } : {}}>
+                          <td style={{ width: 32 }}>
+                            <input type="checkbox" style={{ width: 'auto' }} checked={selected.has(key)} onChange={() => toggleItem(key)} />
+                          </td>
+                          <td style={{ fontWeight: 500 }}>{task.title}</td>
+                          <td className="text-muted text-sm">{task.status}</td>
+                          <td style={{ textAlign: 'right' }}>
+                            {assignedTo ? (
+                              <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
+                                → {getAssigneeName(assignedTo)}
+                              </span>
+                            ) : null}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+              <input type="checkbox" checked={deactivate} onChange={e => setDeactivate(e.target.checked)} style={{ width: 'auto' }} />
+              Deactivate {leavingPerson?.name}'s account after transfer
+            </label>
+          </div>
+
+          <div className="form-actions">
+            <button className="btn btn-secondary" onClick={() => setStep(1)}>Back</button>
+            <button
+              className="btn btn-primary"
+              disabled={saving || (!allAssigned && totalPieces + totalTasks > 0)}
+              onClick={handleExecute}
+            >
+              {saving ? 'Executing...' : `Complete Exit${!allAssigned && totalPieces + totalTasks > 0 ? ' (assign all items first)' : ''}`}
+            </button>
+          </div>
+        </>
+      )}
+    </Modal>
   )
 }
 

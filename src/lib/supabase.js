@@ -1317,6 +1317,32 @@ export async function bulkAssignStyles(styleIds, personId) {
   if (error) throw error
 }
 
+export async function getPersonAssignments(personId) {
+  const [stylesRes, tasksRes] = await Promise.all([
+    supabase
+      .from('range_styles')
+      .select('id, name, style_number, ranges!range_id(id, name)')
+      .eq('assigned_to', personId)
+      .order('range_id'),
+    supabase
+      .from('tasks')
+      .select('id, title, status, priority')
+      .eq('assigned_to', personId)
+      .not('status', 'eq', 'done'),
+  ])
+  if (stylesRes.error) throw stylesRes.error
+  if (tasksRes.error) throw tasksRes.error
+  return { pieces: stylesRes.data || [], tasks: tasksRes.data || [] }
+}
+
+export async function bulkReassignTasks(taskIds, newPersonId) {
+  const { error } = await supabase
+    .from('tasks')
+    .update({ assigned_to: newPersonId })
+    .in('id', taskIds)
+  if (error) throw error
+}
+
 export async function getRangeStyle(id) {
   const { data, error } = await supabase
     .from('range_styles')
