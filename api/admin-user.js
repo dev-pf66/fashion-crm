@@ -6,10 +6,9 @@ const resendApiKey = process.env.RESEND_API_KEY
 const fromEmail = process.env.EMAIL_FROM || 'noreply@jadecouture.com'
 const appUrl = process.env.APP_URL || 'https://fashion-crm-five.vercel.app'
 
-async function sendWelcomeEmail({ to, name, password }) {
+async function sendWelcomeEmail({ to, name, inviteUrl }) {
   if (!resendApiKey) return
   const firstName = name.split(' ')[0]
-  const loginUrl = `${appUrl}/login`
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1a1a1a;">
       <div style="background: linear-gradient(135deg, #1a472a 0%, #2d6a4f 100%); padding: 32px; border-radius: 12px; color: white; text-align: center; margin-bottom: 24px;">
@@ -17,18 +16,14 @@ async function sendWelcomeEmail({ to, name, password }) {
         <p style="margin: 0; opacity: 0.9; font-size: 15px;">Your account is ready, ${firstName}.</p>
       </div>
       <div style="background: #f8f9fa; padding: 24px; border-radius: 12px; margin-bottom: 16px;">
-        <p style="margin: 0 0 16px 0; line-height: 1.6;">Use the credentials below to log in for the first time:</p>
-        <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 14px;">
-          <div style="margin-bottom: 8px;"><strong style="color: #6b7280;">Email:</strong> ${to}</div>
-          <div><strong style="color: #6b7280;">Password:</strong> ${password}</div>
-        </div>
+        <p style="margin: 0 0 16px 0; line-height: 1.6;">Click the button below to set your password and access the CRM. This link expires in 24 hours.</p>
       </div>
       <div style="text-align: center; padding: 8px 0 16px;">
-        <a href="${loginUrl}" style="background: #1a472a; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">Log in to Jade CRM</a>
+        <a href="${inviteUrl}" style="background: #1a472a; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">Set my password & log in</a>
       </div>
       <p style="text-align: center; color: #6b7280; font-size: 13px; margin-top: 16px;">
-        Please change your password after your first login.<br>
-        Questions? Reply to this email or ask an admin.
+        If you weren't expecting this, ignore this email.<br>
+        Questions? Ask an admin.
       </p>
     </div>
   `
@@ -42,7 +37,7 @@ async function sendWelcomeEmail({ to, name, password }) {
       body: JSON.stringify({
         from: `Jade CRM <${fromEmail}>`,
         to: [to],
-        subject: 'Welcome to Jade CRM — your login details',
+        subject: 'Welcome to Jade CRM — set your password',
         html,
       }),
     })
@@ -80,7 +75,7 @@ export default async function handler(req, res) {
     .eq('user_id', caller.id)
     .single()
 
-  const isAdmin = callerPerson?.roles?.permissions?.includes('admin.access') || callerPerson?.role === 'admin'
+  const isAdmin = callerPerson?.roles?.permissions?.includes('admin.access')
   if (!isAdmin) {
     return res.status(403).json({ error: 'Admin access required' })
   }
@@ -167,7 +162,14 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: personError.message })
       }
 
-      await sendWelcomeEmail({ to: email, name, password })
+      // Generate invite link so we never send plaintext passwords via email
+      const { data: linkData } = await adminClient.auth.admin.generateLink({
+        type: 'invite',
+        email,
+        options: { redirectTo: `${appUrl}/` },
+      })
+      const inviteUrl = linkData?.properties?.action_link || `${appUrl}/login`
+      await sendWelcomeEmail({ to: email, name, inviteUrl })
 
       return res.status(200).json({ user: authData.user, person })
     }

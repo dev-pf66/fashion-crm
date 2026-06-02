@@ -1941,12 +1941,24 @@ export async function getTaskAttachments(taskId) {
     .eq('entity_id', String(taskId))
     .order('created_at', { ascending: true })
   if (error) throw error
-  return (data || []).map(r => ({
+  const rows = (data || []).map(r => ({
     id: r.id,
     person_id: r.person_id,
     uploaded_at: r.created_at,
     ...r.details,
   }))
+
+  // task-media is private — generate fresh signed URLs in one round-trip
+  const paths = rows.map(r => r.path).filter(Boolean)
+  if (paths.length) {
+    const { data: signed } = await supabase.storage
+      .from('task-media')
+      .createSignedUrls(paths, 3600)
+    const urlMap = {}
+    ;(signed || []).forEach(s => { urlMap[s.path] = s.signedUrl })
+    return rows.map(r => ({ ...r, url: (r.path && urlMap[r.path]) || r.url }))
+  }
+  return rows
 }
 
 export async function logTaskAttachment(taskId, personId, details) {

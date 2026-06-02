@@ -46,7 +46,23 @@ export default async function handler(req, res) {
     if (!upstream.ok) {
       return res.status(upstream.status).json({ error: 'upstream fetch failed' })
     }
+
+    // Reject non-image content types — prevents using proxy as an open relay
+    const contentType = upstream.headers.get('content-type') || ''
+    if (!contentType.startsWith('image/')) {
+      return res.status(415).json({ error: 'upstream is not an image' })
+    }
+
+    // Hard cap at 10 MB to prevent memory exhaustion
+    const contentLength = parseInt(upstream.headers.get('content-length') || '0', 10)
+    if (contentLength > 10 * 1024 * 1024) {
+      return res.status(413).json({ error: 'image too large' })
+    }
+
     const arrayBuffer = await upstream.arrayBuffer()
+    if (arrayBuffer.byteLength > 10 * 1024 * 1024) {
+      return res.status(413).json({ error: 'image too large' })
+    }
     const inputBuffer = Buffer.from(arrayBuffer)
 
     let pipeline = sharp(inputBuffer).rotate().resize({ width, withoutEnlargement: true })
