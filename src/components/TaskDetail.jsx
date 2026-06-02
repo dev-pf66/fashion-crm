@@ -7,6 +7,7 @@ import Modal from './Modal'
 import StatusBadge from './StatusBadge'
 import CommentSection from './CommentSection'
 import TaskForm from './TaskForm'
+import TaskAttachments from './TaskAttachments'
 import { Pencil, Trash2, Calendar, User, Flag, Tag, Link2, Plus, X, CheckSquare, Timer } from 'lucide-react'
 
 export default function TaskDetail({ taskId, onClose, onUpdate }) {
@@ -435,6 +436,8 @@ export default function TaskDetail({ taskId, onClose, onUpdate }) {
               </form>
             )}
           </div>
+
+          <TaskAttachments taskId={task.id} />
 
           <CommentSection
             entityType="task"

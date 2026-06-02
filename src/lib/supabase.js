@@ -1929,6 +1929,46 @@ export async function getPersonDrilldown(personId, metric, periodStart) {
   }
 }
 
+export async function getTaskAttachments(taskId) {
+  const { data, error } = await supabase
+    .from('activity_log')
+    .select('id, person_id, details, created_at')
+    .eq('entity_type', 'task_attachment')
+    .eq('entity_id', String(taskId))
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data || []).map(r => ({
+    id: r.id,
+    person_id: r.person_id,
+    uploaded_at: r.created_at,
+    ...r.details,
+  }))
+}
+
+export async function logTaskAttachment(taskId, personId, details) {
+  const { data, error } = await supabase
+    .from('activity_log')
+    .insert({
+      action: 'uploaded',
+      entity_type: 'task_attachment',
+      entity_id: String(taskId),
+      person_id: personId || null,
+      details,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteTaskAttachment(logId) {
+  const { error } = await supabase
+    .from('activity_log')
+    .delete()
+    .eq('id', logId)
+  if (error) throw error
+}
+
 export async function getNotificationLogs({ days = 30 } = {}) {
   const since = new Date(Date.now() - days * 86400000).toISOString()
   const { data, error } = await supabase

@@ -8954,3 +8954,7 @@ html, body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Task attachments */
+.attachment-overlay { opacity: 0; }
+div:hover > .attachment-overlay { opacity: 1; }

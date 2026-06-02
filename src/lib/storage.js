@@ -42,6 +42,18 @@ export async function uploadRangeStyleFile(rangeId, styleId, file) {
   return uploadFile('style-files', `${rangeId}/${styleId}`, file)
 }
 
+export async function uploadTaskAttachment(taskId, file) {
+  const ext = file.name.split('.').pop()
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`
+  const filePath = `tasks/${taskId}/${fileName}`
+
+  const { error } = await supabase.storage.from('task-media').upload(filePath, file)
+  if (error) throw error
+
+  const { data: urlData } = supabase.storage.from('task-media').getPublicUrl(filePath)
+  return { url: urlData.publicUrl, path: filePath }
+}
+
 export async function deleteFile(bucket, path) {
   const { error } = await supabase.storage
     .from(bucket)
