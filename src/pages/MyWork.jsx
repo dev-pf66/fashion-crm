@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useApp } from '../App'
 import { useToast } from '../contexts/ToastContext'
 import { usePermissions } from '../hooks/usePermissions'
+import { useDivision } from '../contexts/DivisionContext'
 import { getMyAssignedStyles, getAllAssignedStyles, getProductionStages, updateRangeStyle, logProductionStatusChange } from '../lib/supabase'
 import { thumbUrl } from '../lib/imgUrl'
 import {
@@ -50,6 +51,7 @@ function RemarksInput({ styleId, initialValue, onSave }) {
 export default function MyWork() {
   const { currentPerson, people } = useApp()
   const { isAllAccess, can } = usePermissions()
+  const { currentDivision } = useDivision()
   const canEditKanban = can('my_work.edit')
   const toast = useToast()
   const [styles, setStyles] = useState([])
@@ -61,24 +63,24 @@ export default function MyWork() {
   const [pushing, setPushing] = useState(false)
   const [filterSearch, setFilterSearch] = useState('')
   const [filterRange, setFilterRange] = useState('')
-  const [filterDivision, setFilterDivision] = useState('')
   const [selectedPerson, setSelectedPerson] = useState('')
 
   useEffect(() => {
     loadData()
-  }, [currentPerson?.id, selectedPerson])
+  }, [currentPerson?.id, selectedPerson, currentDivision])
 
   async function loadData() {
     if (!currentPerson?.id) return
     setLoading(true)
+    const divId = currentDivision?.id
     try {
       const [stagesData, stylesData] = await Promise.all([
         getProductionStages(),
         isAllAccess && selectedPerson
-          ? getAllAssignedStyles().then(s => s.filter(x => x.assigned_to === parseInt(selectedPerson)))
+          ? getAllAssignedStyles(divId).then(s => s.filter(x => x.assigned_to === parseInt(selectedPerson)))
           : isAllAccess && !selectedPerson
-          ? getAllAssignedStyles()
-          : getMyAssignedStyles(currentPerson.id),
+          ? getAllAssignedStyles(divId)
+          : getMyAssignedStyles(currentPerson.id, divId),
       ])
       setStages(stagesData || [])
       setStyles(stylesData || [])

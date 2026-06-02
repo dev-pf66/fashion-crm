@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
+import { useDivision } from '../contexts/DivisionContext'
 import { supabase } from '../lib/supabase'
 import { getRelativeTime } from '../lib/activityLogger'
 import { useToast } from '../contexts/ToastContext'
@@ -28,6 +29,7 @@ function entityLabel(t) {
 
 export default function Activity() {
   const { people } = useApp()
+  const { currentDivision } = useDivision()
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ entity_type: '', person_id: '' })
@@ -36,8 +38,12 @@ export default function Activity() {
   const PAGE_SIZE = 30
 
   useEffect(() => {
+    setPage(0)
+  }, [currentDivision])
+
+  useEffect(() => {
     loadActivity()
-  }, [filters, page])
+  }, [filters, page, currentDivision])
 
   async function loadActivity() {
     setLoading(true)
@@ -50,6 +56,7 @@ export default function Activity() {
 
       if (filters.entity_type) query = query.eq('entity_type', filters.entity_type)
       if (filters.person_id) query = query.eq('person_id', filters.person_id)
+      if (currentDivision) query = query.eq('division_id', currentDivision.id)
 
       const { data, error } = await query
       if (error) throw error
@@ -67,7 +74,7 @@ export default function Activity() {
       <div className="page-header">
         <div>
           <h1>Activity Log</h1>
-          <p className="subtitle">Track all changes across the workspace</p>
+          <p className="subtitle">{currentDivision?.name || 'All'} · recent changes</p>
         </div>
       </div>
 

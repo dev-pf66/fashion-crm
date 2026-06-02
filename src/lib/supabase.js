@@ -1287,22 +1287,26 @@ export async function getRangeStyles(rangeId) {
   return data
 }
 
-export async function getMyAssignedStyles(personId) {
-  const { data, error } = await supabase
+export async function getMyAssignedStyles(personId, divisionId) {
+  let query = supabase
     .from('range_styles')
-    .select('*, production_notes, ranges!range_id(id, name, division), assignee:assigned_to(id, name), stage:production_stage_id(id, name, color, sort_order)')
+    .select('*, production_notes, ranges!inner(id, name, division, division_id), assignee:assigned_to(id, name), stage:production_stage_id(id, name, color, sort_order)')
     .eq('assigned_to', personId)
     .order('range_id')
+  if (divisionId) query = query.eq('ranges.division_id', divisionId)
+  const { data, error } = await query
   if (error) throw error
   return data
 }
 
-export async function getAllAssignedStyles() {
-  const { data, error } = await supabase
+export async function getAllAssignedStyles(divisionId) {
+  let query = supabase
     .from('range_styles')
-    .select('*, production_notes, ranges!range_id(id, name, division), assignee:assigned_to(id, name), stage:production_stage_id(id, name, color, sort_order)')
+    .select('*, production_notes, ranges!inner(id, name, division, division_id), assignee:assigned_to(id, name), stage:production_stage_id(id, name, color, sort_order)')
     .not('assigned_to', 'is', null)
     .order('assigned_to')
+  if (divisionId) query = query.eq('ranges.division_id', divisionId)
+  const { data, error } = await query
   if (error) throw error
   return data
 }
