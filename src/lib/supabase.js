@@ -1932,10 +1932,23 @@ export async function getPersonDrilldown(personId, metric, periodStart) {
 export async function getNotificationLogs({ days = 30 } = {}) {
   const since = new Date(Date.now() - days * 86400000).toISOString()
   const { data, error } = await supabase
-    .from('notification_logs')
-    .select('*')
-    .gte('sent_at', since)
-    .order('sent_at', { ascending: false })
+    .from('activity_log')
+    .select('id, action, entity_id, details, created_at')
+    .eq('entity_type', 'whatsapp_notification')
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
   if (error) throw error
-  return data || []
+  return (data || []).map(r => ({
+    id: r.id,
+    sent_at: r.created_at,
+    slot: r.entity_id,
+    status: r.action,
+    person_name: r.details?.person_name,
+    person_email: r.details?.person_email,
+    overdue_count: r.details?.overdue_count || 0,
+    due_today_count: r.details?.due_today_count || 0,
+    due_tomorrow_count: r.details?.due_tomorrow_count || 0,
+    completed_yesterday_count: r.details?.completed_yesterday_count || 0,
+    completed_today_count: r.details?.completed_today_count || 0,
+  }))
 }
