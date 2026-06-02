@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
-import { getRangeProgress, getTeamTaskWorkload, getOverdueTasks, getStaleTasks, flagStaleTasks, getTaskMetrics, getTasks } from '../lib/supabase'
+import { getRangeProgress, getTeamTaskWorkload, getOverdueTasks, getStaleTasks, flagStaleTasks, getTaskMetrics, getTasks, getPersonActuals, getAllAssignedStyles } from '../lib/supabase'
 import { useApp } from '../App'
 import { usePermissions } from '../hooks/usePermissions'
 import StatusBadge from '../components/StatusBadge'
@@ -51,6 +51,9 @@ export default function AdminDashboard() {
   const [overdueTasks, setOverdueTasks] = useState([])
   const [staleTasks, setStaleTasks] = useState([])
   const [pipeline, setPipeline] = useState({ todo: 0, in_progress: 0, review: 0, done: 0 })
+  const [actuals, setActuals] = useState(null)
+  const [lastActivity, setLastActivity] = useState({})
+  const [piecesMap, setPiecesMap] = useState({})
 
   useEffect(() => {
     loadData()
@@ -59,19 +62,35 @@ export default function AdminDashboard() {
   async function loadData() {
     setLoading(true)
     try {
-      const [ranges, metrics, team, overdue, stale, allTasks] = await Promise.all([
+      const now = new Date()
+      const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0,0,0,0)
+      const monthStart = new Date(now); monthStart.setDate(1); monthStart.setHours(0,0,0,0)
+
+      const [ranges, metrics, team, overdue, stale, allTasks, acts, lastAct, allPieces] = await Promise.all([
         getRangeProgress(),
         getTaskMetrics(),
         getTeamTaskWorkload(),
         getOverdueTasks(),
         getStaleTasks(),
         getTasks(),
+        getPersonActuals(weekStart.toISOString(), monthStart.toISOString()),
+        getLastActivityPerPerson(),
+        getAllAssignedStyles(),
       ])
       setRangeData(ranges || [])
       setTaskMetrics(metrics)
       setWorkload(team || [])
       setOverdueTasks(overdue || [])
       setStaleTasks(stale || [])
+      setActuals(acts || null)
+      setLastActivity(lastAct || {})
+
+      // Pieces per person
+      const pm = {}
+      ;(allPieces || []).forEach(s => {
+        if (s.assigned_to) pm[s.assigned_to] = (pm[s.assigned_to] || 0) + 1
+      })
+      setPiecesMap(pm)
 
       // Compute pipeline from all tasks
       const p = { todo: 0, in_progress: 0, review: 0, done: 0 }
@@ -181,6 +200,9 @@ export default function AdminDashboard() {
           pipeline={pipeline}
           currentPerson={currentPerson}
           toast={toast}
+          actuals={actuals}
+          lastActivity={lastActivity}
+          piecesMap={piecesMap}
         />
       ) : activeTab === 'users' ? (
         <UsersTab people={people} toast={toast} refreshPeople={refreshPeople} currentPerson={currentPerson} />
@@ -342,7 +364,17 @@ function RangeTab({ rangeData, totalRanges, totalStyles, overallApprovedPct, uni
 
 // ── Tasks Tab ───────────────────────────────────────────────
 
-function TaskTab({ metrics, activeTasks, workload, overdueTasks, staleTasks, pipeline, currentPerson, toast }) {
+function relativeTime(ts) {
+  if (!ts) return null
+  const diff = Date.now() - new Date(ts).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(diff / 3600000)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(diff / 86400000)}d ago`
+}
+
+function TaskTab({ metrics, activeTasks, workload, overdueTasks, staleTasks, pipeline, currentPerson, toast, actuals, lastActivity, piecesMap }) {
   const [flagging, setFlagging] = useState(false)
   const today = new Date().toISOString().slice(0, 10)
 
@@ -417,37 +449,60 @@ function TaskTab({ metrics, activeTasks, workload, overdueTasks, staleTasks, pip
         ) : (
           <div className="admin-workload-grid">
             {workload.map(person => {
-              const barColor = person.overdue > 0 ? 'var(--danger)' : person.total > 8 ? 'var(--warning)' : 'var(--success)'
               const maxTasks = Math.max(...workload.map(p => p.total), 1)
+              const doneThisWeek = actuals?.tasksWeek?.[person.id] || 0
+              const doneLastWeek = actuals?.tasksPrevWeek?.[person.id] || 0
+              const velocityDelta = doneThisWeek - doneLastWeek
+              const pieces = piecesMap?.[person.id] || 0
+              const lastAct = lastActivity?.[person.id]
+              const lastActAge = lastAct ? Date.now() - new Date(lastAct.created_at).getTime() : Infinity
+              const isDormant = lastActAge > 3 * 86400000
+              const isActiveToday = lastActAge < 86400000
+              const statusDot = isDormant ? '#f87171' : isActiveToday ? '#34d399' : '#fbbf24'
+              const barColor = person.overdue > 0 ? 'var(--danger)' : person.total > 8 ? 'var(--warning)' : 'var(--success)'
+
               return (
                 <div key={person.id} className="admin-workload-card">
                   <div className="admin-workload-header">
-                    <div className="admin-workload-avatar">
-                      {person.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'}
+                    <div style={{ position: 'relative' }}>
+                      <div className="admin-workload-avatar">
+                        {person.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'}
+                      </div>
+                      <div style={{ position: 'absolute', bottom: 0, right: 0, width: 9, height: 9, borderRadius: '50%', background: statusDot, border: '1.5px solid var(--bg-card)' }} />
                     </div>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{person.name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--gray-500)' }}>
-                        {person.total} task{person.total !== 1 ? 's' : ''}
-                        {person.overdue > 0 && <span style={{ color: 'var(--danger)', marginLeft: 6 }}>{person.overdue} overdue</span>}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {person.name}
+                        {doneThisWeek > 0 && (
+                          <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: velocityDelta > 0 ? '#dcfce7' : velocityDelta < 0 ? '#fee2e2' : '#f1f5f9', color: velocityDelta > 0 ? '#16a34a' : velocityDelta < 0 ? '#dc2626' : '#64748b' }}>
+                            {velocityDelta > 0 ? `↑` : velocityDelta < 0 ? `↓` : `→`} {doneThisWeek} done
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--gray-500)', marginTop: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <span>{person.total} active task{person.total !== 1 ? 's' : ''}</span>
+                        {pieces > 0 && <span>· {pieces} piece{pieces !== 1 ? 's' : ''}</span>}
+                        {person.overdue > 0 && <span style={{ color: 'var(--danger)', fontWeight: 600 }}>· {person.overdue} overdue</span>}
                       </div>
                     </div>
                   </div>
-                  <div className="chart-bar-track" style={{ height: 10, marginTop: 8 }}>
-                    <div
-                      className="chart-bar-fill"
-                      style={{
-                        width: `${(person.total / maxTasks) * 100}%`,
-                        background: barColor,
-                      }}
-                    />
+
+                  <div className="chart-bar-track" style={{ height: 6, marginTop: 8, borderRadius: 3 }}>
+                    <div className="chart-bar-fill" style={{ width: `${(person.total / maxTasks) * 100}%`, background: barColor, borderRadius: 3 }} />
                   </div>
-                  <div className="admin-workload-breakdown">
+
+                  <div className="admin-workload-breakdown" style={{ marginTop: 6 }}>
                     {person.todo > 0 && <span>To Do: {person.todo}</span>}
                     {person.inProgress > 0 && <span>In Progress: {person.inProgress}</span>}
                     {person.review > 0 && <span>Review: {person.review}</span>}
-                    {person.highPriority > 0 && <span style={{ color: 'var(--danger)' }}>High/Urgent: {person.highPriority}</span>}
+                    {person.highPriority > 0 && <span style={{ color: 'var(--danger)' }}>🔴 {person.highPriority} urgent</span>}
                   </div>
+
+                  {lastAct && (
+                    <div style={{ marginTop: 6, fontSize: '0.68rem', color: isDormant ? '#f87171' : 'var(--gray-400)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span>{isDormant ? '⚠ Dormant · ' : ''}{lastAct.action} {entityLabel(lastAct.entity_type)} · {relativeTime(lastAct.created_at)}</span>
+                    </div>
+                  )}
                 </div>
               )
             })}
