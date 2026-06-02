@@ -360,26 +360,32 @@ export default function TeamPulse() {
     const now = new Date()
     const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0,0,0,0)
     const monthStart = new Date(now); monthStart.setDate(1); monthStart.setHours(0,0,0,0)
+    const ws = weekStart.toISOString()
+    const ms = monthStart.toISOString()
+
+    // Wave 1 — fastest calls, render the list immediately
+    const wave1 = Promise.all([getTeamTaskWorkload(), getLastActivityPerPerson()])
+    // Wave 2 — heavier calls, fill in detail as they land
+    const wave2 = Promise.all([
+      getPersonActuals(ws, ms),
+      getOverdueTasks(),
+      getStaleTasks(),
+      getAllAssignedStyles(),
+      getTasks(),
+    ])
 
     try {
-      const [wl, acts, lastAct, overdue, stale, allPieces, allTasks] = await Promise.all([
-        getTeamTaskWorkload(),
-        getPersonActuals(weekStart.toISOString(), monthStart.toISOString()),
-        getLastActivityPerPerson(),
-        getOverdueTasks(),
-        getStaleTasks(),
-        getAllAssignedStyles(),
-        getTasks(),
-      ])
-
-      // workload map
+      const [wl, lastAct] = await wave1
       const wlMap = {}
       ;(wl || []).forEach(p => { wlMap[p.id] = p })
       setWorkloadMap(wlMap)
-      setActuals(acts)
       setLastActivity(lastAct || {})
+      setLoading(false) // show list now — wave 2 data fills in behind the scenes
 
-      // overdue grouped by person
+      const [acts, overdue, stale, allPieces, allTasks] = await wave2
+
+      setActuals(acts)
+
       const odMap = {}
       ;(overdue || []).forEach(t => {
         if (!t.people?.id) return
@@ -388,7 +394,6 @@ export default function TeamPulse() {
       })
       setOverdueByPerson(odMap)
 
-      // stale grouped by person
       const staleMap = {}
       ;(stale || []).forEach(t => {
         if (!t.people?.id) return
@@ -397,7 +402,6 @@ export default function TeamPulse() {
       })
       setStaleByPerson(staleMap)
 
-      // pieces grouped by person with stage info
       const piecesMap = {}
       ;(allPieces || []).forEach(p => {
         if (!p.assigned_to) return
@@ -406,7 +410,6 @@ export default function TeamPulse() {
       })
       setPiecesByPerson(piecesMap)
 
-      // tasks by person (active only) + collaborations
       const tasksMap = {}
       const collabMap = {}
       ;(allTasks || []).filter(t => t.status !== 'done').forEach(t => {
@@ -426,7 +429,6 @@ export default function TeamPulse() {
 
     } catch (err) {
       console.error('TeamPulse load failed:', err)
-    } finally {
       setLoading(false)
     }
   }
