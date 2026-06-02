@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useDivision } from '../contexts/DivisionContext'
 import { useApp } from '../App'
 import { usePermissions } from '../hooks/usePermissions'
+import { getTeamTaskWorkload, getLastActivityPerPerson } from '../lib/supabase'
 import FeedbackButton from './FeedbackButton'
 import NotificationBell from './NotificationBell'
 import CommandPalette from './CommandPalette'
@@ -84,6 +85,7 @@ export default function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system')
+  const [pulseBadge, setPulseBadge] = useState(0)
 
   useEffect(() => {
     if (theme === 'system') {
@@ -115,6 +117,19 @@ export default function Layout() {
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  useEffect(() => {
+    if (!can('admin.access')) return
+    Promise.all([getTeamTaskWorkload(), getLastActivityPerPerson()]).then(([wl, la]) => {
+      const count = (wl || []).filter(p => {
+        const overdue = p.overdue > 0
+        const lastAct = la?.[p.id]
+        const dormant = !lastAct || Date.now() - new Date(lastAct.created_at).getTime() > 3 * 86400000
+        return overdue || dormant
+      }).length
+      setPulseBadge(count)
+    }).catch(() => {})
   }, [])
 
   async function handleSignOut() {
@@ -199,6 +214,11 @@ export default function Layout() {
                     >
                       <item.icon size={16} />
                       {item.label}
+                      {item.to === '/admin/team-pulse' && pulseBadge > 0 && (
+                        <span style={{ marginLeft: 'auto', minWidth: 18, height: 18, borderRadius: 99, background: '#ef4444', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
+                          {pulseBadge}
+                        </span>
+                      )}
                     </NavLink>
                   </li>
                 ))}

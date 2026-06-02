@@ -222,7 +222,7 @@ function PersonDetail({ person, overdue, stale, activeTasks, collabTasks, pieces
 
 // ─── person row ───────────────────────────────────────────────────────────────
 
-function PersonRow({ person, workload, actuals, lastAct, overdue, stale, activeTasks, collabTasks, pieces, weekActivity, expanded, onToggle }) {
+function PersonRow({ person, workload, actuals, lastAct, overdue, stale, activeTasks, collabTasks, pieces, weekActivity, expanded, onToggle, loadingDetail }) {
   const doneThisWeek = actuals?.tasksWeek?.[person.id] || 0
   const doneLastWeek = actuals?.tasksPrevWeek?.[person.id] || 0
   const velocityDelta = doneThisWeek - doneLastWeek
@@ -305,16 +305,18 @@ function PersonRow({ person, workload, actuals, lastAct, overdue, stale, activeT
 
       {/* Expanded detail */}
       {expanded && (
-        <PersonDetail
-          person={person}
-          overdue={overdue}
-          stale={stale}
-          activeTasks={activeTasks}
-          collabTasks={collabTasks}
-          pieces={pieces}
-          weekActivity={weekActivity}
-          actuals={actuals}
-        />
+        loadingDetail
+          ? <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Loading detail…</div>
+          : <PersonDetail
+              person={person}
+              overdue={overdue}
+              stale={stale}
+              activeTasks={activeTasks}
+              collabTasks={collabTasks}
+              pieces={pieces}
+              weekActivity={weekActivity}
+              actuals={actuals}
+            />
       )}
     </div>
   )
@@ -334,6 +336,7 @@ export default function TeamPulse() {
   const [loading, setLoading] = useState(true)
   const [showGuide, setShowGuide] = useState(() => !localStorage.getItem('teamPulseGuideDismissed'))
   const [expandedId, setExpandedId] = useState(null)
+  const [loadingDetail, setLoadingDetail] = useState(false)
   const [sort, setSort] = useState('risk')
   const [filterRole, setFilterRole] = useState('')
 
@@ -359,7 +362,7 @@ export default function TeamPulse() {
     const monthStart = new Date(now); monthStart.setDate(1); monthStart.setHours(0,0,0,0)
 
     try {
-      const [wl, acts, lastAct, overdue, stale, allPieces, allTasks, weekLog] = await Promise.all([
+      const [wl, acts, lastAct, overdue, stale, allPieces, allTasks] = await Promise.all([
         getTeamTaskWorkload(),
         getPersonActuals(weekStart.toISOString(), monthStart.toISOString()),
         getLastActivityPerPerson(),
@@ -367,7 +370,6 @@ export default function TeamPulse() {
         getStaleTasks(),
         getAllAssignedStyles(),
         getTasks(),
-        getAuditLog({ since: weekStart.toISOString(), limit: 1000 }),
       ])
 
       // workload map
@@ -422,14 +424,6 @@ export default function TeamPulse() {
       setTasksByPerson(tasksMap)
       setCollabByPerson(collabMap)
 
-      // activity this week by person
-      const actMap = {}
-      ;(weekLog || []).filter(e => e.person_id && e.entity_type !== 'whatsapp_notification' && e.entity_type !== 'task_attachment').forEach(e => {
-        if (!actMap[e.person_id]) actMap[e.person_id] = []
-        actMap[e.person_id].push(e)
-      })
-      setActivityByPerson(actMap)
-
     } catch (err) {
       console.error('TeamPulse load failed:', err)
     } finally {
@@ -450,6 +444,26 @@ export default function TeamPulse() {
     if (stale > 0) score += stale * 5
     if (doneThisWeek < doneLastWeek) score += 5
     return score
+  }
+
+  async function handleToggle(personId) {
+    if (expandedId === personId) { setExpandedId(null); return }
+    setExpandedId(personId)
+    if (activityByPerson[personId] !== undefined) return // already loaded
+    setLoadingDetail(true)
+    const now = new Date()
+    const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0,0,0,0)
+    try {
+      const log = await getAuditLog({ personId, since: weekStart.toISOString(), limit: 100 })
+      setActivityByPerson(prev => ({
+        ...prev,
+        [personId]: (log || []).filter(e => e.entity_type !== 'whatsapp_notification' && e.entity_type !== 'task_attachment'),
+      }))
+    } catch {
+      setActivityByPerson(prev => ({ ...prev, [personId]: [] }))
+    } finally {
+      setLoadingDetail(false)
+    }
   }
 
   const activePeople = useMemo(() =>
@@ -580,7 +594,8 @@ export default function TeamPulse() {
             pieces={piecesByPerson[person.id] || []}
             weekActivity={activityByPerson[person.id] || []}
             expanded={expandedId === person.id}
-            onToggle={() => setExpandedId(expandedId === person.id ? null : person.id)}
+            onToggle={() => handleToggle(person.id)}
+            loadingDetail={loadingDetail && expandedId === person.id}
           />
         ))
       )}
