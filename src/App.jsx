@@ -37,6 +37,7 @@ const MyWork = lazy(() => import('./pages/MyWork'))
 const RangeDashboard = lazy(() => import('./pages/RangeDashboard'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Targets = lazy(() => import('./pages/Targets'))
+const NotificationAnalytics = lazy(() => import('./pages/NotificationAnalytics'))
 
 export const AppContext = createContext()
 
@@ -154,6 +155,7 @@ function AppRoutes() {
             <Route path="content" element={<ContentCalendar />} />
             <Route path="admin" element={<ProtectedRoute action="admin.access"><AdminDashboard /></ProtectedRoute>} />
             <Route path="admin/emails" element={<ProtectedRoute action="admin.access"><EmailLog /></ProtectedRoute>} />
+            <Route path="admin/notifications" element={<ProtectedRoute action="admin.access"><NotificationAnalytics /></ProtectedRoute>} />
             <Route path="targets" element={<ProtectedRoute action="admin.access"><Targets /></ProtectedRoute>} />
             <Route path="activity" element={<ProtectedRoute action="activity.view"><Activity /></ProtectedRoute>} />
             <Route path="help" element={<Help />} />

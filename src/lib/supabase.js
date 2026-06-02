@@ -1615,10 +1615,10 @@ export async function getTaskSubtaskCounts(taskIds) {
 // TASK METRICS
 // ============================================================
 
-export async function getTaskMetrics() {
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('id, status, due_date')
+export async function getTaskMetrics(divisionId) {
+  let query = supabase.from('tasks').select('id, status, due_date')
+  if (divisionId) query = query.eq('division_id', divisionId)
+  const { data, error } = await query
   if (error) throw error
   const now = new Date().toISOString().slice(0, 10)
   const tasks = data || []
@@ -1927,4 +1927,15 @@ export async function getPersonDrilldown(personId, metric, periodStart) {
     }
     default: return []
   }
+}
+
+export async function getNotificationLogs({ days = 30 } = {}) {
+  const since = new Date(Date.now() - days * 86400000).toISOString()
+  const { data, error } = await supabase
+    .from('notification_logs')
+    .select('*')
+    .gte('sent_at', since)
+    .order('sent_at', { ascending: false })
+  if (error) throw error
+  return data || []
 }
