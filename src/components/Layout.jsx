@@ -11,7 +11,7 @@ import {
   LayoutDashboard, Scissors, Factory, Palette,
   FlaskConical, Users, Settings, LogOut,
   ClipboardList, Clock, HelpCircle, Menu, X, Search, CalendarDays, FileText, Layers, CheckSquare, Shield,
-  Moon, Sun, Bell, Gem, PackageCheck, Sparkles, Briefcase, BarChart3, Target
+  Moon, Sun, Bell, Gem, PackageCheck, Sparkles, Briefcase, BarChart3, Target, Activity
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -66,6 +66,7 @@ const NAV_SECTIONS = [
       { to: '/admin', icon: Shield, label: 'Command Center', requiredAction: 'admin.access' },
       { to: '/targets', icon: Target, label: 'Target Tracking', requiredAction: 'admin.access' },
       { to: '/admin/notifications', icon: Bell, label: 'Notif. Analytics', requiredAction: 'admin.access' },
+      { to: '/admin/team-pulse', icon: Activity, label: 'Team Pulse', requiredAction: 'admin.access' },
       { to: '/team', icon: Users, label: 'Team', requiredAction: 'team.view' },
       { to: '/activity', icon: Clock, label: 'Activity', requiredAction: 'activity.view' },
       { to: '/help', icon: HelpCircle, label: 'Help' },
