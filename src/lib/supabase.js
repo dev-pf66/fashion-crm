@@ -1485,7 +1485,9 @@ export async function getTasks(filters = {}) {
     .select(TASK_SELECT)
     .order('sort_order')
     .order('created_at', { ascending: false })
-  if (filters.division_id) query = query.eq('division_id', filters.division_id)
+  // Include tasks that belong to the selected division OR have no division set
+  // (tasks created via Tina/WhatsApp don't have a division and must show everywhere)
+  if (filters.division_id) query = query.or(`division_id.eq.${filters.division_id},division_id.is.null`)
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.assigned_to) query = query.eq('assigned_to', filters.assigned_to)
   if (filters.priority) query = query.eq('priority', filters.priority)
@@ -1621,7 +1623,7 @@ export async function getTaskSubtaskCounts(taskIds) {
 
 export async function getTaskMetrics(divisionId) {
   let query = supabase.from('tasks').select('id, status, due_date')
-  if (divisionId) query = query.eq('division_id', divisionId)
+  if (divisionId) query = query.or(`division_id.eq.${divisionId},division_id.is.null`)
   const { data, error } = await query
   if (error) throw error
   const now = new Date().toISOString().slice(0, 10)
