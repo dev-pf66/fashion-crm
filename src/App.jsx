@@ -8,6 +8,7 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import ProtectedRoute from './components/ProtectedRoute'
 import OnboardingWizard from './components/OnboardingWizard'
+import ErrorBoundary from './components/ErrorBoundary'
 
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Styles = lazy(() => import('./pages/Styles'))
@@ -130,6 +131,7 @@ function AppRoutes() {
       <ToastProvider>
       <DivisionProvider>
         <OnboardingGate />
+        <ErrorBoundary>
         <Suspense fallback={<div className="loading-container"><div className="loading-spinner" /></div>}>
         <Routes>
           <Route path="/" element={<Layout />}>
@@ -167,6 +169,7 @@ function AppRoutes() {
           <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
         </Suspense>
+        </ErrorBoundary>
       </DivisionProvider>
       </ToastProvider>
     </AppContext.Provider>

@@ -39,8 +39,8 @@ export default function Dashboard() {
         getStyles(currentDivision.id),
         getUpcomingDeadlines(currentDivision.id, currentPerson),
         getOverdueItems(currentDivision.id),
-        getTaskMetrics(),
-        getTasks().catch(() => []),
+        getTaskMetrics(currentDivision.id),
+        getTasks({ division_id: currentDivision.id }).catch(() => []),
       ])
       setStats(statsData)
       setRecentStyles(stylesData.slice(0, 5))

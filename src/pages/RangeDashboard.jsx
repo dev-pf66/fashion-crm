@@ -336,49 +336,51 @@ function ConsolidatedMatrix({ styles, categories, priceBrackets, cellTargets, ca
           </tr>
         </thead>
         <tbody>
-          {activeCatRows.map(row => {
-            const rowTargetSum = activeBracketCols.reduce(
-              (s, col) => s + cellTarget(row.catKey, col.bracketKey),
-              0
-            )
-            return (
-              <tr key={row.catKey}>
-                <th className="rd-matrix-rowlabel">{row.display}</th>
-                {activeBracketCols.map(col => (
-                  <TargetCell
-                    key={col.bracketKey}
-                    count={cellCount(row.catKey, col.bracketKey)}
-                    target={cellTarget(row.catKey, col.bracketKey)}
-                    heatBg={cellHeat(cellCount(row.catKey, col.bracketKey))}
-                    canEdit={canEdit}
-                    onSave={value => onSaveTarget(row.display, col.display, value)}
-                  />
-                ))}
-                <td className="rd-matrix-cell rd-matrix-total">
-                  <strong>{rowTotal(row.catKey)}</strong>
-                  {rowTargetSum > 0 && <span className="rd-cell-target-label"> / {rowTargetSum}</span>}
-                </td>
-              </tr>
-            )
-          })}
+          {activeCatRows.map(row => (
+            <tr key={row.catKey}>
+              <th className="rd-matrix-rowlabel">{row.display}</th>
+              {activeBracketCols.map(col => (
+                <TargetCell
+                  key={col.bracketKey}
+                  count={cellCount(row.catKey, col.bracketKey)}
+                  target={cellTarget(row.catKey, col.bracketKey)}
+                  heatBg={cellHeat(cellCount(row.catKey, col.bracketKey))}
+                  canEdit={canEdit}
+                  onSave={value => onSaveTarget(row.display, col.display, value)}
+                />
+              ))}
+              <TargetCell
+                count={rowTotal(row.catKey)}
+                target={cellTarget(row.catKey, '_total')}
+                heatBg={undefined}
+                canEdit={canEdit}
+                isTotal
+                onSave={value => onSaveTarget(row.display, '_total', value)}
+              />
+            </tr>
+          ))}
           <tr className="rd-matrix-totalrow">
             <th className="rd-matrix-rowlabel">Total</th>
-            {activeBracketCols.map(col => {
-              const colTargetSum = activeCatRows.reduce(
-                (s, row) => s + cellTarget(row.catKey, col.bracketKey),
-                0
-              )
-              return (
-                <td key={col.bracketKey} className="rd-matrix-cell">
-                  <strong>{colTotal(col.bracketKey)}</strong>
-                  {colTargetSum > 0 && <span className="rd-cell-target-label"> / {colTargetSum}</span>}
-                </td>
-              )
-            })}
-            <td className="rd-matrix-cell rd-matrix-grandtotal">
-              <strong>{matrixTotal}</strong>
-              {grandTarget > 0 && <span className="rd-cell-target-label"> / {grandTarget}</span>}
-            </td>
+            {activeBracketCols.map(col => (
+              <TargetCell
+                key={col.bracketKey}
+                count={colTotal(col.bracketKey)}
+                target={cellTarget('_total', col.bracketKey)}
+                heatBg={undefined}
+                canEdit={canEdit}
+                isTotal
+                onSave={value => onSaveTarget('_total', col.display, value)}
+              />
+            ))}
+            <TargetCell
+              count={matrixTotal}
+              target={cellTarget('_total', '_total')}
+              heatBg={undefined}
+              canEdit={canEdit}
+              isTotal
+              isGrand
+              onSave={value => onSaveTarget('_total', '_total', value)}
+            />
           </tr>
         </tbody>
       </table>
@@ -386,7 +388,7 @@ function ConsolidatedMatrix({ styles, categories, priceBrackets, cellTargets, ca
   )
 }
 
-function TargetCell({ count, target, heatBg, canEdit, onSave }) {
+function TargetCell({ count, target, heatBg, canEdit, onSave, isTotal = false, isGrand = false }) {
   const [editing, setEditing] = useState(false)
   const [val, setVal] = useState(String(target || ''))
   const committedRef = useRef(false)
@@ -418,9 +420,16 @@ function TargetCell({ count, target, heatBg, canEdit, onSave }) {
     setEditing(false)
   }
 
+  const tdClass = [
+    'rd-matrix-cell',
+    isGrand ? 'rd-matrix-grandtotal' : isTotal ? 'rd-matrix-total' : '',
+    canEdit ? 'rd-matrix-cell-editable' : '',
+    editing ? 'rd-matrix-cell-editing' : '',
+  ].filter(Boolean).join(' ')
+
   if (editing) {
     return (
-      <td className="rd-matrix-cell rd-matrix-cell-editing" style={{ background: heatBg }}>
+      <td className={tdClass} style={{ background: heatBg }}>
         <input
           type="number"
           min="0"
@@ -440,7 +449,7 @@ function TargetCell({ count, target, heatBg, canEdit, onSave }) {
 
   return (
     <td
-      className={`rd-matrix-cell ${canEdit ? 'rd-matrix-cell-editable' : ''}`}
+      className={tdClass}
       style={{ background: heatBg }}
       onClick={canEdit ? startEdit : undefined}
       role={canEdit ? 'button' : undefined}
@@ -448,7 +457,7 @@ function TargetCell({ count, target, heatBg, canEdit, onSave }) {
       onKeyDown={canEdit ? e => { if (e.key === 'Enter') startEdit() } : undefined}
     >
       <div className="rd-cell-count">
-        {count}
+        {isTotal || isGrand ? <strong>{count}</strong> : count}
         {target > 0 && <span className="rd-cell-target-label"> / {target}</span>}
         {canEdit && target === 0 && <span className="rd-cell-target-add">+</span>}
       </div>

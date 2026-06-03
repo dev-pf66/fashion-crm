@@ -52,13 +52,17 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+            // Only cache public (non-signed) storage objects. Signed URLs
+            // include a token parameter and expire in 1 hour — caching them
+            // long-term causes 403s after expiry. Private-bucket requests
+            // (task-media, etc.) must go to the network every time.
+            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\//i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'supabase-storage',
               expiration: {
                 maxEntries: 500,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days (down from 30)
               },
             },
           },
