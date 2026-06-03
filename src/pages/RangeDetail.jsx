@@ -435,8 +435,10 @@ export default function RangeDetail() {
   async function handleStatusChange(styleId, status) {
     if (!can('range_plan.edit')) return
     try {
-      await updateRangeStyle(styleId, { status })
-      setStyles(prev => prev.map(s => s.id === styleId ? { ...s, status } : s))
+      const updates = { status }
+      if (status === 'rejected') updates.production_stage_id = 25 // Cancelled stage
+      await updateRangeStyle(styleId, updates)
+      setStyles(prev => prev.map(s => s.id === styleId ? { ...s, ...updates } : s))
     } catch (err) {
       toast.error('Failed to update status')
     }
@@ -537,8 +539,10 @@ export default function RangeDetail() {
   async function handleBulkStatusChange(status) {
     if (!can('range_plan.edit')) return
     try {
-      await Promise.all([...selectedIds].map(id => updateRangeStyle(id, { status })))
-      setStyles(prev => prev.map(s => selectedIds.has(s.id) ? { ...s, status } : s))
+      const updates = { status }
+      if (status === 'rejected') updates.production_stage_id = 25 // Cancelled stage
+      await Promise.all([...selectedIds].map(id => updateRangeStyle(id, updates)))
+      setStyles(prev => prev.map(s => selectedIds.has(s.id) ? { ...s, ...updates } : s))
       toast.success(`${selectedIds.size} styles updated`)
       setSelectedIds(new Set())
     } catch (err) {
