@@ -65,45 +65,30 @@ const ROLE_INFO = {
   },
 }
 
-// 3 priority pages per role. Each page must be a route the role can actually reach.
-const ROLE_STARTING_POINTS = {
-  admin: [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard', desc: 'Your division at a glance' },
-    { to: '/team', icon: Users, label: 'Team', desc: 'People, roles, and access' },
-    { to: '/activity', icon: ActivityIcon, label: 'Activity', desc: 'Audit every change' },
-  ],
-  admin_viewer: [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard', desc: 'Your division at a glance' },
-    { to: '/activity', icon: ActivityIcon, label: 'Activity', desc: 'Everything happening across the CRM' },
-    { to: '/range-planning', icon: Layers, label: 'Range Plan', desc: 'Browse the full collection' },
-  ],
-  merchandiser: [
-    { to: '/tasks', icon: CheckSquare, label: 'Tasks', desc: 'What you owe today' },
-    { to: '/range-planning', icon: Layers, label: 'Range Plan', desc: 'Plan your collection' },
-    { to: '/styles', icon: Scissors, label: 'Styles', desc: 'Every piece in development' },
-  ],
-  social_media: [
-    { to: '/content', icon: Sparkles, label: 'Content Hub', desc: 'Pieces needing shoots or edits' },
-    { to: '/tasks', icon: CheckSquare, label: 'Tasks', desc: 'Your assigned work' },
-    { to: '/calendar', icon: CalendarDays, label: 'Calendar', desc: 'Shoot schedule and deadlines' },
-  ],
-  design: [
-    { to: '/tasks', icon: CheckSquare, label: 'Tasks', desc: 'Your assigned work' },
-    { to: '/styles', icon: Scissors, label: 'Styles', desc: 'Every piece in development' },
-    { to: '/samples', icon: FlaskConical, label: 'Samples', desc: 'Rounds to review' },
-  ],
-  marketing: [
-    { to: '/content', icon: Sparkles, label: 'Content Hub', desc: 'Content pipeline status' },
-    { to: '/calendar', icon: CalendarDays, label: 'Calendar', desc: 'Campaign deadlines' },
-    { to: '/tasks', icon: CheckSquare, label: 'Tasks', desc: 'Your assigned work' },
-  ],
-  viewer: [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard', desc: 'Division overview' },
-    { to: '/range-planning', icon: Layers, label: 'Range Plan', desc: 'Current collection' },
-    { to: '/tasks', icon: CheckSquare, label: 'Tasks', desc: 'Your assigned work' },
-  ],
+// All pages that can appear as starting points, ordered by priority.
+// Each entry declares which permission gates it — the function below
+// picks the first 3 the role can actually access.
+const ALL_PAGES = [
+  { to: '/',              icon: LayoutDashboard, label: 'Dashboard',    desc: 'Your division at a glance',              permission: 'dashboard.view' },
+  { to: '/tasks',         icon: CheckSquare,     label: 'Tasks',        desc: 'Your assigned work',                      permission: 'tasks.view' },
+  { to: '/content',       icon: Sparkles,        label: 'Content Hub',  desc: 'Pieces needing shoots or edits',          permission: 'content.view' },
+  { to: '/range-planning',icon: Layers,          label: 'Range Plan',   desc: 'Plan and browse the collection',          permission: 'range_plan.view' },
+  { to: '/styles',        icon: Scissors,        label: 'Styles',       desc: 'Every piece in development',              permission: 'styles.view' },
+  { to: '/samples',       icon: FlaskConical,    label: 'Samples',      desc: 'Rounds to review',                        permission: 'samples.view' },
+  { to: '/activity',      icon: ActivityIcon,    label: 'Activity',     desc: 'Everything happening across the CRM',     permission: 'activity.view' },
+  { to: '/team',          icon: Users,           label: 'Team',         desc: 'People, roles, and access',               permission: 'team.view' },
+  { to: '/calendar',      icon: CalendarDays,    label: 'Calendar',     desc: 'Deadlines and shoot schedule',            permission: 'calendar.view' },
+  { to: '/production',    icon: PackageCheck,    label: 'Production',   desc: 'Track pieces through production',         permission: 'production.view' },
+  { to: '/suppliers',     icon: Truck,           label: 'Suppliers',    desc: 'Your supplier network',                   permission: 'suppliers.view' },
+]
+
+// Derive the 3 best starting pages from the role's actual permissions.
+// Works for any role — existing or future — with no code changes needed.
+function getStartingPoints(permissions = []) {
+  const permSet = new Set(permissions)
+  const accessible = ALL_PAGES.filter(p => permSet.has(p.permission))
+  return accessible.slice(0, 3)
 }
-const DEFAULT_STARTING_POINTS = ROLE_STARTING_POINTS.viewer
 
 // Options for Step 3 ("About you")
 const WORK_RHYTHM = [
@@ -143,7 +128,7 @@ export default function OnboardingWizard() {
 
   const firstName = currentPerson?.name?.split(' ')[0] || 'there'
   const roleInfo = role?.name ? (ROLE_INFO[role.name] || null) : null
-  const startingPoints = (role?.name && ROLE_STARTING_POINTS[role.name]) || DEFAULT_STARTING_POINTS
+  const startingPoints = getStartingPoints(role?.permissions || [])
   const RoleIcon = roleInfo?.icon || Shield
 
   const totalSteps = 4
@@ -379,8 +364,8 @@ export default function OnboardingWizard() {
                 <label>Home page</label>
                 <p className="onboarding-q-desc">Where should we take you after login?</p>
                 <div className="onboarding-chip-row">
-                  {(startingPoints.some(sp => sp.to === '/')
-                    ? startingPoints
+                  {((startingPoints.length === 0 || startingPoints.some(sp => sp.to === '/'))
+                    ? (startingPoints.length > 0 ? startingPoints : [{ to: '/', icon: LayoutDashboard, label: 'Dashboard' }])
                     : [{ to: '/', icon: LayoutDashboard, label: 'Dashboard' }, ...startingPoints]
                   ).map(sp => {
                     const selected = prefs.home_page === sp.to
