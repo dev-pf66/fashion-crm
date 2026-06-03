@@ -63,6 +63,7 @@ export default function MyWork() {
   const [pushing, setPushing] = useState(false)
   const [filterSearch, setFilterSearch] = useState('')
   const [filterRange, setFilterRange] = useState('')
+  const [filterDivision, setFilterDivision] = useState('')
   const [selectedPerson, setSelectedPerson] = useState('')
 
   useEffect(() => {
