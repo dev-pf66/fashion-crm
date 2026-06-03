@@ -38,7 +38,7 @@ export default class ErrorBoundary extends Component {
           >
             Refresh page
           </button>
-          {import.meta.env.DEV && this.state.error && (
+          {this.state.error && (
             <pre style={{
               background: '#fef2f2', border: '1px solid #fecaca',
               borderRadius: '8px', padding: '16px', fontSize: '12px',
