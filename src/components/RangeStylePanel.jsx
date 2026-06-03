@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
-import { getRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets, getStyleStatuses, assignStyleTo, sendAssignmentEmail } from '../lib/supabase'
+import { getRangeStyle, createRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets, getStyleStatuses, assignStyleTo, sendAssignmentEmail } from '../lib/supabase'
 import { usePermissions } from '../hooks/usePermissions'
 import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
@@ -8,7 +8,7 @@ import { thumbUrl } from '../lib/imgUrl'
 import { useApp } from '../App'
 import CommentSection from './CommentSection'
 import Modal from './Modal'
-import { X, Upload, Trash2, Star, FileText, Image as ImageIcon, Loader, PackageCheck, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, Upload, Trash2, Copy, Star, FileText, Image as ImageIcon, Loader, PackageCheck, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const FALLBACK_STATUSES = [
   { value: 'concept', label: 'Concept' },
@@ -213,6 +213,26 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
       onDelete()
     } catch (err) {
       toast.error('Failed to delete style')
+    }
+  }
+
+  async function handleDuplicateStyle() {
+    if (!style) return
+    try {
+      const { id, created_at, updated_at, thumbnail_url, pushed_to_production_at,
+              production_stage_id, range_style_files, suppliers, assignee, stage, ...fields } = style
+      await createRangeStyle({
+        ...fields,
+        name: `${style.name} (Copy)`,
+        status: 'concept',
+        production_stage_id: null,
+        thumbnail_url: null,
+        pushed_to_production_at: null,
+      })
+      toast.success('Style duplicated')
+      onUpdate()
+    } catch (err) {
+      toast.error('Failed to duplicate style')
     }
   }
 
@@ -478,9 +498,12 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               <CommentSection entityType="range_style" entityId={styleId} rangeId={rangeId} />
             </div>
 
-            {/* Delete */}
+            {/* Duplicate / Delete */}
             {canEdit && (
-              <div className="rp-panel-danger">
+              <div className="rp-panel-danger" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <button className="btn btn-sm" style={{ color: 'var(--gray-600)' }} onClick={handleDuplicateStyle}>
+                  <Copy size={14} /> Duplicate
+                </button>
                 <button className="btn btn-sm" style={{ color: 'var(--danger)' }} onClick={handleDeleteStyle}>
                   <Trash2 size={14} /> Delete Style
                 </button>
