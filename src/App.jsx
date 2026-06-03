@@ -130,8 +130,8 @@ function AppRoutes() {
     <AppContext.Provider value={{ currentPerson, people, setPeople, refreshPeople }}>
       <ToastProvider>
       <DivisionProvider>
-        <OnboardingGate />
         <ErrorBoundary>
+        <OnboardingGate />
         <Suspense fallback={<div className="loading-container"><div className="loading-spinner" /></div>}>
         <Routes>
           <Route path="/" element={<Layout />}>

@@ -21,6 +21,13 @@ const ROLE_INFO = {
     can: ['Manage divisions, teams, and roles', 'See everything across every division', 'Invite users and assign roles', 'Run reports and audit activity'],
     cant: [],
   },
+  admin_viewer: {
+    icon: Shield,
+    label: 'Admin Viewer',
+    tagline: 'You have read-only visibility across the entire CRM.',
+    can: ['See every division, range, and style', 'View all activity and task boards', 'Access the full team roster', 'Browse production and sample rounds'],
+    cant: ['Create or edit anything', 'Manage team roles or invitations'],
+  },
   merchandiser: {
     icon: Truck,
     label: 'Merchandiser',
@@ -65,6 +72,11 @@ const ROLE_STARTING_POINTS = {
     { to: '/team', icon: Users, label: 'Team', desc: 'People, roles, and access' },
     { to: '/activity', icon: ActivityIcon, label: 'Activity', desc: 'Audit every change' },
   ],
+  admin_viewer: [
+    { to: '/', icon: LayoutDashboard, label: 'Dashboard', desc: 'Your division at a glance' },
+    { to: '/activity', icon: ActivityIcon, label: 'Activity', desc: 'Everything happening across the CRM' },
+    { to: '/range-planning', icon: Layers, label: 'Range Plan', desc: 'Browse the full collection' },
+  ],
   merchandiser: [
     { to: '/tasks', icon: CheckSquare, label: 'Tasks', desc: 'What you owe today' },
     { to: '/range-planning', icon: Layers, label: 'Range Plan', desc: 'Plan your collection' },
@@ -91,6 +103,7 @@ const ROLE_STARTING_POINTS = {
     { to: '/tasks', icon: CheckSquare, label: 'Tasks', desc: 'Your assigned work' },
   ],
 }
+const DEFAULT_STARTING_POINTS = ROLE_STARTING_POINTS.viewer
 
 // Options for Step 3 ("About you")
 const WORK_RHYTHM = [
@@ -129,17 +142,12 @@ export default function OnboardingWizard() {
   })
 
   const firstName = currentPerson?.name?.split(' ')[0] || 'there'
-  const roleInfo = role?.name ? ROLE_INFO[role.name] : null
-  const startingPoints = role?.name ? ROLE_STARTING_POINTS[role.name] : ROLE_STARTING_POINTS.viewer
+  const roleInfo = role?.name ? (ROLE_INFO[role.name] || null) : null
+  const startingPoints = (role?.name && ROLE_STARTING_POINTS[role.name]) || DEFAULT_STARTING_POINTS
   const RoleIcon = roleInfo?.icon || Shield
 
   const totalSteps = 4
-  const canGoNext = (() => {
-    if (step === 3) {
-      return prefs.work_rhythm && prefs.usage_frequency && prefs.tech_familiarity
-    }
-    return true
-  })()
+  const canGoNext = true  // all steps are optional — never block progress
 
   function updatePref(key, value) {
     setPrefs(p => ({ ...p, [key]: value }))
