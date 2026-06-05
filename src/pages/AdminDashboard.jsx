@@ -626,13 +626,16 @@ function UsersTab({ people, toast, refreshPeople, currentPerson }) {
   const [resetModal, setResetModal] = useState(null)
   const [divisionsModal, setDivisionsModal] = useState(null)
   const [exitModal, setExitModal] = useState(false)
+  const [roleModal, setRoleModal] = useState(null)
   const [authUsers, setAuthUsers] = useState([])
   const [divisions, setDivisions] = useState([])
+  const [roles, setRoles] = useState([])
   const [loadingAuth, setLoadingAuth] = useState(true)
 
   useEffect(() => {
     loadAuthUsers()
     getDivisions().then(setDivisions).catch(() => setDivisions([]))
+    getRoles().then(setRoles).catch(() => setRoles([]))
   }, [])
 
   async function loadAuthUsers() {
@@ -696,11 +699,19 @@ function UsersTab({ people, toast, refreshPeople, currentPerson }) {
                 <td style={{ fontWeight: 500 }}>{user.name}</td>
                 <td className="text-muted">{user.email}</td>
                 <td>
-                  {user.roles?.name ? (
-                    <span className={`role-badge role-${user.roles.name}`}>{user.roles.name}</span>
-                  ) : (
-                    <span className="text-muted">No role</span>
-                  )}
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setRoleModal(user)}
+                    title="Change role"
+                    style={{ padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    {user.roles?.name ? (
+                      <span className={`role-badge role-${user.roles.name}`}>{user.roles.name}</span>
+                    ) : (
+                      <span className="text-muted text-sm">No role</span>
+                    )}
+                    <Pencil size={12} style={{ opacity: 0.5 }} />
+                  </button>
                 </td>
                 <td>
                   <button
@@ -852,6 +863,20 @@ function UsersTab({ people, toast, refreshPeople, currentPerson }) {
             setExitModal(false)
             refreshPeople()
             toast.success('Exit procedure completed')
+          }}
+          toast={toast}
+        />
+      )}
+
+      {roleModal && (
+        <EditRoleModal
+          user={roleModal}
+          roles={roles}
+          onClose={() => setRoleModal(null)}
+          onSaved={() => {
+            setRoleModal(null)
+            refreshPeople()
+            toast.success('Role updated')
           }}
           toast={toast}
         />
@@ -1134,6 +1159,61 @@ function ExitProcedureModal({ people, onClose, onDone, toast }) {
           </div>
         </>
       )}
+    </Modal>
+  )
+}
+
+function EditRoleModal({ user, roles, onClose, onSaved, toast }) {
+  const [picked, setPicked] = useState(user.role_id ? String(user.role_id) : '')
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updatePerson(user.id, { role_id: picked ? parseInt(picked) : null })
+      onSaved()
+    } catch (err) {
+      toast.error(err.message || 'Failed to update role')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const selected = roles.find(r => String(r.id) === picked)
+
+  return (
+    <Modal title={`Change role: ${user.name}`} onClose={onClose}>
+      <p className="text-muted text-sm" style={{ marginBottom: '0.75rem' }}>
+        Pick the permission role for this user. Changes take effect on their next page load.
+      </p>
+      <div className="form-group">
+        <label>Role</label>
+        <select value={picked} onChange={e => setPicked(e.target.value)} style={{ width: '100%' }}>
+          <option value="">No role</option>
+          {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+        </select>
+      </div>
+      {selected && (
+        <div className="form-group">
+          <label className="text-muted text-sm">Permissions in this role ({selected.permissions?.length || 0})</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxHeight: '30vh', overflowY: 'auto' }}>
+            {(selected.permissions || []).map(p => (
+              <span key={p} className="badge" style={{ background: 'var(--gray-100)', color: 'var(--gray-600)', fontSize: '0.6875rem' }}>{p}</span>
+            ))}
+          </div>
+          {selected.division_codes && selected.division_codes.length > 0 && (
+            <div style={{ marginTop: 8, fontSize: '0.75rem', color: 'var(--gray-500)' }}>
+              Locked to divisions: {selected.division_codes.join(', ')}
+            </div>
+          )}
+        </div>
+      )}
+      <div className="form-actions">
+        <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+        <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
     </Modal>
   )
 }
