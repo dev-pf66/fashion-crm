@@ -48,7 +48,12 @@ export default function ProductionBoard() {
   const [splitModal, setSplitModal] = useState(null)
   const [assigneeModal, setAssigneeModal] = useState(null)
 
-  useEffect(() => { loadData() }, [currentDivision])
+  useEffect(() => {
+    loadData()
+    const onFocus = () => loadData()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [currentDivision])
 
   async function loadData() {
     setLoading(true)

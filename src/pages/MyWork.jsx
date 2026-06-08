@@ -68,6 +68,9 @@ export default function MyWork() {
 
   useEffect(() => {
     loadData()
+    const onFocus = () => loadData()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
   }, [currentPerson?.id, selectedPerson, currentDivision])
 
   async function loadData() {
