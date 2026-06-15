@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
-import { getRangeStyle, createRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets, getStyleStatuses, assignStyleTo, sendAssignmentEmail } from '../lib/supabase'
+import { getRangeStyle, createRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets, getStyleStatuses, assignStyleTo, sendAssignmentEmail, getRanges } from '../lib/supabase'
 import { usePermissions } from '../hooks/usePermissions'
 import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
@@ -8,7 +8,7 @@ import { thumbUrl } from '../lib/imgUrl'
 import { useApp } from '../App'
 import CommentSection from './CommentSection'
 import Modal from './Modal'
-import { X, Upload, Trash2, Copy, Star, FileText, Image as ImageIcon, Loader, PackageCheck, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, Upload, Trash2, Copy, Star, FileText, Image as ImageIcon, Loader, PackageCheck, ChevronLeft, ChevronRight, ArrowRightLeft } from 'lucide-react'
 
 const FALLBACK_STATUSES = [
   { value: 'concept', label: 'Concept' },
@@ -39,6 +39,8 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
   const [priceBrackets, setPriceBrackets] = useState([])
   const [statuses, setStatuses] = useState(FALLBACK_STATUSES)
   const [showProductionModal, setShowProductionModal] = useState(false)
+  const [showMoveModal, setShowMoveModal] = useState(false)
+  const [availableRanges, setAvailableRanges] = useState([])
   const [lightboxIndex, setLightboxIndex] = useState(null)
 
   const imageFiles = files.filter(f => f.file_type && f.file_type.startsWith('image/'))
@@ -219,20 +221,49 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
   async function handleDuplicateStyle() {
     if (!style) return
     try {
-      const { id, created_at, updated_at, thumbnail_url, pushed_to_production_at,
+      const { id, created_at, updated_at, pushed_to_production_at,
               production_stage_id, range_style_files, suppliers, assignee, stage, ...fields } = style
-      await createRangeStyle({
+      const newStyle = await createRangeStyle({
         ...fields,
         name: `${style.name} (Copy)`,
         status: 'concept',
         production_stage_id: null,
-        thumbnail_url: null,
         pushed_to_production_at: null,
       })
-      toast.success('Style duplicated')
+      // Copy file records to the new style
+      if (newStyle?.id && files.length > 0) {
+        await Promise.all(files.map(f => createRangeStyleFile({
+          style_id: newStyle.id,
+          file_url: f.file_url,
+          file_name: f.file_name,
+          file_type: f.file_type,
+        })))
+      }
+      toast.success('Style duplicated with images')
       onUpdate()
     } catch (err) {
       toast.error('Failed to duplicate style')
+    }
+  }
+
+  async function handleOpenMoveModal() {
+    try {
+      const ranges = await getRanges()
+      setAvailableRanges((ranges || []).filter(r => String(r.id) !== String(rangeId)))
+      setShowMoveModal(true)
+    } catch (err) {
+      toast.error('Failed to load ranges')
+    }
+  }
+
+  async function handleMoveToRange(targetRangeId) {
+    try {
+      await updateRangeStyle(styleId, { range_id: parseInt(targetRangeId) })
+      toast.success(`"${style?.name}" moved to new range`)
+      setShowMoveModal(false)
+      onDelete()
+    } catch (err) {
+      toast.error('Failed to move style')
     }
   }
 
@@ -251,6 +282,13 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
           <div className="loading-container"><div className="loading-spinner" /></div>
         ) : (
           <div className="rp-panel-body">
+            <button
+              className="btn btn-secondary"
+              style={{ width: '100%', marginBottom: '1.25rem', justifyContent: 'center', display: 'flex' }}
+              onClick={handleOpenMoveModal}
+            >
+              <ArrowRightLeft size={15} /> Move to Range
+            </button>
             {/* Form fields */}
             <fieldset disabled={!canEdit} style={{ border: 'none', padding: 0, margin: 0, minWidth: 0 }}>
             <div className="form-group">
@@ -498,13 +536,16 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               <CommentSection entityType="range_style" entityId={styleId} rangeId={rangeId} />
             </div>
 
-            {/* Duplicate / Delete */}
+            {/* Duplicate / Move / Delete */}
             {canEdit && (
-              <div className="rp-panel-danger" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <button className="btn btn-sm" style={{ color: 'var(--gray-600)' }} onClick={handleDuplicateStyle}>
+              <div className="rp-panel-danger" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button className="btn btn-secondary btn-sm" onClick={handleDuplicateStyle}>
                   <Copy size={14} /> Duplicate
                 </button>
-                <button className="btn btn-sm" style={{ color: 'var(--danger)' }} onClick={handleDeleteStyle}>
+                <button className="btn btn-secondary btn-sm" onClick={handleOpenMoveModal}>
+                  <ArrowRightLeft size={14} /> Move to Range
+                </button>
+                <button className="btn btn-sm" style={{ color: 'var(--danger)', border: '1px solid var(--danger)', borderRadius: '6px', padding: '0.35rem 0.75rem' }} onClick={handleDeleteStyle}>
                   <Trash2 size={14} /> Delete Style
                 </button>
               </div>
@@ -552,6 +593,15 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
             </div>
           )}
         </div>
+      )}
+
+      {showMoveModal && (
+        <MoveToRangeModal
+          styleName={style?.name}
+          availableRanges={availableRanges}
+          onClose={() => setShowMoveModal(false)}
+          onMove={handleMoveToRange}
+        />
       )}
 
       {showProductionModal && (
@@ -717,6 +767,49 @@ function PushToProductionModal({ styleName, currentQty, people, currentPerson, o
             disabled={submitting || !quantity}
           >
             {submitting ? 'Pushing...' : 'Push to Production'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+function MoveToRangeModal({ styleName, availableRanges, onClose, onMove }) {
+  const [targetRangeId, setTargetRangeId] = useState('')
+  const [moving, setMoving] = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!targetRangeId) return
+    setMoving(true)
+    await onMove(targetRangeId)
+    setMoving(false)
+  }
+
+  return (
+    <Modal title={`Move "${styleName}" to Range`} onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label>Destination Range</label>
+          {availableRanges.length === 0 ? (
+            <p className="text-muted" style={{ fontSize: '0.875rem', margin: '0.5rem 0' }}>No other ranges available.</p>
+          ) : (
+            <select value={targetRangeId} onChange={e => setTargetRangeId(e.target.value)} required autoFocus>
+              <option value="">Choose a range...</option>
+              {availableRanges.map(r => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+        <div className="form-actions">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={moving || !targetRangeId}
+          >
+            {moving ? 'Moving...' : 'Move Style'}
           </button>
         </div>
       </form>

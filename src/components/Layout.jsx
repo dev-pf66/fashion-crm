@@ -234,7 +234,6 @@ export default function Layout() {
               <div className="sidebar-user-name">{currentPerson?.name || 'User'}</div>
               <div className="sidebar-user-email">{user?.email}</div>
             </div>
-            <NotificationBell />
             <button className="theme-toggle" onClick={toggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
               {isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>

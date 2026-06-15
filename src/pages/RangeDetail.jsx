@@ -9,7 +9,7 @@ import {
   getRangeStyles, createRangeStyle, updateRangeStyle, updateRangeStyleOrder, deleteRangeStyle,
   createRangeStyleFile,
   getTasksForRange, getTaskSubtaskCounts,
-  getPriceBrackets, bulkAssignStyles, sendAssignmentEmail,
+  getPriceBrackets, bulkAssignStyles, sendAssignmentEmail, getRanges,
 } from '../lib/supabase'
 import { usePermissions } from '../hooks/usePermissions'
 import { uploadRangeStyleFile } from '../lib/storage'
@@ -115,10 +115,21 @@ export default function RangeDetail() {
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [priceBrackets, setPriceBrackets] = useState([])
   const [collapsedSilhouettes, setCollapsedSilhouettes] = useState(new Set())
+  const [availableRanges, setAvailableRanges] = useState([])
+  const [rangesLoaded, setRangesLoaded] = useState(false)
 
   useEffect(() => {
     getPriceBrackets().then(setPriceBrackets).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (selectedIds.size > 0 && !rangesLoaded) {
+      getRanges().then(r => {
+        setAvailableRanges((r || []).filter(x => String(x.id) !== String(id)))
+        setRangesLoaded(true)
+      }).catch(() => {})
+    }
+  }, [selectedIds.size, rangesLoaded, id])
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)')
@@ -581,6 +592,19 @@ export default function RangeDetail() {
     }
   }
 
+  async function handleBulkMove(targetRangeId) {
+    if (!can('range_plan.edit')) return
+    try {
+      await Promise.all([...selectedIds].map(sid => updateRangeStyle(sid, { range_id: parseInt(targetRangeId) })))
+      const target = availableRanges.find(r => String(r.id) === String(targetRangeId))
+      setStyles(prev => prev.filter(s => !selectedIds.has(s.id)))
+      toast.success(`${selectedIds.size} style${selectedIds.size !== 1 ? 's' : ''} moved to ${target?.name || 'range'}`)
+      setSelectedIds(new Set())
+    } catch (err) {
+      toast.error('Failed to move styles')
+    }
+  }
+
   if (loading) return <KanbanSkeleton columns={5} />
   if (!range) return <div className="card"><div className="empty-state"><h3>Range not found</h3></div></div>
 
@@ -794,6 +818,18 @@ export default function RangeDetail() {
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
+          {availableRanges.length > 0 && (
+            <select
+              className="btn btn-sm"
+              defaultValue=""
+              onChange={e => { if (e.target.value) { handleBulkMove(e.target.value); e.target.value = '' } }}
+            >
+              <option value="" disabled>Move to range...</option>
+              {availableRanges.map(r => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
+          )}
           <button className="btn btn-danger btn-sm" onClick={handleBulkDelete}>
             <Trash2 size={14} /> Delete
           </button>

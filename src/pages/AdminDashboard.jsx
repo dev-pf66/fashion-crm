@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
 import { getRangeProgress, getTeamTaskWorkload, getOverdueTasks, getStaleTasks, flagStaleTasks, getTaskMetrics, getTasks, getPersonActuals, getAllAssignedStyles } from '../lib/supabase'
@@ -41,11 +41,13 @@ export default function AdminDashboard() {
   const { currentPerson, people, refreshPeople } = useApp()
   const [activeTab, setActiveTab] = useState('ranges')
   const [loading, setLoading] = useState(true)
+  const [taskLoading, setTaskLoading] = useState(false)
+  const tasksLoadedRef = useRef(false)
 
-  // Range data
+  // Range data (loaded on mount for default tab)
   const [rangeData, setRangeData] = useState([])
 
-  // Task data
+  // Task data (loaded lazily on first Tasks tab visit)
   const [taskMetrics, setTaskMetrics] = useState(null)
   const [workload, setWorkload] = useState([])
   const [overdueTasks, setOverdueTasks] = useState([])
@@ -56,18 +58,32 @@ export default function AdminDashboard() {
   const [piecesMap, setPiecesMap] = useState({})
 
   useEffect(() => {
-    loadData()
+    loadRangeData()
   }, [])
 
-  async function loadData() {
+  async function loadRangeData() {
     setLoading(true)
+    try {
+      const ranges = await getRangeProgress()
+      setRangeData(ranges || [])
+    } catch (err) {
+      console.error('Failed to load range data:', err)
+      toast.error('Failed to load command center data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function loadTaskData() {
+    if (tasksLoadedRef.current) return
+    tasksLoadedRef.current = true
+    setTaskLoading(true)
     try {
       const now = new Date()
       const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0,0,0,0)
       const monthStart = new Date(now); monthStart.setDate(1); monthStart.setHours(0,0,0,0)
 
-      const [ranges, metrics, team, overdue, stale, allTasks, acts, lastAct, allPieces] = await Promise.all([
-        getRangeProgress(),
+      const [metrics, team, overdue, stale, allTasks, acts, lastAct, allPieces] = await Promise.all([
         getTaskMetrics(),
         getTeamTaskWorkload(),
         getOverdueTasks(),
@@ -77,7 +93,6 @@ export default function AdminDashboard() {
         getLastActivityPerPerson(),
         getAllAssignedStyles(),
       ])
-      setRangeData(ranges || [])
       setTaskMetrics(metrics)
       setWorkload(team || [])
       setOverdueTasks(overdue || [])
@@ -85,25 +100,29 @@ export default function AdminDashboard() {
       setActuals(acts || null)
       setLastActivity(lastAct || {})
 
-      // Pieces per person
       const pm = {}
       ;(allPieces || []).forEach(s => {
         if (s.assigned_to) pm[s.assigned_to] = (pm[s.assigned_to] || 0) + 1
       })
       setPiecesMap(pm)
 
-      // Compute pipeline from all tasks
       const p = { todo: 0, in_progress: 0, review: 0, done: 0 }
       ;(allTasks || []).forEach(t => {
         if (p[t.status] !== undefined) p[t.status]++
       })
       setPipeline(p)
     } catch (err) {
-      console.error('Failed to load admin data:', err)
-      toast.error('Failed to load command center data')
+      console.error('Failed to load task data:', err)
+      toast.error('Failed to load task data')
+      tasksLoadedRef.current = false // allow retry on error
     } finally {
-      setLoading(false)
+      setTaskLoading(false)
     }
+  }
+
+  function handleTabChange(tab) {
+    setActiveTab(tab)
+    if (tab === 'tasks') loadTaskData()
   }
 
   if (loading) {
@@ -145,35 +164,35 @@ export default function AdminDashboard() {
       <div className="tabs">
         <button
           className={`tab ${activeTab === 'ranges' ? 'active' : ''}`}
-          onClick={() => setActiveTab('ranges')}
+          onClick={() => handleTabChange('ranges')}
         >
           <Layers size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
           Range Planning
         </button>
         <button
           className={`tab ${activeTab === 'tasks' ? 'active' : ''}`}
-          onClick={() => setActiveTab('tasks')}
+          onClick={() => handleTabChange('tasks')}
         >
           <CheckSquare size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
           Tasks
         </button>
         <button
           className={`tab ${activeTab === 'users' ? 'active' : ''}`}
-          onClick={() => setActiveTab('users')}
+          onClick={() => handleTabChange('users')}
         >
           <Users size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
           Users
         </button>
         <button
           className={`tab ${activeTab === 'config' ? 'active' : ''}`}
-          onClick={() => setActiveTab('config')}
+          onClick={() => handleTabChange('config')}
         >
           <Settings size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
           Config
         </button>
         <button
           className={`tab ${activeTab === 'activity' ? 'active' : ''}`}
-          onClick={() => setActiveTab('activity')}
+          onClick={() => handleTabChange('activity')}
         >
           <ActivityIcon size={14} style={{ marginRight: 4, verticalAlign: -2 }} />
           Activity
@@ -192,6 +211,7 @@ export default function AdminDashboard() {
         />
       ) : activeTab === 'tasks' ? (
         <TaskTab
+          loading={taskLoading}
           metrics={taskMetrics}
           activeTasks={activeTasks}
           workload={workload}
@@ -374,9 +394,11 @@ function relativeTime(ts) {
   return `${Math.floor(diff / 86400000)}d ago`
 }
 
-function TaskTab({ metrics, activeTasks, workload, overdueTasks, staleTasks, pipeline, currentPerson, toast, actuals, lastActivity, piecesMap }) {
+function TaskTab({ loading, metrics, activeTasks, workload, overdueTasks, staleTasks, pipeline, currentPerson, toast, actuals, lastActivity, piecesMap }) {
   const [flagging, setFlagging] = useState(false)
   const today = new Date().toISOString().slice(0, 10)
+
+  if (loading) return <ListSkeleton rows={6} />
 
   async function handleFlagStale() {
     setFlagging(true)
@@ -890,13 +912,12 @@ function ExitProcedureModal({ people, onClose, onDone, toast }) {
   const [leavingPerson, setLeavingPerson] = useState(null)
   const [assignments, setAssignments] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [selected, setSelected] = useState(new Set())
-  const [transferTo, setTransferTo] = useState('')
-  // { pieceId -> personId, taskId -> personId }
+  // { 'p-<uuid>' -> personId, 't-<id>' -> personId }
   const [pieceMap, setPieceMap] = useState({})
   const [taskMap, setTaskMap] = useState({})
   const [saving, setSaving] = useState(false)
   const [deactivate, setDeactivate] = useState(true)
+  const [bulkTo, setBulkTo] = useState('')
 
   async function handleSelectPerson(personId) {
     const person = people.find(p => p.id === parseInt(personId))
@@ -904,7 +925,7 @@ function ExitProcedureModal({ people, onClose, onDone, toast }) {
     setAssignments(null)
     setPieceMap({})
     setTaskMap({})
-    setSelected(new Set())
+    setBulkTo('')
     if (!person) return
     setLoading(true)
     try {
@@ -917,60 +938,41 @@ function ExitProcedureModal({ people, onClose, onDone, toast }) {
     }
   }
 
-  function toggleItem(key) {
-    setSelected(prev => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-  }
-
-  function toggleAll(keys) {
-    const allSelected = keys.every(k => selected.has(k))
-    setSelected(prev => {
-      const next = new Set(prev)
-      if (allSelected) keys.forEach(k => next.delete(k))
-      else keys.forEach(k => next.add(k))
-      return next
-    })
-  }
-
-  function assignSelected() {
-    if (!transferTo) return
+  function applyBulkTo() {
+    if (!bulkTo) return
+    const pid = parseInt(bulkTo)
     const newPieceMap = { ...pieceMap }
     const newTaskMap = { ...taskMap }
-    selected.forEach(key => {
-      if (key.startsWith('p-')) newPieceMap[key] = parseInt(transferTo)
-      if (key.startsWith('t-')) newTaskMap[key] = parseInt(transferTo)
-    })
+    assignments.pieces.forEach(piece => { newPieceMap[`p-${piece.id}`] = pid })
+    assignments.tasks.forEach(task => { newTaskMap[`t-${task.id}`] = pid })
     setPieceMap(newPieceMap)
     setTaskMap(newTaskMap)
-    setSelected(new Set())
-    setTransferTo('')
-  }
-
-  function getAssigneeName(personId) {
-    return people.find(p => p.id === personId)?.name || ''
+    setBulkTo('')
   }
 
   const totalPieces = assignments?.pieces.length || 0
   const totalTasks = assignments?.tasks.length || 0
-  const assignedPieces = Object.keys(pieceMap).length
-  const assignedTasks = Object.keys(taskMap).length
-  const allAssigned = totalPieces + totalTasks > 0 && assignedPieces + assignedTasks === totalPieces + totalTasks
+  const assignedPieces = Object.values(pieceMap).filter(Boolean).length
+  const assignedTasks = Object.values(taskMap).filter(Boolean).length
 
   async function handleExecute() {
+    const unassignedCount = (totalPieces + totalTasks) - (assignedPieces + assignedTasks)
+    if (unassignedCount > 0) {
+      const ok = confirm(`${unassignedCount} item${unassignedCount !== 1 ? 's' : ''} will remain unassigned. Continue anyway?`)
+      if (!ok) return
+    }
     setSaving(true)
     try {
       const pieceGroups = {}
       Object.entries(pieceMap).forEach(([key, pid]) => {
-        const id = parseInt(key.replace('p-', ''))
+        if (!pid) return
+        const id = key.replace('p-', '')
         if (!pieceGroups[pid]) pieceGroups[pid] = []
         pieceGroups[pid].push(id)
       })
       const taskGroups = {}
       Object.entries(taskMap).forEach(([key, pid]) => {
+        if (!pid) return
         const id = parseInt(key.replace('t-', ''))
         if (!taskGroups[pid]) taskGroups[pid] = []
         taskGroups[pid].push(id)
@@ -1042,54 +1044,43 @@ function ExitProcedureModal({ people, onClose, onDone, toast }) {
       {step === 2 && assignments && (
         <>
           <p className="text-muted text-sm" style={{ marginBottom: '1rem' }}>
-            Select items then choose who to transfer them to. Repeat until all are assigned.
+            Assign each item to a team member using the dropdowns. Use "Assign all" to send everything to one person at once.
           </p>
 
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1.25rem', padding: '0.75rem', background: 'var(--gray-50)', borderRadius: 'var(--radius)' }}>
-            <span className="text-sm" style={{ fontWeight: 500, flexShrink: 0 }}>Transfer selected to:</span>
-            <select value={transferTo} onChange={e => setTransferTo(e.target.value)} style={{ flex: 1 }}>
-              <option value="">Select recipient...</option>
-              {recipients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <button
-              className="btn btn-primary btn-sm"
-              disabled={!transferTo || selected.size === 0}
-              onClick={assignSelected}
-            >
-              Assign {selected.size > 0 ? `(${selected.size})` : ''}
-            </button>
-          </div>
+          {totalPieces + totalTasks > 0 && (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1.25rem', padding: '0.75rem', background: 'var(--gray-50)', borderRadius: 'var(--radius)' }}>
+              <span className="text-sm" style={{ fontWeight: 500, flexShrink: 0 }}>Assign all to:</span>
+              <select value={bulkTo} onChange={e => setBulkTo(e.target.value)} style={{ flex: 1 }}>
+                <option value="">Select person...</option>
+                {recipients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <button className="btn btn-secondary btn-sm" disabled={!bulkTo} onClick={applyBulkTo}>
+                Apply to all
+              </button>
+            </div>
+          )}
 
           {totalPieces > 0 && (
             <div style={{ marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <input
-                  type="checkbox"
-                  style={{ width: 'auto' }}
-                  checked={assignments.pieces.every(p => selected.has(`p-${p.id}`))}
-                  onChange={() => toggleAll(assignments.pieces.map(p => `p-${p.id}`))}
-                />
-                <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Pieces ({totalPieces})</span>
-              </div>
-              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Pieces ({totalPieces})</span>
+              <div className="card" style={{ padding: 0, overflow: 'hidden', marginTop: '0.5rem' }}>
                 <table className="data-table">
                   <tbody>
                     {assignments.pieces.map(piece => {
                       const key = `p-${piece.id}`
-                      const assignedTo = pieceMap[key]
                       return (
-                        <tr key={piece.id} style={assignedTo ? { opacity: 0.5 } : {}}>
-                          <td style={{ width: 32 }}>
-                            <input type="checkbox" style={{ width: 'auto' }} checked={selected.has(key)} onChange={() => toggleItem(key)} />
-                          </td>
+                        <tr key={piece.id}>
                           <td style={{ fontWeight: 500 }}>{piece.name || `#${piece.id}`}</td>
                           <td className="text-muted text-sm">{piece.ranges?.name}</td>
-                          <td style={{ textAlign: 'right' }}>
-                            {assignedTo ? (
-                              <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
-                                → {getAssigneeName(assignedTo)}
-                              </span>
-                            ) : null}
+                          <td style={{ width: 200 }}>
+                            <select
+                              value={pieceMap[key] || ''}
+                              onChange={e => setPieceMap(prev => ({ ...prev, [key]: e.target.value ? parseInt(e.target.value) : undefined }))}
+                              style={{ fontSize: '0.8125rem', padding: '0.25rem 0.5rem', width: '100%' }}
+                            >
+                              <option value="">— unassigned —</option>
+                              {recipients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </select>
                           </td>
                         </tr>
                       )
@@ -1102,34 +1093,25 @@ function ExitProcedureModal({ people, onClose, onDone, toast }) {
 
           {totalTasks > 0 && (
             <div style={{ marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <input
-                  type="checkbox"
-                  style={{ width: 'auto' }}
-                  checked={assignments.tasks.every(t => selected.has(`t-${t.id}`))}
-                  onChange={() => toggleAll(assignments.tasks.map(t => `t-${t.id}`))}
-                />
-                <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Open Tasks ({totalTasks})</span>
-              </div>
-              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Open Tasks ({totalTasks})</span>
+              <div className="card" style={{ padding: 0, overflow: 'hidden', marginTop: '0.5rem' }}>
                 <table className="data-table">
                   <tbody>
                     {assignments.tasks.map(task => {
                       const key = `t-${task.id}`
-                      const assignedTo = taskMap[key]
                       return (
-                        <tr key={task.id} style={assignedTo ? { opacity: 0.5 } : {}}>
-                          <td style={{ width: 32 }}>
-                            <input type="checkbox" style={{ width: 'auto' }} checked={selected.has(key)} onChange={() => toggleItem(key)} />
-                          </td>
+                        <tr key={task.id}>
                           <td style={{ fontWeight: 500 }}>{task.title}</td>
                           <td className="text-muted text-sm">{task.status}</td>
-                          <td style={{ textAlign: 'right' }}>
-                            {assignedTo ? (
-                              <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary)' }}>
-                                → {getAssigneeName(assignedTo)}
-                              </span>
-                            ) : null}
+                          <td style={{ width: 200 }}>
+                            <select
+                              value={taskMap[key] || ''}
+                              onChange={e => setTaskMap(prev => ({ ...prev, [key]: e.target.value ? parseInt(e.target.value) : undefined }))}
+                              style={{ fontSize: '0.8125rem', padding: '0.25rem 0.5rem', width: '100%' }}
+                            >
+                              <option value="">— unassigned —</option>
+                              {recipients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </select>
                           </td>
                         </tr>
                       )
@@ -1151,10 +1133,10 @@ function ExitProcedureModal({ people, onClose, onDone, toast }) {
             <button className="btn btn-secondary" onClick={() => setStep(1)}>Back</button>
             <button
               className="btn btn-primary"
-              disabled={saving || (!allAssigned && totalPieces + totalTasks > 0)}
+              disabled={saving}
               onClick={handleExecute}
             >
-              {saving ? 'Executing...' : `Complete Exit${!allAssigned && totalPieces + totalTasks > 0 ? ' (assign all items first)' : ''}`}
+              {saving ? 'Executing...' : 'Complete Exit'}
             </button>
           </div>
         </>

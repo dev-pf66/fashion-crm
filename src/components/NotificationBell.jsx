@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { Bell, Check, X } from 'lucide-react'
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/supabase'
@@ -29,19 +30,18 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(false)
   const toast = useToast()
-  const dropdownRef = useRef(null)
+  const bellRef = useRef(null)
+  const [pos, setPos] = useState({ bottom: 0, left: 0 })
   const prevUnreadRef = useRef(0)
 
   const unreadCount = notifications.filter(n => !n.read).length
 
-  // Request browser notification permission
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
   }, [])
 
-  // Browser notification when new notifications arrive while tab is hidden
   useEffect(() => {
     if (unreadCount > prevUnreadRef.current && document.hidden) {
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -66,14 +66,12 @@ export default function NotificationBell() {
     }
   }, [currentPerson?.id])
 
-  // Initial fetch and auto-refresh every 30 seconds
   useEffect(() => {
     fetchNotifications()
-    const interval = setInterval(fetchNotifications, 30000)
+    const interval = setInterval(fetchNotifications, 300000)
     return () => clearInterval(interval)
   }, [fetchNotifications])
 
-  // Close on Escape key
   useEffect(() => {
     function handleKeyDown(e) {
       if (e.key === 'Escape') setOpen(false)
@@ -85,6 +83,14 @@ export default function NotificationBell() {
   }, [open])
 
   function toggle() {
+    if (!open && bellRef.current) {
+      const rect = bellRef.current.getBoundingClientRect()
+      setPos({
+        // anchor dropdown's bottom edge just above the bell button, extending upward
+        bottom: window.innerHeight - rect.top + 8,
+        left: rect.left,
+      })
+    }
     setOpen(prev => !prev)
     if (!open) fetchNotifications()
   }
@@ -126,17 +132,27 @@ export default function NotificationBell() {
   }
 
   return (
-    <div className="notif-bell" ref={dropdownRef}>
-      <button className="notif-bell-btn" onClick={toggle} title="Notifications" aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}>
+    <div className="notif-bell">
+      <button
+        ref={bellRef}
+        className="notif-bell-btn"
+        onClick={toggle}
+        title="Notifications"
+        aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'}
+      >
         <Bell size={18} />
         {unreadCount > 0 && (
           <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
         )}
       </button>
-      {open && (
+
+      {open && createPortal(
         <>
           <div className="notif-overlay" onClick={close} />
-          <div className="notif-dropdown">
+          <div
+            className="notif-dropdown"
+            style={{ bottom: `${pos.bottom}px`, left: `${pos.left}px` }}
+          >
             <div className="notif-dropdown-header">
               <h4>Notifications</h4>
               <div className="notif-dropdown-header-actions">
@@ -183,7 +199,8 @@ export default function NotificationBell() {
               )}
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   )
