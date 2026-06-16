@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { getRangeStyle, createRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets, getStyleStatuses, assignStyleTo, sendAssignmentEmail, getRanges } from '../lib/supabase'
 import { usePermissions } from '../hooks/usePermissions'
-import { uploadRangeStyleFile, deleteFile } from '../lib/storage'
+import { uploadRangeStyleFile, deleteFile, copyRangeStyleFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
 import { thumbUrl } from '../lib/imgUrl'
 import { useApp } from '../App'
@@ -229,15 +229,26 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         status: 'concept',
         production_stage_id: null,
         pushed_to_production_at: null,
+        thumbnail_url: null,
       })
-      // Copy file records to the new style
       if (newStyle?.id && files.length > 0) {
-        await Promise.all(files.map(f => createRangeStyleFile({
-          style_id: newStyle.id,
-          file_url: f.file_url,
-          file_name: f.file_name,
-          file_type: f.file_type,
-        })))
+        const copiedFiles = await Promise.all(files.map(async f => {
+          let newFileUrl = f.file_url
+          try {
+            newFileUrl = await copyRangeStyleFile(f.file_url, rangeId, newStyle.id)
+          } catch { /* fallback: share the original URL */ }
+          await createRangeStyleFile({
+            style_id: newStyle.id,
+            file_url: newFileUrl,
+            file_name: f.file_name,
+            file_type: f.file_type,
+          })
+          return { originalUrl: f.file_url, newUrl: newFileUrl }
+        }))
+        const thumbEntry = copiedFiles.find(f => f.originalUrl === style.thumbnail_url)
+        if (thumbEntry) {
+          await updateRangeStyle(newStyle.id, { thumbnail_url: thumbEntry.newUrl })
+        }
       }
       toast.success('Style duplicated with images')
       onUpdate()
@@ -259,7 +270,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
   async function handleMoveToRange(targetRangeId) {
     try {
       await updateRangeStyle(styleId, { range_id: parseInt(targetRangeId) })
-      toast.success(`"${style?.name}" moved to new range`)
+      toast.success(`"${style?.name}" pushed to new range`)
       setShowMoveModal(false)
       onDelete()
     } catch (err) {
@@ -282,13 +293,6 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
           <div className="loading-container"><div className="loading-spinner" /></div>
         ) : (
           <div className="rp-panel-body">
-            <button
-              className="btn btn-secondary"
-              style={{ width: '100%', marginBottom: '1.25rem', justifyContent: 'center', display: 'flex' }}
-              onClick={handleOpenMoveModal}
-            >
-              <ArrowRightLeft size={15} /> Move to Range
-            </button>
             {/* Form fields */}
             <fieldset disabled={!canEdit} style={{ border: 'none', padding: 0, margin: 0, minWidth: 0 }}>
             <div className="form-group">
@@ -543,7 +547,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                   <Copy size={14} /> Duplicate
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={handleOpenMoveModal}>
-                  <ArrowRightLeft size={14} /> Move to Range
+                  <ArrowRightLeft size={14} /> Push to Range
                 </button>
                 <button className="btn btn-sm" style={{ color: 'var(--danger)', border: '1px solid var(--danger)', borderRadius: '6px', padding: '0.35rem 0.75rem' }} onClick={handleDeleteStyle}>
                   <Trash2 size={14} /> Delete Style
@@ -787,7 +791,7 @@ function MoveToRangeModal({ styleName, availableRanges, onClose, onMove }) {
   }
 
   return (
-    <Modal title={`Move "${styleName}" to Range`} onClose={onClose}>
+    <Modal title={`Push "${styleName}" to Range`} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label>Destination Range</label>
@@ -809,7 +813,7 @@ function MoveToRangeModal({ styleName, availableRanges, onClose, onMove }) {
             className="btn btn-primary"
             disabled={moving || !targetRangeId}
           >
-            {moving ? 'Moving...' : 'Move Style'}
+            {moving ? 'Pushing...' : 'Push to Range'}
           </button>
         </div>
       </form>

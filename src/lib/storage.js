@@ -77,3 +77,15 @@ export async function deleteFile(bucket, path) {
     .remove([path])
   if (error) throw error
 }
+
+export async function copyRangeStyleFile(fromUrl, rangeId, newStyleId) {
+  const pathMatch = fromUrl.match(/style-files\/(.+)$/)
+  if (!pathMatch) return fromUrl
+  const fromPath = pathMatch[1]
+  const fileName = fromPath.split('/').pop()
+  const toPath = `${rangeId}/${newStyleId}/${fileName}`
+  const { error } = await supabase.storage.from('style-files').copy(fromPath, toPath)
+  if (error) throw error
+  const { data: urlData } = supabase.storage.from('style-files').getPublicUrl(toPath)
+  return urlData.publicUrl
+}
