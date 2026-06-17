@@ -125,29 +125,32 @@ export default function Pricing() {
         grouped.map(([rangeName, rangerows]) => {
           const isCollapsed = collapsed[rangeName]
           const rangeTotal = rangerows.reduce((s, p) => s + (Number(p.production_qty) || 0) * (Number(p.price_per_piece) || 0), 0)
+          const rangeUnits = rangerows.reduce((s, p) => s + (Number(p.production_qty) || 0), 0)
           return (
             <div key={rangeName} className="card" style={{ marginBottom: '1rem', padding: 0, overflow: 'hidden' }}>
               <button
                 onClick={() => setCollapsed(c => ({ ...c, [rangeName]: !c[rangeName] }))}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '0.875rem 1rem', background: 'var(--gray-50)', border: 'none', borderBottom: isCollapsed ? 'none' : '1px solid var(--gray-200)', cursor: 'pointer', textAlign: 'left' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '0.875rem 1rem', background: 'var(--gray-100)', border: 'none', borderBottom: isCollapsed ? 'none' : '2px solid var(--gray-200)', cursor: 'pointer', textAlign: 'left' }}
               >
-                {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                <span style={{ fontWeight: 600 }}>{rangeName}</span>
-                <span className="text-muted text-sm">{rangerows.length} piece{rangerows.length !== 1 ? 's' : ''}</span>
-                <span style={{ marginLeft: 'auto', fontWeight: 600, fontSize: '0.875rem' }}>{fmtMoney(rangeTotal)}</span>
+                {isCollapsed ? <ChevronRight size={18} color="var(--gray-900)" /> : <ChevronDown size={18} color="var(--gray-900)" />}
+                <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--gray-900)' }}>{rangeName}</span>
+                <span style={{ fontSize: '0.8125rem', color: 'var(--gray-500)' }}>{rangerows.length} piece{rangerows.length !== 1 ? 's' : ''} · {rangeUnits.toLocaleString('en-IN')} units</span>
+                <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: '0.9rem', color: 'var(--primary)', background: 'var(--primary-light)', padding: '4px 12px', borderRadius: 8 }}>
+                  {rangeTotal > 0 ? fmtMoney(rangeTotal) : '₹0'}
+                </span>
               </button>
 
               {!isCollapsed && (
                 <div style={{ overflowX: 'auto' }}>
-                  <table className="data-table" style={{ minWidth: 720 }}>
+                  <table className="data-table" style={{ minWidth: 760 }}>
                     <thead>
                       <tr>
                         <th>Piece</th>
                         <th>Category</th>
                         <th style={{ minWidth: 180 }}>Supplier</th>
                         <th style={{ width: 110 }}>Quantity</th>
-                        <th style={{ width: 140 }}>Price / piece</th>
-                        <th style={{ width: 130, textAlign: 'right' }}>Total</th>
+                        <th style={{ width: 150 }}>Price / piece</th>
+                        <th style={{ width: 140, textAlign: 'right' }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -155,8 +158,8 @@ export default function Pricing() {
                         const lineTotal = (Number(p.production_qty) || 0) * (Number(p.price_per_piece) || 0)
                         return (
                           <tr key={p.id}>
-                            <td style={{ fontWeight: 500 }}>{p.name}</td>
-                            <td className="text-muted">{p.category || '—'}</td>
+                            <td style={{ fontWeight: 600, color: 'var(--gray-900)' }}>{p.name}</td>
+                            <td style={{ color: 'var(--gray-600)' }}>{p.category || '—'}</td>
                             <td>
                               <select
                                 value={p.supplier_id || ''}
@@ -178,24 +181,35 @@ export default function Pricing() {
                               />
                             </td>
                             <td>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={p.price_per_piece ?? ''}
-                                placeholder="₹"
-                                onChange={e => setPieces(prev => prev.map(x => x.id === p.id ? { ...x, price_per_piece: e.target.value } : x))}
-                                onBlur={e => saveField(p.id, 'price_per_piece', e.target.value === '' ? null : parseFloat(e.target.value))}
-                                style={{ width: '100%', fontSize: '0.8125rem' }}
-                              />
+                              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <span style={{ position: 'absolute', left: 8, color: 'var(--gray-500)', fontSize: '0.8125rem', pointerEvents: 'none' }}>₹</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={p.price_per_piece ?? ''}
+                                  placeholder="0.00"
+                                  onChange={e => setPieces(prev => prev.map(x => x.id === p.id ? { ...x, price_per_piece: e.target.value } : x))}
+                                  onBlur={e => saveField(p.id, 'price_per_piece', e.target.value === '' ? null : parseFloat(e.target.value))}
+                                  style={{ width: '100%', fontSize: '0.8125rem', paddingLeft: 20 }}
+                                />
+                              </div>
                             </td>
-                            <td style={{ textAlign: 'right', fontWeight: 600, fontSize: '0.8125rem' }}>
+                            <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '0.8125rem', color: lineTotal > 0 ? 'var(--gray-900)' : 'var(--gray-400)' }}>
                               {lineTotal > 0 ? fmtMoney(lineTotal) : '—'}
                             </td>
                           </tr>
                         )
                       })}
                     </tbody>
+                    <tfoot>
+                      <tr style={{ background: 'var(--gray-50)', borderTop: '2px solid var(--gray-200)' }}>
+                        <td colSpan={3} style={{ fontWeight: 700, color: 'var(--gray-900)' }}>{rangeName} total</td>
+                        <td style={{ fontWeight: 700, color: 'var(--gray-900)', fontSize: '0.8125rem' }}>{rangeUnits.toLocaleString('en-IN')}</td>
+                        <td></td>
+                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--primary)', fontSize: '0.875rem' }}>{rangeTotal > 0 ? fmtMoney(rangeTotal) : '₹0'}</td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               )}
