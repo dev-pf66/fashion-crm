@@ -12,7 +12,7 @@ import {
   LayoutDashboard, Scissors, Factory, Palette,
   FlaskConical, Users, Settings, LogOut,
   ClipboardList, Clock, HelpCircle, Menu, X, Search, CalendarDays, FileText, Layers, CheckSquare, Shield,
-  Moon, Sun, Bell, Gem, PackageCheck, Sparkles, Briefcase, BarChart3, Target, Activity
+  Moon, Sun, Bell, Gem, PackageCheck, Sparkles, Briefcase, BarChart3, Target, Activity, IndianRupee
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -41,6 +41,7 @@ const NAV_SECTIONS = [
       { to: '/range-dashboard', icon: BarChart3, label: 'Dashboard', requiredAction: 'range_plan.view' },
       { to: '/my-work', icon: Briefcase, label: 'My Work' },
       { to: '/production', icon: PackageCheck, label: 'Production', requiredAction: 'production.view' },
+      { to: '/pricing', icon: IndianRupee, label: 'Pricing', requiredAction: 'admin.access', homeOnly: true },
     ]
   },
   {
@@ -197,6 +198,7 @@ export default function Layout() {
             if (isSocial && section.hideForSocial) return null
             if (!isSocial && section.socialOnly) return null
             const items = section.items.filter(item => {
+              if (item.homeOnly && currentDivision?.code !== 'HOME') return false
               if (item.requiredAction) return can(item.requiredAction)
               return true
             })

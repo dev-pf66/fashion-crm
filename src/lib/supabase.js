@@ -1287,6 +1287,19 @@ export async function getRangeStyles(rangeId) {
   return data
 }
 
+// Every piece in a division, with its range + supplier — backs the Home
+// pricing table. Reuses supplier_id / production_qty and the new
+// price_per_piece column.
+export async function getPricingPieces(divisionId) {
+  const { data, error } = await supabase
+    .from('range_styles')
+    .select('id, name, category, supplier_id, production_qty, price_per_piece, sort_order, ranges!inner(id, name, division_id)')
+    .eq('ranges.division_id', divisionId)
+    .order('sort_order')
+  if (error) throw error
+  return data || []
+}
+
 export async function getMyAssignedStyles(personId, divisionId) {
   let query = supabase
     .from('range_styles')

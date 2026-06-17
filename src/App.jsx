@@ -40,6 +40,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Targets = lazy(() => import('./pages/Targets'))
 const NotificationAnalytics = lazy(() => import('./pages/NotificationAnalytics'))
 const TeamPulse = lazy(() => import('./pages/TeamPulse'))
+const Pricing = lazy(() => import('./pages/Pricing'))
 
 export const AppContext = createContext()
 
@@ -155,6 +156,7 @@ function AppRoutes() {
             <Route path="production" element={<ProductionBoard />} />
             <Route path="my-work" element={<MyWork />} />
             <Route path="range-dashboard" element={<RangeDashboard />} />
+            <Route path="pricing" element={<ProtectedRoute action="admin.access"><Pricing /></ProtectedRoute>} />
             <Route path="content" element={<ContentCalendar />} />
             <Route path="admin" element={<ProtectedRoute action="admin.access"><AdminDashboard /></ProtectedRoute>} />
             <Route path="admin/emails" element={<ProtectedRoute action="admin.access"><EmailLog /></ProtectedRoute>} />
