@@ -269,7 +269,11 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
 
   async function handleMoveToRange(targetRangeId) {
     try {
-      await updateRangeStyle(styleId, { range_id: parseInt(targetRangeId) })
+      const result = await updateRangeStyle(styleId, { range_id: targetRangeId })
+      if (!result) {
+        toast.error('Failed to move style — please try again')
+        return
+      }
       toast.success(`"${style?.name}" pushed to new range`)
       setShowMoveModal(false)
       onDelete()
@@ -540,9 +544,9 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               <CommentSection entityType="range_style" entityId={styleId} rangeId={rangeId} />
             </div>
 
-            {/* Duplicate / Move / Delete */}
+            {/* Duplicate / Push to Range / Delete — editors only */}
             {canEdit && (
-              <div className="rp-panel-danger" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="rp-panel-danger" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
                 <button className="btn btn-secondary btn-sm" onClick={handleDuplicateStyle}>
                   <Copy size={14} /> Duplicate
                 </button>
