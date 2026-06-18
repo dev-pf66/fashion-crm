@@ -595,7 +595,7 @@ export default function RangeDetail() {
   async function handleBulkMove(targetRangeId) {
     if (!can('range_plan.edit')) return
     try {
-      await Promise.all([...selectedIds].map(sid => updateRangeStyle(sid, { range_id: parseInt(targetRangeId) })))
+      await Promise.all([...selectedIds].map(sid => updateRangeStyle(sid, { range_id: targetRangeId })))
       const target = availableRanges.find(r => String(r.id) === String(targetRangeId))
       setStyles(prev => prev.filter(s => !selectedIds.has(s.id)))
       toast.success(`${selectedIds.size} style${selectedIds.size !== 1 ? 's' : ''} moved to ${target?.name || 'range'}`)

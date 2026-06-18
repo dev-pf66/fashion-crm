@@ -80,7 +80,7 @@ const NAV_SECTIONS = [
 export default function Layout() {
   const { currentPerson } = useApp()
   const { user, signOut } = useAuth()
-  const { can, hasRole } = usePermissions()
+  const { can, hasRole, isAdmin } = usePermissions()
   const { divisions, currentDivision, changeDivision, loading: divisionsLoading, isSwitching, pendingDivision } = useDivision()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -199,7 +199,7 @@ export default function Layout() {
             if (!isSocial && section.socialOnly) return null
             const items = section.items.filter(item => {
               if (item.homeOnly && currentDivision?.code !== 'HOME') return false
-              if (item.requiredAction) return can(item.requiredAction)
+              if (item.requiredAction) return isAdmin || can(item.requiredAction)
               return true
             })
             if (items.length === 0) return null
