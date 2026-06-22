@@ -269,16 +269,14 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
 
   async function handleMoveToRange(targetRangeId) {
     try {
-      const result = await updateRangeStyle(styleId, { range_id: targetRangeId })
-      if (!result) {
-        toast.error('Failed to move style — please try again')
-        return
-      }
-      toast.success(`"${style?.name}" pushed to new range`)
+      await updateRangeStyle(styleId, { range_id: targetRangeId })
+      const targetRange = availableRanges.find(r => String(r.id) === String(targetRangeId))
+      const rangeName = targetRange?.name || 'the selected range'
+      toast.success(`"${style?.name}" moved to ${rangeName}`)
       setShowMoveModal(false)
       onDelete()
     } catch (err) {
-      toast.error('Failed to move style')
+      toast.error('Failed to move style — please try again')
     }
   }
 
