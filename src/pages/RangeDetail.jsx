@@ -242,6 +242,11 @@ export default function RangeDetail() {
     let result
     if (groupBy === 'category') {
       result = rangeCategories.filter(c => grouped[c]).map(c => ({ key: c, label: c, styles: grouped[c] }))
+      // Also render any categories present in the data but not in rangeCategories (e.g. 'TBD', custom values)
+      Object.keys(grouped)
+        .filter(k => k !== 'Unassigned' && !rangeCategories.includes(k))
+        .sort()
+        .forEach(k => result.push({ key: k, label: k, styles: grouped[k] }))
       if (grouped['Unassigned']) result.push({ key: 'Unassigned', label: 'Unassigned', styles: grouped['Unassigned'] })
     } else if (groupBy === 'status') {
       result = RANGE_STYLE_STATUSES.filter(s => grouped[s.value]).map(s => ({ key: s.value, label: s.label, styles: grouped[s.value] }))
