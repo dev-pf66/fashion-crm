@@ -84,7 +84,7 @@ export default function MyWork() {
           ? getAllAssignedStyles(divId).then(s => s.filter(x => x.assigned_to === parseInt(selectedPerson)))
           : isAllAccess && !selectedPerson
           ? getAllAssignedStyles(divId)
-          : getMyAssignedStyles(currentPerson.id, divId),
+          : getMyAssignedStyles(currentPerson.id, null),
       ])
       setStages(stagesData || [])
       setStyles(stylesData || [])

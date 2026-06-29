@@ -1123,6 +1123,12 @@ export default function RangeDetail() {
                                             )}
                                             <div className="rp-card-tags">
                                               {groupBy !== 'category' && <span className="tag">{style.category}</span>}
+                                              {style.price_category && <span className="tag" style={{ background: 'var(--gray-100)', color: 'var(--gray-600)' }}>{style.price_category}</span>}
+                                              {style.price_per_piece != null && (
+                                                <span className="tag" style={{ background: 'var(--gray-900)', color: '#fff', fontWeight: 600 }}>
+                                                  ₹{Number(style.price_per_piece).toLocaleString('en-IN')}
+                                                </span>
+                                              )}
                                               <StatusDropdown status={style.status} onChange={(s) => handleStatusChange(style.id, s)} />
                                             </div>
                                             {style.assignee?.name && (
@@ -1132,7 +1138,9 @@ export default function RangeDetail() {
                                               </div>
                                             )}
                                             {cardSize !== 'sm' && style.production_qty > 0 && (
-                                              <div className="text-sm text-muted" style={{ marginTop: '0.125rem' }}>Qty: {style.production_qty.toLocaleString()}</div>
+                                              <div className="text-sm text-muted" style={{ marginTop: '0.125rem' }}>
+                                                {`Qty: ${style.production_qty.toLocaleString()}`}
+                                              </div>
                                             )}
                                             {cardSize !== 'sm' && style.colorways?.length > 0 && (
                                               <div className="rp-card-colors">
@@ -1342,6 +1350,12 @@ function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, o
         )}
         <div className="rp-card-tags">
           {groupBy !== 'category' && <span className="tag">{style.category}</span>}
+          {style.price_category && <span className="tag" style={{ background: 'var(--gray-100)', color: 'var(--gray-600)' }}>{style.price_category}</span>}
+          {style.price_per_piece != null && (
+            <span className="tag" style={{ background: 'var(--gray-900)', color: '#fff', fontWeight: 600 }}>
+              ₹{Number(style.price_per_piece).toLocaleString('en-IN')}
+            </span>
+          )}
           <StatusDropdown status={style.status} onChange={(s) => onStatusChange(style.id, s)} />
         </div>
         {style.assignee?.name && (
@@ -1354,7 +1368,9 @@ function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, o
           <span className={`tag tag-content tag-content-${style.content_status}`}>{CONTENT_STATUS_LABELS[style.content_status]}</span>
         )}
         {cardSize !== 'sm' && style.production_qty > 0 && (
-          <div className="text-sm text-muted" style={{ marginTop: '0.125rem' }}>Qty: {style.production_qty.toLocaleString()}</div>
+          <div className="text-sm text-muted" style={{ marginTop: '0.125rem' }}>
+            {`Qty: ${style.production_qty.toLocaleString()}`}
+          </div>
         )}
         {cardSize !== 'sm' && style.colorways?.length > 0 && (
           <div className="rp-card-colors">
@@ -1479,6 +1495,8 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
             <th>Colorways</th>
             <th className="sortable" onClick={() => handleSort('delivery_drop')}>Drop <SortIcon field="delivery_drop" /></th>
             <th>Supplier</th>
+            <th className="sortable" onClick={() => handleSort('price_per_piece')}>Price <SortIcon field="price_per_piece" /></th>
+            <th className="sortable" onClick={() => handleSort('price_category')}>Price Cat. <SortIcon field="price_category" /></th>
             <th className="sortable" onClick={() => handleSort('due_date')}>Due Date <SortIcon field="due_date" /></th>
             <th className="sortable" onClick={() => handleSort('status')}>Status <SortIcon field="status" /></th>
           </tr>
@@ -1560,6 +1578,12 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
               </td>
               <td style={{ fontSize: '0.8125rem', color: 'var(--gray-600)' }}>
                 {style.suppliers?.name ? maskSupplierName(style.suppliers.name, currentPerson) : '—'}
+              </td>
+              <td style={{ fontSize: '0.8125rem', color: 'var(--gray-700)', fontVariantNumeric: 'tabular-nums' }}>
+                {style.price_per_piece ? `₹${Number(style.price_per_piece).toLocaleString('en-IN')}` : '—'}
+              </td>
+              <td style={{ fontSize: '0.8125rem', color: 'var(--gray-600)' }}>
+                {style.price_category || '—'}
               </td>
               <td style={{ fontSize: '0.8125rem', color: style.due_date && new Date(style.due_date) < new Date() ? 'var(--danger)' : 'var(--gray-600)' }}>
                 {style.due_date

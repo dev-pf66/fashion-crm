@@ -99,6 +99,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         silhouette: data.silhouette || '',
         content_status: data.content_status || '',
         price_category: data.price_category || '',
+        price_per_piece: data.price_per_piece != null ? data.price_per_piece : '',
         assigned_to: data.assigned_to || '',
         notes: data.notes || '',
       })
@@ -137,6 +138,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         silhouette: form.silhouette.trim() || null,
         content_status: form.content_status || null,
         price_category: form.price_category || null,
+        price_per_piece: form.price_per_piece !== '' ? parseFloat(form.price_per_piece) : null,
         notes: form.notes.trim() || null,
       })
       toast.success('Style updated')
@@ -393,12 +395,25 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Price Category</label>
-              <select value={form.price_category} onChange={e => updateField('price_category', e.target.value)}>
-                <option value="">Not set</option>
-                {priceBrackets.map(b => <option key={b.id} value={b.label}>{b.label}</option>)}
-              </select>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Price Category</label>
+                <select value={form.price_category} onChange={e => updateField('price_category', e.target.value)}>
+                  <option value="">Not set</option>
+                  {priceBrackets.map(b => <option key={b.id} value={b.label}>{b.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Exact Price (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.price_per_piece}
+                  onChange={e => updateField('price_per_piece', e.target.value)}
+                  placeholder="e.g. 1200"
+                />
+              </div>
             </div>
 
             <div className="form-group">
