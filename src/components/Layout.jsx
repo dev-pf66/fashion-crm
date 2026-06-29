@@ -12,7 +12,7 @@ import {
   LayoutDashboard, Scissors, Factory, Palette,
   FlaskConical, Users, Settings, LogOut,
   ClipboardList, Clock, HelpCircle, Menu, X, Search, CalendarDays, FileText, Layers, CheckSquare, Shield,
-  Moon, Sun, Bell, Gem, PackageCheck, Sparkles, Briefcase, BarChart3, Target, Activity, IndianRupee
+  Moon, Sun, Bell, Gem, PackageCheck, Sparkles, Briefcase, BarChart3, Target, Activity, IndianRupee, PenLine
 } from 'lucide-react'
 
 const NAV_SECTIONS = [
@@ -40,6 +40,7 @@ const NAV_SECTIONS = [
       { to: '/by-embroidery', icon: Gem, label: 'By Embroidery', requiredAction: 'range_plan.view' },
       { to: '/range-dashboard', icon: BarChart3, label: 'Dashboard', requiredAction: 'range_plan.view' },
       { to: '/my-work', icon: Briefcase, label: 'My Work' },
+      { to: '/rough-sketches', icon: PenLine, label: 'Rough Sketches', requiredAction: 'range_plan.view' },
       { to: '/production', icon: PackageCheck, label: 'Production', requiredAction: 'production.view' },
       { to: '/pricing', icon: IndianRupee, label: 'Pricing', requiredAction: 'admin.access', homeOnly: true },
     ]

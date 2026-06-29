@@ -41,6 +41,7 @@ const Targets = lazy(() => import('./pages/Targets'))
 const NotificationAnalytics = lazy(() => import('./pages/NotificationAnalytics'))
 const TeamPulse = lazy(() => import('./pages/TeamPulse'))
 const Pricing = lazy(() => import('./pages/Pricing'))
+const RoughSketches = lazy(() => import('./pages/RoughSketches'))
 
 export const AppContext = createContext()
 
@@ -153,6 +154,7 @@ function AppRoutes() {
             <Route path="range-planning" element={<RangePlanning />} />
             <Route path="range-planning/:id" element={<RangeDetail />} />
             <Route path="by-embroidery" element={<ByEmbroidery />} />
+            <Route path="rough-sketches" element={<RoughSketches />} />
             <Route path="production" element={<ProductionBoard />} />
             <Route path="my-work" element={<MyWork />} />
             <Route path="range-dashboard" element={<RangeDashboard />} />

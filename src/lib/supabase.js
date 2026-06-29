@@ -1396,6 +1396,26 @@ export async function deleteRangeStyle(id) {
   if (error) throw error
 }
 
+export async function getRoughSketches(divisionId) {
+  let query = supabase
+    .from('range_styles')
+    .select('id, name, category, thumbnail_url, sketch_status, assigned_to, ranges!inner(id, name, division_id), assignee:assigned_to(id, name)')
+    .not('sketch_status', 'is', null)
+    .order('updated_at', { ascending: false })
+  if (divisionId) query = query.eq('ranges.division_id', divisionId)
+  const { data, error } = await query
+  if (error) throw error
+  return data || []
+}
+
+export async function setSketchStatus(id, status) {
+  const { error } = await supabase
+    .from('range_styles')
+    .update({ sketch_status: status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
 export async function updateRangeStyleOrder(items) {
   const promises = items.map(({ id, sort_order }) =>
     supabase.from('range_styles').update({ sort_order }).eq('id', id)

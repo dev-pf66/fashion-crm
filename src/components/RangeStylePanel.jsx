@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
-import { getRangeStyle, createRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets, getStyleStatuses, assignStyleTo, sendAssignmentEmail, getRanges } from '../lib/supabase'
+import { getRangeStyle, createRangeStyle, updateRangeStyle, deleteRangeStyle, getRangeStyleFiles, createRangeStyleFile, deleteRangeStyleFile, getSuppliers, createNotification, getSilhouettes, getPriceBrackets, getStyleStatuses, assignStyleTo, sendAssignmentEmail, getRanges, setSketchStatus } from '../lib/supabase'
 import { usePermissions } from '../hooks/usePermissions'
 import { uploadRangeStyleFile, deleteFile, copyRangeStyleFile } from '../lib/storage'
 import { STYLE_CATEGORIES as DEFAULT_CATEGORIES, maskSupplierName } from '../lib/constants'
@@ -8,7 +8,7 @@ import { thumbUrl } from '../lib/imgUrl'
 import { useApp } from '../App'
 import CommentSection from './CommentSection'
 import Modal from './Modal'
-import { X, Upload, Trash2, Copy, Star, FileText, Image as ImageIcon, Loader, PackageCheck, ChevronLeft, ChevronRight, ArrowRightLeft } from 'lucide-react'
+import { X, Upload, Trash2, Copy, Star, FileText, Image as ImageIcon, Loader, PackageCheck, ChevronLeft, ChevronRight, ArrowRightLeft, PenLine } from 'lucide-react'
 
 const FALLBACK_STATUSES = [
   { value: 'concept', label: 'Concept' },
@@ -100,6 +100,7 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
         content_status: data.content_status || '',
         price_category: data.price_category || '',
         price_per_piece: data.price_per_piece != null ? data.price_per_piece : '',
+        sketch_status: data.sketch_status || null,
         assigned_to: data.assigned_to || '',
         notes: data.notes || '',
       })
@@ -445,6 +446,26 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                 <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>
+                {!form.sketch_status && (
+                  <button
+                    className="btn btn-secondary"
+                    onClick={async () => {
+                      try {
+                        await setSketchStatus(styleId, 'in_review')
+                        updateField('sketch_status', 'in_review')
+                        toast.success('Sent to Rough Sketches — In Review')
+                        onUpdate()
+                      } catch { toast.error('Failed to send to sketch review') }
+                    }}
+                  >
+                    <PenLine size={16} /> Send to Sketch Review
+                  </button>
+                )}
+                {form.sketch_status && (
+                  <span className="tag" style={{ background: form.sketch_status === 'approved' ? 'var(--success-bg,#dcfce7)' : '#fef3c7', color: form.sketch_status === 'approved' ? 'var(--success-text,#15803d)' : '#92400e', fontWeight: 600 }}>
+                    <PenLine size={12} /> Sketch: {form.sketch_status === 'approved' ? 'Approved' : 'In Review'}
+                  </span>
+                )}
                 {form.status !== 'production' && (
                   <button
                     className="btn btn-primary"
