@@ -40,7 +40,7 @@ export default function Dashboard() {
         getUpcomingDeadlines(currentDivision.id, currentPerson),
         getOverdueItems(currentDivision.id),
         getTaskMetrics(currentDivision.id),
-        getTasks({ division_id: currentDivision.id }).catch(() => []),
+        getTasks({ division_id: currentDivision.id, current_person_id: currentPerson?.id }).catch(() => []),
       ])
       setStats(statsData)
       setRecentStyles(stylesData.slice(0, 5))

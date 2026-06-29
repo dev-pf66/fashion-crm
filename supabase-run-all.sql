@@ -275,10 +275,12 @@ END $$;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS style_id INTEGER REFERENCES styles(id) ON DELETE SET NULL;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS purchase_order_id INTEGER REFERENCES purchase_orders(id) ON DELETE SET NULL;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS range_id INTEGER REFERENCES ranges(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS idx_tasks_style_id ON tasks(style_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_supplier_id ON tasks(supplier_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_purchase_order_id ON tasks(purchase_order_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_range_id ON tasks(range_id);
 
 
 -- ============================================================

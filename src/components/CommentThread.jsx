@@ -1,8 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useApp } from '../App'
-import { getComments, createComment, deleteComment } from '../lib/supabase'
+import { getComments, createComment, deleteComment, createNotification } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { Send, Trash2, MessageSquare } from 'lucide-react'
+
+function entityLink(entityType, entityId) {
+  if (entityType === 'style') return `/styles/${entityId}`
+  if (entityType === 'supplier') return `/suppliers/${entityId}`
+  if (entityType === 'purchase_order') return `/orders/${entityId}`
+  return null
+}
 
 export default function CommentThread({ entityType, entityId }) {
   const { currentPerson, people } = useApp()
@@ -56,6 +63,25 @@ export default function CommentThread({ entityType, entityId }) {
         content: text.trim(),
         mentions: mentions.length > 0 ? mentions : null,
       })
+
+      // Notify each mentioned person
+      const link = entityLink(entityType, entityId)
+      for (const mentionId of mentions) {
+        if (mentionId === currentPerson.id) continue
+        try {
+          await createNotification({
+            person_id: mentionId,
+            type: 'mention',
+            title: `${currentPerson.name} mentioned you`,
+            message: text.trim().substring(0, 100),
+            link,
+            from_person_id: currentPerson.id,
+          })
+        } catch (err) {
+          console.error('Failed to send mention notification', err)
+        }
+      }
+
       setText('')
       toast.success('Comment added')
       loadComments()

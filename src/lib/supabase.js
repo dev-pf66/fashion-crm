@@ -1220,7 +1220,7 @@ export async function deleteStyleRequest(id) {
 export async function getRanges(divisionId) {
   let query = supabase
     .from('ranges')
-    .select('*, range_styles(id, category, status, production_qty)')
+    .select('*, range_styles(id, category, status, production_qty, price_per_piece)')
     .order('created_at', { ascending: false })
   if (divisionId) query = query.eq('division_id', divisionId)
   const { data, error } = await query
@@ -1492,15 +1492,26 @@ export async function markAllNotificationsRead(personId) {
 
 const TASK_SELECT = '*, people:assigned_to(id, name), creator:created_by(id, name), styles:style_id(id, name, style_number), suppliers:supplier_id(id, name), purchase_orders:purchase_order_id(id, po_number), ranges:range_id(id, name), collaborators'
 
+// Builds the PostgREST OR string for task visibility:
+// - tasks in the current division
+// - tasks with no division (created via Tina/WhatsApp, visible everywhere)
+// - tasks assigned to the current user regardless of division
+//   (so cross-division assignments like Tanvi → Aditi are always visible)
+export function buildTasksOrFilter(divisionId, personId) {
+  const parts = [`division_id.eq.${divisionId}`, 'division_id.is.null']
+  if (personId) parts.push(`assigned_to.eq.${personId}`)
+  return parts.join(',')
+}
+
 export async function getTasks(filters = {}) {
   let query = supabase
     .from('tasks')
     .select(TASK_SELECT)
     .order('sort_order')
     .order('created_at', { ascending: false })
-  // Include tasks that belong to the selected division OR have no division set
-  // (tasks created via Tina/WhatsApp don't have a division and must show everywhere)
-  if (filters.division_id) query = query.or(`division_id.eq.${filters.division_id},division_id.is.null`)
+  if (filters.division_id) {
+    query = query.or(buildTasksOrFilter(filters.division_id, filters.current_person_id))
+  }
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.assigned_to) query = query.eq('assigned_to', filters.assigned_to)
   if (filters.priority) query = query.eq('priority', filters.priority)

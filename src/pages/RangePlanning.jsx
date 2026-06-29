@@ -213,10 +213,17 @@ function RangeCard({ range, onDelete, folderNames, onMoveToFolder, canEdit = tru
   const byCategory = {}
   const byStatus = {}
   let totalQty = 0
+  let minPrice = null
+  let maxPrice = null
   ;(range.range_styles || []).forEach(s => {
     byCategory[s.category] = (byCategory[s.category] || 0) + 1
     byStatus[s.status] = (byStatus[s.status] || 0) + 1
     totalQty += s.production_qty || 0
+    if (s.price_per_piece != null) {
+      const p = Number(s.price_per_piece)
+      if (minPrice === null || p < minPrice) minPrice = p
+      if (maxPrice === null || p > maxPrice) maxPrice = p
+    }
   })
 
   async function handleMoveToFolder(e, folderName) {
@@ -306,6 +313,13 @@ function RangeCard({ range, onDelete, folderNames, onMoveToFolder, canEdit = tru
           <div className="rp-range-card-meta" style={{ display: 'flex', gap: '1rem', fontSize: '0.8125rem', color: 'var(--gray-600)' }}>
             <span>Approved: {byStatus.approved || 0} / {styleCount}</span>
             {totalQty > 0 && <span>Total Qty: {totalQty.toLocaleString()}</span>}
+            {minPrice !== null && (
+              <span>
+                {minPrice === maxPrice
+                  ? `₹${Number(minPrice).toLocaleString('en-IN')}`
+                  : `₹${Number(minPrice).toLocaleString('en-IN')} – ₹${Number(maxPrice).toLocaleString('en-IN')}`}
+              </span>
+            )}
           </div>
           <div className="rp-range-card-breakdown">
             {Object.entries(byCategory).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([cat, count]) => (

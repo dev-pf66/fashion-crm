@@ -257,6 +257,15 @@ export default function CommentSection({ entityType, entityId, rangeId, linkPath
         mentions: Array.from(allMentionedIds)
       })
 
+      // Build a deep-link to the exact place where the mention happened
+      function buildLink() {
+        if (entityType === 'range_style' && rangeId) return `/range-planning/${rangeId}?style=${entityId}`
+        if (entityType === 'task') return `/tasks?task=${entityId}`
+        if (linkPath) return linkPath
+        return null
+      }
+      const notifLink = buildLink()
+
       // Send notifications for each mentioned person
       for (const mentionId of allMentionedIds) {
         try {
@@ -265,7 +274,7 @@ export default function CommentSection({ entityType, entityId, rangeId, linkPath
             type: 'mention',
             title: `${currentPerson.name} mentioned you`,
             message: text.substring(0, 100),
-            link: linkPath || (rangeId ? `/range-planning/${rangeId}` : null),
+            link: notifLink,
             from_person_id: currentPerson.id
           })
         } catch (err) {

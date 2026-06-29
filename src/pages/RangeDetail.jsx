@@ -143,6 +143,14 @@ export default function RangeDetail() {
     if (isMobile) setCardSize('sm')
   }, [isMobile])
 
+  // Auto-open style panel from ?style= URL param (e.g. from Tina notification link)
+  useEffect(() => {
+    const styleParam = searchParams.get('style')
+    if (styleParam && panelStyleId !== styleParam) {
+      setPanelStyleId(styleParam)
+    }
+  }, [searchParams])
+
   const [groupOrder, setGroupOrder] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(`range-group-order-${id}`)) || {}

@@ -6,6 +6,13 @@ export default defineConfig({
   plugins: [
     react(),
   ],
+  test: {
+    environment: 'node',
+    env: {
+      VITE_SUPABASE_URL: 'http://localhost',
+      VITE_SUPABASE_ANON_KEY: 'test-key',
+    },
+  },
   build: {
     rollupOptions: {
       output: {

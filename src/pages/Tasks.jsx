@@ -17,7 +17,7 @@ import EmptyState from '../components/EmptyState'
 import { Plus, CheckSquare, LayoutGrid, List, X, Clock, User, Timer } from 'lucide-react'
 
 export default function Tasks() {
-  const { people } = useApp()
+  const { people, currentPerson } = useApp()
   const { currentDivision } = useDivision()
   const toast = useToast()
   const { can } = usePermissions()
@@ -59,7 +59,7 @@ export default function Tasks() {
     setLoading(true)
     try {
       const [data, counts] = await Promise.all([
-        getTasks({ division_id: currentDivision?.id }),
+        getTasks({ division_id: currentDivision?.id, current_person_id: currentPerson?.id }),
         getTaskSubtaskCounts(),
       ])
       setTasks(data || [])
