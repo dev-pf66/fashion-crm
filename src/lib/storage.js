@@ -71,6 +71,10 @@ export async function uploadRangeStyleFile(rangeId, styleId, file) {
   return uploadFile('style-files', `${rangeId}/${styleId}`, file)
 }
 
+export async function uploadRoughSketch(file) {
+  return uploadFile('style-images', 'rough-sketches', file)
+}
+
 export async function deleteFile(bucket, path) {
   const { error } = await supabase.storage
     .from(bucket)

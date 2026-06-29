@@ -1398,21 +1398,35 @@ export async function deleteRangeStyle(id) {
 
 export async function getRoughSketches(divisionId) {
   let query = supabase
-    .from('range_styles')
-    .select('id, name, category, thumbnail_url, sketch_status, assigned_to, ranges!inner(id, name, division_id), assignee:assigned_to(id, name)')
-    .not('sketch_status', 'is', null)
-    .order('updated_at', { ascending: false })
-  if (divisionId) query = query.eq('ranges.division_id', divisionId)
+    .from('rough_sketches')
+    .select('*, uploader:uploaded_by(id, name)')
+    .order('created_at', { ascending: false })
+  if (divisionId) query = query.eq('division_id', divisionId)
   const { data, error } = await query
   if (error) throw error
   return data || []
 }
 
-export async function setSketchStatus(id, status) {
+export async function createRoughSketch(payload) {
+  const { data, error } = await supabase
+    .from('rough_sketches')
+    .insert(payload)
+    .select('*, uploader:uploaded_by(id, name)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateRoughSketchStatus(id, status) {
   const { error } = await supabase
-    .from('range_styles')
-    .update({ sketch_status: status, updated_at: new Date().toISOString() })
+    .from('rough_sketches')
+    .update({ status, updated_at: new Date().toISOString() })
     .eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteRoughSketch(id) {
+  const { error } = await supabase.from('rough_sketches').delete().eq('id', id)
   if (error) throw error
 }
 
