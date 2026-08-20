@@ -159,9 +159,18 @@ export default function CommentThread({ entityType, entityId }) {
     p.name?.toLowerCase().includes(mentionQuery)
   ).slice(0, 5)
 
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+  }
+
   function renderContent(content) {
-    // Highlight @mentions
-    return content.replace(/@(\w+(?:\s\w+)?)/g, (match) => {
+    // Escape first so comment text can never inject markup, then highlight @mentions
+    return escapeHtml(content).replace(/@(\w+(?:\s\w+)?)/g, (match) => {
       return `<span class="comment-mention">${match}</span>`
     })
   }
