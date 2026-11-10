@@ -10,6 +10,10 @@ import CommentSection from './CommentSection'
 import Modal from './Modal'
 import { X, Upload, Trash2, Copy, Star, FileText, Image as ImageIcon, Loader, PackageCheck, ChevronLeft, ChevronRight, ArrowRightLeft } from 'lucide-react'
 
+function formatFullDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 const FALLBACK_STATUSES = [
   { value: 'concept', label: 'Concept' },
   { value: 'in_progress', label: 'In Progress' },
@@ -289,7 +293,17 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
       <div className="rp-panel-overlay" onClick={onClose} />
       <div className="rp-panel">
         <div className="rp-panel-header">
-          <h2>{loading ? 'Loading...' : style?.name || 'Style Detail'}</h2>
+          <div>
+            <h2>{loading ? 'Loading...' : style?.name || 'Style Detail'}</h2>
+            {!loading && style?.created_at && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--gray-500)', marginTop: '0.125rem' }}>
+                Added {formatFullDate(style.created_at)}
+                {style.updated_at && (
+                  <span> · Updated {formatFullDate(style.updated_at)}</span>
+                )}
+              </div>
+            )}
+          </div>
           <button className="modal-close" onClick={onClose}><X size={20} /></button>
         </div>
 
@@ -544,6 +558,19 @@ export default function RangeStylePanel({ styleId, rangeId, categories, onClose,
                       )}
                       {style.thumbnail_url === file.file_url && (
                         <div className="rp-thumbnail-badge">Thumbnail</div>
+                      )}
+                      {file.uploaded_at && (
+                        <div
+                          style={{
+                            position: 'absolute', top: 4, left: 4,
+                            background: 'rgba(0,0,0,0.6)', color: '#fff',
+                            fontSize: '0.625rem', fontWeight: 500, padding: '0.0625rem 0.375rem',
+                            borderRadius: 'var(--radius-sm, 4px)',
+                          }}
+                          title={`Uploaded ${new Date(file.uploaded_at).toLocaleString()}`}
+                        >
+                          {formatFullDate(file.uploaded_at)}
+                        </div>
                       )}
                     </div>
                     )

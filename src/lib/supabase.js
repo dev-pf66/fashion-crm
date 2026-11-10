@@ -1293,7 +1293,7 @@ export async function getRangeStyles(rangeId) {
 export async function getPricingPieces(divisionId) {
   const { data, error } = await supabase
     .from('range_styles')
-    .select('id, name, category, supplier_id, production_qty, price_per_piece, sort_order, ranges!inner(id, name, division_id)')
+    .select('id, name, category, supplier_id, production_qty, price_per_piece, sort_order, created_at, updated_at, ranges!inner(id, name, division_id)')
     .eq('ranges.division_id', divisionId)
     .order('sort_order')
   if (error) throw error

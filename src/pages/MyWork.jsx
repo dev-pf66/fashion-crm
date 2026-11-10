@@ -6,6 +6,10 @@ import { usePermissions } from '../hooks/usePermissions'
 import { useDivision } from '../contexts/DivisionContext'
 import { getMyAssignedStyles, getAllAssignedStyles, getProductionStages, updateRangeStyle, logProductionStatusChange } from '../lib/supabase'
 import { thumbUrl } from '../lib/imgUrl'
+
+function formatFullDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
 import {
   Briefcase, Image as ImageIcon, X, ChevronLeft, ChevronRight,
   Maximize2, Search, LayoutGrid, List, Clock, Users, MessageSquare, PackageCheck,
@@ -325,6 +329,15 @@ export default function MyWork() {
                                         <Clock size={10} /> Overdue
                                       </div>
                                     )}
+                                    {style.created_at && (
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.625rem', color: 'var(--gray-400)', marginTop: '0.25rem', flexWrap: 'wrap' }}
+                                        title={new Date(style.created_at).toLocaleString()}>
+                                        Added {formatFullDate(style.created_at)}
+                                        {style.updated_at && (
+                                          <span title={new Date(style.updated_at).toLocaleString()}>· Updated {formatFullDate(style.updated_at)}</span>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                   <RemarksInput
                                     key={style.id}
@@ -446,6 +459,15 @@ export default function MyWork() {
                           {style.due_date && new Date(style.due_date) < new Date() && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.6875rem', color: 'var(--danger)', marginTop: '0.25rem', fontWeight: 600 }}>
                               <Clock size={11} /> Overdue — due {new Date(style.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </div>
+                          )}
+                          {style.created_at && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.6875rem', color: 'var(--gray-400)', marginTop: '0.25rem', flexWrap: 'wrap' }}
+                              title={new Date(style.created_at).toLocaleString()}>
+                              Added {formatFullDate(style.created_at)}
+                              {style.updated_at && (
+                                <span title={new Date(style.updated_at).toLocaleString()}>· Updated {formatFullDate(style.updated_at)}</span>
+                              )}
                             </div>
                           )}
                           <div className="mywork-card-remarks-wrap">

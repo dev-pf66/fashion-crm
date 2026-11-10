@@ -14,6 +14,10 @@ import { BarChart3, Target, Users, AlertTriangle, TrendingUp, ChevronDown } from
 import { DashboardSkeleton } from '../components/PageSkeleton'
 import { thumbUrl } from '../lib/imgUrl'
 
+function formatFullDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 export default function RangeDashboard() {
   const { currentPerson, people } = useApp()
   const { role, isAdmin } = usePermissions()
@@ -514,6 +518,16 @@ function MerchRow({ m, expanded, onToggle, stages }) {
                     {s.due_date && (
                       <span className={`rd-piece-due ${s.due_date < new Date().toISOString().split('T')[0] && s.production_stage_id !== stages.find(st => st.name === 'Finishing')?.id ? 'overdue' : ''}`}>
                         Due: {new Date(s.due_date + 'T00:00:00').toLocaleDateString()}
+                      </span>
+                    )}
+                    {s.created_at && (
+                      <span className="rd-piece-due" title={new Date(s.created_at).toLocaleString()}>
+                        Added {formatFullDate(s.created_at)}
+                      </span>
+                    )}
+                    {s.updated_at && (
+                      <span className="rd-piece-due" title={new Date(s.updated_at).toLocaleString()}>
+                        Updated {formatFullDate(s.updated_at)}
                       </span>
                     )}
                   </div>

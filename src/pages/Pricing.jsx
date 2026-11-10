@@ -5,6 +5,10 @@ import { getPricingPieces, getSuppliers, updateRangeStyle } from '../lib/supabas
 import { ListSkeleton } from '../components/PageSkeleton'
 import { IndianRupee, Search, ChevronDown, ChevronRight } from 'lucide-react'
 
+function formatFullDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 const HOME_CODE = 'HOME'
 
 function fmtMoney(n) {
@@ -151,6 +155,8 @@ export default function Pricing() {
                         <th style={{ width: 110 }}>Quantity</th>
                         <th style={{ width: 150 }}>Price / piece</th>
                         <th style={{ width: 140, textAlign: 'right' }}>Total</th>
+                        <th style={{ width: 110 }}>Added</th>
+                        <th style={{ width: 110 }}>Updated</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -198,6 +204,12 @@ export default function Pricing() {
                             <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '0.8125rem', color: lineTotal > 0 ? 'var(--gray-900)' : 'var(--gray-400)' }}>
                               {lineTotal > 0 ? fmtMoney(lineTotal) : '—'}
                             </td>
+                            <td style={{ fontSize: '0.75rem', color: 'var(--gray-500)', whiteSpace: 'nowrap' }} title={p.created_at ? new Date(p.created_at).toLocaleString() : ''}>
+                              {p.created_at ? formatFullDate(p.created_at) : '—'}
+                            </td>
+                            <td style={{ fontSize: '0.75rem', color: 'var(--gray-500)', whiteSpace: 'nowrap' }} title={p.updated_at ? new Date(p.updated_at).toLocaleString() : ''}>
+                              {p.updated_at ? formatFullDate(p.updated_at) : '—'}
+                            </td>
                           </tr>
                         )
                       })}
@@ -208,6 +220,8 @@ export default function Pricing() {
                         <td style={{ fontWeight: 700, color: 'var(--gray-900)', fontSize: '0.8125rem' }}>{rangeUnits.toLocaleString('en-IN')}</td>
                         <td></td>
                         <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--primary)', fontSize: '0.875rem' }}>{rangeTotal > 0 ? fmtMoney(rangeTotal) : '₹0'}</td>
+                        <td></td>
+                        <td></td>
                       </tr>
                     </tfoot>
                   </table>

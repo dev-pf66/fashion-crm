@@ -19,6 +19,10 @@ import { thumbUrl } from '../lib/imgUrl'
 const RS_PREFIX = 'rs:'
 const UN_PREFIX = 'u:'
 
+function formatFullDate(date) {
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 function timeAgo(date) {
   if (!date) return ''
   const seconds = Math.floor((new Date() - new Date(date)) / 1000)
@@ -60,7 +64,7 @@ export default function ProductionBoard() {
     try {
       let query = supabase
         .from('range_styles')
-        .select('id, name, status, production_qty, production_client, production_lead, production_collaborators, production_notes, production_floor_stage_id, pushed_to_production_at, status_updated_at, thumbnail_url, ranges!inner(id, name, division_id), stage:production_floor_stage_id(id, name, color, sort_order)')
+        .select('id, name, status, production_qty, production_client, production_lead, production_collaborators, production_notes, production_floor_stage_id, pushed_to_production_at, status_updated_at, thumbnail_url, created_at, updated_at, ranges!inner(id, name, division_id), stage:production_floor_stage_id(id, name, color, sort_order)')
         .eq('status', 'production')
         .order('pushed_to_production_at', { ascending: false })
 
@@ -371,6 +375,15 @@ export default function ProductionBoard() {
                                           <Clock size={10} /> {timeAgo(item.pushed_to_production_at)}
                                         </div>
                                       )}
+                                      {item.created_at && (
+                                        <div style={{ fontSize: '0.625rem', color: 'var(--gray-400)', marginTop: '0.125rem' }}
+                                          title={new Date(item.created_at).toLocaleString()}>
+                                          Added {formatFullDate(item.created_at)}
+                                          {item.updated_at && (
+                                            <span title={new Date(item.updated_at).toLocaleString()}> · Updated {formatFullDate(item.updated_at)}</span>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 )}
@@ -414,6 +427,15 @@ export default function ProductionBoard() {
                                           <span>{unit.assignee?.name || 'Unassigned'}</span>
                                           <Pencil size={10} style={{ opacity: 0.5, marginLeft: 2 }} />
                                         </div>
+                                        {unit.parent?.created_at && (
+                                          <div style={{ fontSize: '0.625rem', color: 'var(--gray-400)', marginTop: '0.125rem' }}
+                                            title={new Date(unit.parent.created_at).toLocaleString()}>
+                                            Added {formatFullDate(unit.parent.created_at)}
+                                            {unit.parent?.updated_at && (
+                                              <span title={new Date(unit.parent.updated_at).toLocaleString()}> · Updated {formatFullDate(unit.parent.updated_at)}</span>
+                                            )}
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   )}
@@ -506,6 +528,15 @@ export default function ProductionBoard() {
                               {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </select>
                           </div>
+                          {item.created_at && (
+                            <div style={{ fontSize: '0.6875rem', color: 'var(--gray-400)', marginTop: '0.25rem' }}
+                              title={new Date(item.created_at).toLocaleString()}>
+                              Added {formatFullDate(item.created_at)}
+                              {item.updated_at && (
+                                <span title={new Date(item.updated_at).toLocaleString()}> · Updated {formatFullDate(item.updated_at)}</span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

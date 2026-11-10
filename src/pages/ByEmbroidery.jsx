@@ -8,6 +8,10 @@ import StatusBadge from '../components/StatusBadge'
 import { GridSkeleton } from '../components/PageSkeleton'
 import { thumbUrl } from '../lib/imgUrl'
 
+function formatFullDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 export default function ByEmbroidery() {
   const { currentPerson } = useApp()
   const { currentDivision } = useDivision()
@@ -140,6 +144,15 @@ export default function ByEmbroidery() {
                           <div className="emb-card-range">
                             {ranges[s.range_id]?.name || 'Unknown range'}
                           </div>
+                          {s.created_at && (
+                            <div style={{ fontSize: '0.6875rem', color: 'var(--gray-400)', marginTop: '0.25rem' }}
+                              title={new Date(s.created_at).toLocaleString()}>
+                              Added {formatFullDate(s.created_at)}
+                              {s.updated_at && (
+                                <span title={new Date(s.updated_at).toLocaleString()}> · Updated {formatFullDate(s.updated_at)}</span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </Link>
                     ))}

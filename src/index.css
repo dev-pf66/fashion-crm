@@ -4414,6 +4414,100 @@ tr:hover .quick-view-btn {
   flex-wrap: wrap;
 }
 
+.bulk-add-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius);
+  color: var(--gray-500);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.bulk-add-dropzone:hover,
+.bulk-add-dropzone.drag-over {
+  border-color: var(--primary);
+  background: var(--gray-50);
+}
+
+.bulk-add-dropzone p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.bulk-add-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.bulk-add-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.bulk-add-thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--gray-100);
+}
+
+.bulk-add-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bulk-add-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+}
+
+.bulk-add-overlay.done {
+  background: rgba(22, 163, 74, 0.55);
+}
+
+.bulk-add-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.bulk-add-item input {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.4rem;
+}
+
+.bulk-add-item.error input {
+  border-color: var(--danger, #dc2626);
+}
+
 .rp-view-toggle {
   display: flex;
   background: var(--gray-100);

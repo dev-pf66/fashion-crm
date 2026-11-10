@@ -5,6 +5,10 @@ import { thumbUrl } from '../lib/imgUrl'
 import StatusBadge from './StatusBadge'
 import { ImageOff } from 'lucide-react'
 
+function formatFullDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 export default function StyleCard({ style }) {
   const navigate = useNavigate()
   const { currentPerson } = useApp()
@@ -57,6 +61,15 @@ export default function StyleCard({ style }) {
             </div>
           )}
         </div>
+        {style.created_at && (
+          <div style={{ fontSize: '0.6875rem', color: 'var(--gray-400)', marginTop: '0.25rem' }}
+            title={new Date(style.created_at).toLocaleString()}>
+            Added {formatFullDate(style.created_at)}
+            {style.updated_at && (
+              <span title={new Date(style.updated_at).toLocaleString()}> · Updated {formatFullDate(style.updated_at)}</span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

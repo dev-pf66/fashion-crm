@@ -24,6 +24,7 @@ import {
   Image as ImageIcon, Lock, Play, GripVertical,
   Maximize2, Minimize2, Square, X, ChevronLeft, ChevronRight, Factory,
   CheckSquare, Clock, Calendar, Download, Trash2, ChevronDown, ChevronUp,
+  Images, Loader2, Check,
 } from 'lucide-react'
 import { KanbanSkeleton } from '../components/PageSkeleton'
 
@@ -85,6 +86,24 @@ function getColorDot(colorName) {
   return hex || '#d1d5db'
 }
 
+function formatFullDate(timestamp) {
+  return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+// Shows the exact date a piece was added, and the exact date it was last updated
+function PieceDates({ style }) {
+  if (!style.created_at) return null
+  return (
+    <div className="rp-card-dates" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.6875rem', color: 'var(--gray-400)', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+      <Calendar size={10} />
+      <span title={new Date(style.created_at).toLocaleString()}>Added {formatFullDate(style.created_at)}</span>
+      {style.updated_at && (
+        <span title={new Date(style.updated_at).toLocaleString()}>· Updated {formatFullDate(style.updated_at)}</span>
+      )}
+    </div>
+  )
+}
+
 export default function RangeDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -104,6 +123,7 @@ export default function RangeDetail() {
   const [editingRange, setEditingRange] = useState(false)
   const [quickAddGroup, setQuickAddGroup] = useState(null)
   const [quickAddName, setQuickAddName] = useState('')
+  const [showBulkAdd, setShowBulkAdd] = useState(false)
   const [lightbox, setLightbox] = useState(null) // { url, styleId }
   const [showFilters, setShowFilters] = useState(false)
   const [tab, setTab] = useState('styles')
@@ -904,9 +924,14 @@ export default function RangeDetail() {
             <Download size={14} /> <span className="hide-mobile-text">Export</span>
           </button>
           {can('range_plan.edit') && (
-            <button className="btn btn-primary btn-sm" onClick={() => { setQuickAddGroup('_top'); setQuickAddName('') }}>
-              <Plus size={14} /> <span className="hide-mobile-text">Add Style</span>
-            </button>
+            <>
+              <button className="btn btn-primary btn-sm" onClick={() => { setQuickAddGroup('_top'); setQuickAddName('') }}>
+                <Plus size={14} /> <span className="hide-mobile-text">Add Style</span>
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowBulkAdd(true)}>
+                <Images size={14} /> <span className="hide-mobile-text">Bulk Add</span>
+              </button>
+            </>
           )}
           <button
             className={`btn btn-sm mobile-filter-toggle ${showFilters ? 'active' : ''}`}
@@ -1169,6 +1194,7 @@ export default function RangeDetail() {
                                                 {new Date(style.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                               </div>
                                             )}
+                                            {cardSize !== 'sm' && <PieceDates style={style} />}
                                           </div>
                                         </div>
                                       )}
@@ -1217,6 +1243,18 @@ export default function RangeDetail() {
           onClose={() => setPanelStyleId(null)}
           onUpdate={() => loadData()}
           onDelete={() => { setPanelStyleId(null); loadData() }}
+        />
+      )}
+
+      {/* Bulk Add Styles Modal */}
+      {showBulkAdd && (
+        <BulkAddStylesModal
+          rangeId={id}
+          rangeCategories={rangeCategories}
+          styleCount={styles.length}
+          currentPersonId={currentPerson?.id || null}
+          onClose={() => setShowBulkAdd(false)}
+          onDone={() => { setShowBulkAdd(false); loadData() }}
         />
       )}
 
@@ -1399,6 +1437,7 @@ function StyleCard({ style, cardSize, groupBy, onStatusChange, onOpenLightbox, o
             {new Date(style.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </div>
         )}
+        {cardSize !== 'sm' && <PieceDates style={style} />}
       </div>
     </div>
   )
@@ -1484,6 +1523,7 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
               {style.delivery_drop && (
                 <div className="text-sm text-muted">{style.delivery_drop}</div>
               )}
+              <PieceDates style={style} />
             </div>
           </div>
         ))}
@@ -1512,6 +1552,8 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
             <th className="sortable" onClick={() => handleSort('price_category')}>Price Cat. <SortIcon field="price_category" /></th>
             <th className="sortable" onClick={() => handleSort('due_date')}>Due Date <SortIcon field="due_date" /></th>
             <th className="sortable" onClick={() => handleSort('status')}>Status <SortIcon field="status" /></th>
+            <th className="sortable" onClick={() => handleSort('created_at')}>Added <SortIcon field="created_at" /></th>
+            <th className="sortable" onClick={() => handleSort('updated_at')}>Updated <SortIcon field="updated_at" /></th>
           </tr>
         </thead>
         <tbody>
@@ -1611,6 +1653,12 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
                       return <span className="badge" style={{ background: conf.bg, color: conf.color, fontSize: '0.6875rem' }}>{conf.label}</span>
                     })()}
               </td>
+              <td style={{ fontSize: '0.75rem', color: 'var(--gray-500)', whiteSpace: 'nowrap' }} title={style.created_at ? new Date(style.created_at).toLocaleString() : ''}>
+                {style.created_at ? formatFullDate(style.created_at) : '—'}
+              </td>
+              <td style={{ fontSize: '0.75rem', color: 'var(--gray-500)', whiteSpace: 'nowrap' }} title={style.updated_at ? new Date(style.updated_at).toLocaleString() : ''}>
+                {style.updated_at ? formatFullDate(style.updated_at) : '—'}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -1621,6 +1669,150 @@ function TableView({ styles, isMobile, onStatusChange, onInlineEdit, onClickStyl
         </div>
       )}
     </div>
+  )
+}
+
+function BulkAddStylesModal({ rangeId, rangeCategories, styleCount, currentPersonId, onClose, onDone }) {
+  const toast = useToast()
+  const [items, setItems] = useState([]) // { id, file, previewUrl, name, status }
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
+  const [dragOver, setDragOver] = useState(false)
+
+  function stripExt(fileName) {
+    const idx = fileName.lastIndexOf('.')
+    return idx > 0 ? fileName.slice(0, idx) : fileName
+  }
+
+  function addFiles(fileList) {
+    const files = Array.from(fileList).filter(f => f.type.startsWith('image/'))
+    if (files.length === 0) return
+    const newItems = files.map(file => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+      name: stripExt(file.name),
+      status: 'pending',
+    }))
+    setItems(prev => [...prev, ...newItems])
+  }
+
+  function removeItem(itemId) {
+    setItems(prev => {
+      const item = prev.find(i => i.id === itemId)
+      if (item) URL.revokeObjectURL(item.previewUrl)
+      return prev.filter(i => i.id !== itemId)
+    })
+  }
+
+  function renameItem(itemId, name) {
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, name } : i))
+  }
+
+  async function handleUploadAll() {
+    if (items.length === 0 || uploading) return
+    setUploading(true)
+    let successCount = 0
+    let failCount = 0
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      setItems(prev => prev.map(it => it.id === item.id ? { ...it, status: 'uploading' } : it))
+      try {
+        const newStyle = await createRangeStyle({
+          range_id: rangeId,
+          name: item.name.trim() || 'Untitled Style',
+          category: rangeCategories[0],
+          status: 'concept',
+          sort_order: styleCount + i,
+          created_by: currentPersonId,
+        })
+        const url = await uploadRangeStyleFile(rangeId, newStyle.id, item.file)
+        await createRangeStyleFile({ style_id: newStyle.id, file_url: url, file_name: item.file.name, file_type: item.file.type })
+        await updateRangeStyle(newStyle.id, { thumbnail_url: url })
+        setItems(prev => prev.map(it => it.id === item.id ? { ...it, status: 'done' } : it))
+        successCount++
+      } catch (err) {
+        console.error('Bulk add style failed:', err)
+        setItems(prev => prev.map(it => it.id === item.id ? { ...it, status: 'error' } : it))
+        failCount++
+      }
+    }
+    setUploading(false)
+    if (successCount > 0) {
+      toast.success(`Added ${successCount} style${successCount === 1 ? '' : 's'}${failCount > 0 ? ` (${failCount} failed)` : ''}`)
+    } else {
+      toast.error('Failed to add styles')
+    }
+    if (failCount === 0) {
+      items.forEach(i => URL.revokeObjectURL(i.previewUrl))
+      onDone()
+    }
+  }
+
+  return (
+    <Modal title="Bulk Add Styles" onClose={uploading ? () => {} : onClose} large>
+      <p className="text-muted" style={{ marginTop: 0, marginBottom: '1rem', fontSize: '0.875rem' }}>
+        Drop in photos to quickly create a style for each one. You can fill in category, colorways, and other
+        details afterwards from the style card.
+      </p>
+
+      <div
+        className={`bulk-add-dropzone ${dragOver ? 'drag-over' : ''}`}
+        onClick={() => !uploading && fileInputRef.current?.click()}
+        onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={e => {
+          e.preventDefault()
+          setDragOver(false)
+          if (!uploading) addFiles(e.dataTransfer.files)
+        }}
+      >
+        <Images size={28} />
+        <p>Click to select images or drag & drop them here</p>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          style={{ display: 'none' }}
+          onChange={e => { addFiles(e.target.files); e.target.value = '' }}
+        />
+      </div>
+
+      {items.length > 0 && (
+        <div className="bulk-add-grid">
+          {items.map(item => (
+            <div key={item.id} className={`bulk-add-item ${item.status}`}>
+              <div className="bulk-add-thumb">
+                <img src={item.previewUrl} alt="" />
+                {item.status === 'uploading' && <div className="bulk-add-overlay"><Loader2 size={18} className="spin" /></div>}
+                {item.status === 'done' && <div className="bulk-add-overlay done"><Check size={18} /></div>}
+                {!uploading && item.status === 'pending' && (
+                  <button className="bulk-add-remove" onClick={() => removeItem(item.id)}><X size={12} /></button>
+                )}
+              </div>
+              <input
+                type="text"
+                value={item.name}
+                onChange={e => renameItem(item.id, e.target.value)}
+                disabled={uploading}
+                placeholder="Style name"
+              />
+              {item.status === 'error' && <span className="text-danger" style={{ fontSize: '0.75rem' }}>Failed</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', justifyContent: 'flex-end' }}>
+        <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={uploading}>
+          {items.some(i => i.status === 'done') ? 'Close' : 'Cancel'}
+        </button>
+        <button className="btn btn-primary btn-sm" onClick={handleUploadAll} disabled={items.length === 0 || uploading}>
+          {uploading ? <><Loader2 size={14} className="spin" /> Adding...</> : `Add ${items.length} Style${items.length === 1 ? '' : 's'}`}
+        </button>
+      </div>
+    </Modal>
   )
 }
 
