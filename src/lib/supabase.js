@@ -1396,37 +1396,78 @@ export async function deleteRangeStyle(id) {
   if (error) throw error
 }
 
+// Rough sketches are stored in the existing `attachments` table (category encodes
+// "rough_sketch:<status>:<division_id>") so the board works without a schema migration.
+// If the dedicated `rough_sketches` table (migration 043) is ever applied, this can be swapped back.
+const SKETCH_PREFIX = 'rough_sketch:'
+
+function attachmentToSketch(row, peopleById) {
+  const [, status = 'in_review', div = ''] = (row.category || '').split(':')
+  return {
+    id: String(row.id),
+    name: row.file_name,
+    file_name: row.file_name,
+    file_url: row.file_url,
+    file_type: row.file_type,
+    status,
+    division_id: div ? Number(div) : null,
+    uploaded_by: row.uploaded_by,
+    uploader: row.uploaded_by ? (peopleById?.[row.uploaded_by] || null) : null,
+    created_at: row.created_at,
+    updated_at: row.created_at,
+  }
+}
+
+async function getPeopleMap(ids) {
+  const uniq = [...new Set(ids.filter(Boolean))]
+  if (!uniq.length) return {}
+  const { data } = await supabase.from('people').select('id, name').in('id', uniq)
+  return Object.fromEntries((data || []).map(p => [p.id, p]))
+}
+
 export async function getRoughSketches(divisionId) {
-  let query = supabase
-    .from('rough_sketches')
-    .select('*, uploader:uploaded_by(id, name)')
+  const { data, error } = await supabase
+    .from('attachments')
+    .select('*')
+    .like('category', `${SKETCH_PREFIX}%`)
     .order('created_at', { ascending: false })
-  if (divisionId) query = query.eq('division_id', divisionId)
-  const { data, error } = await query
   if (error) throw error
-  return data || []
+  const people = await getPeopleMap((data || []).map(r => r.uploaded_by))
+  return (data || [])
+    .map(r => attachmentToSketch(r, people))
+    .filter(s => !divisionId || s.division_id === divisionId)
 }
 
 export async function createRoughSketch(payload) {
   const { data, error } = await supabase
-    .from('rough_sketches')
-    .insert(payload)
-    .select('*, uploader:uploaded_by(id, name)')
+    .from('attachments')
+    .insert({
+      file_name: payload.name || payload.file_name,
+      file_url: payload.file_url,
+      file_type: payload.file_type,
+      category: `${SKETCH_PREFIX}${payload.status || 'in_review'}:${payload.division_id ?? ''}`,
+      uploaded_by: payload.uploaded_by ?? null,
+    })
+    .select('*')
     .single()
   if (error) throw error
-  return data
+  const people = await getPeopleMap([data.uploaded_by])
+  return attachmentToSketch(data, people)
 }
 
 export async function updateRoughSketchStatus(id, status) {
+  const { data: row, error: e1 } = await supabase.from('attachments').select('category').eq('id', id).single()
+  if (e1) throw e1
+  const [, , div = ''] = (row.category || '').split(':')
   const { error } = await supabase
-    .from('rough_sketches')
-    .update({ status, updated_at: new Date().toISOString() })
+    .from('attachments')
+    .update({ category: `${SKETCH_PREFIX}${status}:${div}` })
     .eq('id', id)
   if (error) throw error
 }
 
 export async function deleteRoughSketch(id) {
-  const { error } = await supabase.from('rough_sketches').delete().eq('id', id)
+  const { error } = await supabase.from('attachments').delete().eq('id', id).like('category', `${SKETCH_PREFIX}%`)
   if (error) throw error
 }
 
